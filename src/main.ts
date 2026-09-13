@@ -1,16 +1,32 @@
 import { lex } from './engine/lexer';
+import { parse } from './engine/parser';
+import { printRoot } from './engine/printer';
 
 const source = `page-[
   background-color-[black]
-  nav-bar-[
+  menu-icon-[
     top
     left
+    url-[xyz]
+  ]
+  text-1-[
+    center
+    content-[Google]
+    font-size-[32px]
+  ]
+  input-bar-[
+    below-text-1-[20px]
+    center
+    input-type-[search-bar]
+    mic-icon-[
+      right
+      url-[xyz]
+    ]
   ]
 ]
 `;
 
 const tokens = lex(source);
+const ast = parse(tokens);
 
-for (const t of tokens) {
-  console.log(`${t.type.padEnd(14)} | ${JSON.stringify(t.value).padEnd(20)} | line ${t.line}`);
-}
+console.log(printRoot(ast));
