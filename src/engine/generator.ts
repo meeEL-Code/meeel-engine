@@ -3,7 +3,9 @@ import {
   resolveBlock,
   PROPERTIES,
   POSITION_KEYWORDS,
+  KEYWORD_CSS,
   isParametricKeyword,
+  parseParametric,
 } from './registry';
 
 const VOID_TAGS = new Set(['img', 'input']);
@@ -31,6 +33,7 @@ export function generate(root: BlockNode): string {
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>meeEL Output</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -61,23 +64,22 @@ function generateBlock(
   const textParts: string[] = [];
   const childLines: string[] = [];
 
-  // Defaults for special blocks
+  // Defaults
   if (id === 'page' || id.startsWith('page-')) {
     css['width'] = '100%';
     css['min-height'] = '100vh';
+    css['position'] = 'relative';
   }
   if (id === 'nav-bar' || id.startsWith('nav-bar-')) {
     css['width'] = '100%';
     css['height'] = '56px';
-    css['display'] = 'flex';
-    css['align-items'] = 'center';
   }
 
   let hasPosition = false;
   let transformX = false;
   let transformY = false;
 
-  // Pass 1: properties + keywords
+  // Pass 1: keywords + properties
   for (const child of block.children) {
     if (child.kind === 'keyword') {
       const kw = child.name;
@@ -92,12 +94,10 @@ function generateBlock(
           case 'center': css['left'] = '50%'; transformX = true; break;
           case 'middle': css['top'] = '50%'; transformY = true; break;
         }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(css, KEYWORD_CSS[kw]);
       } else if (isParametricKeyword(kw)) {
-        // Parametric positioning not fully implemented yet.
-        // We'll place the element relative and use margin as gap.
-        css['position'] = 'relative';
-        // distance is stored as property from parent — skip for now
-        // (Full implementation requires cross-element resolution.)
+        // handled in Pass 3
       }
     } else if (child.kind === 'property') {
       const propDef = PROPERTIES[child.name];
@@ -107,18 +107,22 @@ function generateBlock(
         );
       }
 
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+
       if (propDef.special === 'content') {
-        textParts.push(child.value);
+        textParts.push(val);
       } else if (propDef.special === 'src') {
-        attrs['src'] = child.value;
+        attrs['src'] = val;
       } else if (propDef.special === 'type') {
-        attrs['type'] = child.value;
+        attrs['type'] = val;
       } else if (propDef.special === 'placeholder') {
-        attrs['placeholder'] = child.value;
+        attrs['placeholder'] = val;
       } else if (propDef.special === 'href') {
-        attrs['href'] = child.value;
+        attrs['href'] = val;
+      } else if (propDef.special === 'value') {
+        attrs['value'] = val;
       } else {
-        css[propDef.css] = child.value;
+        css[propDef.css] = val;
       }
     }
   }
@@ -142,7 +146,58 @@ function generateBlock(
     }
   }
 
+  // Pass 3: parametric positioning — apply as margins to children
+  for (const child of block.children) {
+    if (child.kind !== 'block') continue;
+    const childCss = cssRules[`#${child.name}`];
+    if (!childCss) continue;
+
+    for (const sub of child.children) {
+      let pname: string | null = null;
+      let gap = '0px';
+      if (sub.kind === 'keyword' && isParametricKeyword(sub.name)) {
+        pname = sub.name;
+      } else if (sub.kind === 'property' && isParametricKeyword(sub.name)) {
+        pname = sub.name;
+        gap = sub.value;
+      }
+      if (!pname) continue;
+
+      const parsed = parseParametric(pname);
+      if (!parsed) continue;
+
+      if (parsed.relation === 'below') childCss['margin-top'] = gap;
+      else if (parsed.relation === 'above') childCss['margin-bottom'] = gap;
+      else if (parsed.relation === 'right-of') childCss['margin-left'] = gap;
+      else if (parsed.relation === 'left-of') childCss['margin-right'] = gap;
+    }
+  }
+
   cssRules[`#${id}`] = css;
+
+  // Special handling for toggle
+  if (id === 'toggle' || id.startsWith('toggle-')) {
+    attrs['type'] = 'checkbox';
+  }
+
+  // Special handling for dropdown
+  if (id.endsWith('-dropdown') && !attrs['type']) {
+    if (attrs['value']) {
+      const v = attrs['value'];
+      delete attrs['value'];
+      const opt = `<option>${escapeHtml(v)}</option>`;
+      const attrStr = Object.entries(attrs)
+        .map(([k, v]) => `${k}="${escapeHtml(v)}"`)
+        .join(' ');
+      const attrPart = attrStr ? ' ' + attrStr : '';
+      return `${indent}<input id="${id}"${attrPart} value="${escapeHtml(v)}">`;
+    }
+  }
+
+  // Special handling for divider (text on line)
+  if (id === 'divider' || id.startsWith('divider-')) {
+    // already handled as div
+  }
 
   const attrStr = Object.entries(attrs)
     .map(([k, v]) => `${k}="${escapeHtml(v)}"`)

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>meeEL Page</title>
+  <link rel="stylesheet" href="/src/ui/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">meeEL Page</div>
+    <button id="publish-btn" class="btn-publish">Publish》</button>
+  </header>
+
+  <main class="layout">
+    <section class="pane editor-pane">
+      <div class="pane-header">Code</div>
+      <textarea id="editor" spellcheck="false"></textarea>
+    </section>
+    <section class="pane preview-pane">
+      <div class="pane-header">Preview</div>
+      <iframe id="preview"></iframe>
+    </section>
+  </main>
+
+  <script type="module" src="/src/ui/app.ts"></script>
+</body>
+</html>
