@@ -53,6 +53,7 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
 };
 
 export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
+  { suffix: '-page', def: { tag: 'div' } },
   { suffix: '-icon', def: { tag: 'img' } },
   { suffix: '-text', def: { tag: 'span' } },
   { suffix: '-image', def: { tag: 'img' } },

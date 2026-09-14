@@ -564,3 +564,33 @@ body {
 }
 .btn-primary:hover { background: #0070e0; }
 .btn-primary:active { transform: scale(0.97); }
+
+/* ============ Page selector ============ */
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-selector {
+  background: #2a2a2a;
+  color: #d0d0d0;
+  border: 1px solid #3a3a3a;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  margin: 0;
+}
+
+.page-selector:hover {
+  background: #333;
+  border-color: #444;
+}
+
+.page-selector[hidden] {
+  display: none;
+}

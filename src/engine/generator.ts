@@ -356,3 +356,58 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+/* ============ MULTI-PAGE SUPPORT ============ */
+
+export interface PageOutput {
+  name: string;      // original block name: "page", "home-page"
+  filename: string;  // "index.html", "home.html"
+  label: string;     // "Page", "Home", "Chat Room"
+  html: string;      // full self-contained HTML
+  css: string;       // just the CSS
+}
+
+export function generatePages(root: BlockNode): PageOutput[] {
+  const topBlocks: BlockNode[] = [];
+  for (const child of root.children) {
+    if (child.kind === 'block') topBlocks.push(child);
+  }
+
+  if (topBlocks.length === 0) return [];
+
+  return topBlocks.map((b) => {
+    const singleRoot: BlockNode = {
+      kind: 'block',
+      name: '<root>',
+      children: [b],
+      line: 0,
+    };
+    const parts = generateParts(singleRoot);
+    const { filename, label } = pageFilename(b.name);
+    return {
+      name: b.name,
+      filename,
+      label,
+      html: parts.fullHtml,
+      css: parts.css,
+    };
+  });
+}
+
+function pageFilename(name: string): { filename: string; label: string } {
+  if (name === 'page') return { filename: 'index.html', label: 'Page' };
+
+  let base = name;
+  if (name.endsWith('-page')) base = name.slice(0, -5);
+  if (!base) base = name;
+
+  const filename = base + '.html';
+  const label =
+    base
+      .split('-')
+      .filter(Boolean)
+      .map((w) => w[0].toUpperCase() + w.slice(1))
+      .join(' ') || 'Page';
+
+  return { filename, label };
+}

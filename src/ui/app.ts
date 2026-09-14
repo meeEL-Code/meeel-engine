@@ -1,7 +1,7 @@
 import { lex } from '../engine/lexer';
 import { parse } from '../engine/parser';
 import { resolve, ResolveError } from '../engine/resolver';
-import { generate } from '../engine/generator';
+import { generatePages, PageOutput } from '../engine/generator';
 import {
   resolveBlock,
   POSITION_KEYWORDS,
@@ -12,7 +12,7 @@ import {
   PROPERTIES,
 } from '../engine/registry';
 
-const DEFAULT_CODE = `page-[
+const DEFAULT_CODE = `home-page-[
   background-color-[black]
 
   text-1-[
@@ -30,11 +30,15 @@ const highlightOut = document.getElementById('highlight-output') as HTMLElement;
 const preview = document.getElementById('preview') as HTMLIFrameElement;
 const gutter = document.getElementById('gutter') as HTMLElement;
 const suggestionBar = document.getElementById('suggestion-bar') as HTMLElement;
+const pageSelector = document.getElementById('page-selector') as HTMLSelectElement;
 
 editor.value = DEFAULT_CODE;
 
 let debounceTimer: number | undefined;
 let errorMap = new Map<number, string | undefined>();
+
+let allPages: PageOutput[] = [];
+let currentPageIndex = 0;
 
 /* ============ SVG ICONS ============ */
 
@@ -195,27 +199,22 @@ let allSuggestions: Suggestion[] = [];
 
 function buildSuggestionList(): Suggestion[] {
   const list: Suggestion[] = [];
-  // fixed blocks
   for (const name of Object.keys(FIXED_BLOCKS)) {
     list.push({ name, category: 'block' });
   }
-  // suffix blocks (give sample names)
   for (const { suffix } of SUFFIX_BLOCKS) {
     const s = suffix.replace('-', '');
     list.push({ name: s, category: 'block' });
   }
-  // properties
   for (const name of Object.keys(PROPERTIES)) {
     list.push({ name, category: 'property' });
   }
-  // keywords
   for (const name of POSITION_KEYWORDS) {
     list.push({ name, category: 'keyword' });
   }
   for (const name of Object.keys(KEYWORD_CSS)) {
     list.push({ name, category: 'keyword' });
   }
-  // Deduplicate by name
   const seen = new Set<string>();
   return list.filter((s) => {
     if (seen.has(s.name)) return false;
@@ -233,7 +232,6 @@ function getCurrentWord(): { word: string; start: number; end: number } | null {
   const pos = editor.selectionStart;
   if (editor.selectionStart !== editor.selectionEnd) return null;
   const before = editor.value.slice(0, pos);
-  // Only allow word chars: a-z, 0-9, -
   const match = before.match(/[a-z][a-z0-9-]*$/);
   if (!match) return null;
   return { word: match[0], start: pos - match[0].length, end: pos };
@@ -245,7 +243,6 @@ function getSuggestions(word: string): Suggestion[] {
   const matches = allSuggestions.filter((s) =>
     s.name.startsWith(lower) && s.name !== lower
   );
-  // Sort: shorter names first, then alphabetical
   matches.sort((a, b) => {
     if (a.name.length !== b.name.length) return a.name.length - b.name.length;
     return a.name.localeCompare(b.name);
@@ -281,7 +278,6 @@ function acceptSuggestion(idx: number) {
   const before = editor.value.slice(0, word.start);
   const after = editor.value.slice(word.end);
 
-  // Detect current line's leading whitespace (for nested indentation)
   const lineStart = before.lastIndexOf('\n') + 1;
   const currentLine = before.slice(lineStart);
   const indentMatch = currentLine.match(/^(\s*)/);
@@ -292,18 +288,12 @@ function acceptSuggestion(idx: number) {
   let cursorOffset = insert.length;
 
   if (s.category === 'block') {
-    // Insert: name-[\n<indent+2>\n<indent>]
-    // cursor lands on the inner line so user can type children
-    const inner = '';
-    insert = s.name + '-[\n' + innerIndent + inner + '\n' + currentIndent + ']';
+    insert = s.name + '-[\n' + innerIndent + '\n' + currentIndent + ']';
     cursorOffset = s.name.length + 2 + innerIndent.length;
   } else if (s.category === 'property') {
-    // Insert: name-[]
-    // cursor lands between [ and ]
     insert = s.name + '-[]';
     cursorOffset = s.name.length + 2;
   }
-  // keyword: just insert the name, cursor at end
 
   editor.value = before + insert + after;
   const newPos = word.start + cursorOffset;
@@ -380,19 +370,76 @@ function render() {
 
     syncGutter();
     syncHighlight();
-    const html = generate(ast);
-    const doc = preview.contentDocument;
-    if (doc) {
-      doc.open();
-      doc.write(html);
-      doc.close();
+
+    allPages = generatePages(ast);
+
+    if (allPages.length === 0) {
+      renderBlank();
+      updatePageSelector();
+      return;
     }
+
+    if (currentPageIndex >= allPages.length) {
+      currentPageIndex = 0;
+    }
+
+    updatePageSelector();
+    renderCurrentPage();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     syncGutter();
     syncHighlight();
     renderMessage('Parse Error', escapeHtml(message));
   }
+}
+
+function renderCurrentPage() {
+  const page = allPages[currentPageIndex];
+  if (!page) return;
+  const doc = preview.contentDocument;
+  if (!doc) return;
+  doc.open();
+  doc.write(page.html);
+  doc.close();
+}
+
+function updatePageSelector() {
+  if (!pageSelector) return;
+  if (allPages.length <= 1) {
+    pageSelector.hidden = true;
+    pageSelector.innerHTML = '';
+    return;
+  }
+  pageSelector.hidden = false;
+  pageSelector.innerHTML = allPages
+    .map((p, i) =>
+      `<option value="${i}"${i === currentPageIndex ? ' selected' : ''}>${escapeHtml(p.label)}</option>`
+    )
+    .join('');
+}
+
+pageSelector.addEventListener('change', () => {
+  currentPageIndex = parseInt(pageSelector.value, 10) || 0;
+  renderCurrentPage();
+  if (publishModal && !publishModal.hidden) {
+    cachedParts = buildParts();
+    switchTab(currentTab);
+  }
+});
+
+function renderBlank() {
+  const doc = preview.contentDocument;
+  if (!doc) return;
+  doc.open();
+  doc.write(`
+    <html><body style="font-family: monospace; padding: 20px; background: #f5f5f5; color: #999; display: flex; align-items: center; justify-content: center; height: 100vh;">
+      <div style="text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 12px;">∅</div>
+        <div>Write something to see preview</div>
+      </div>
+    </body></html>
+  `);
+  doc.close();
 }
 
 /* ============ ERROR PANEL ============ */
@@ -538,6 +585,7 @@ editor.addEventListener('input', () => {
   syncHighlight();
   syncGutter();
   updateSuggestions();
+  scheduleSave();
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = window.setTimeout(render, 200);
 });
@@ -547,7 +595,6 @@ editor.addEventListener('click', () => {
 });
 
 editor.addEventListener('keydown', (e) => {
-  // Tab / Enter — accept suggestion if visible
   if (suggestionBar.hidden === false && currentSuggestions.length > 0) {
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -584,21 +631,15 @@ editor.addEventListener('keydown', (e) => {
     syncGutter();
   }
 
-  if (e.key === 'Escape') {
-    clearSuggestions();
-  }
+  if (e.key === 'Escape') clearSuggestions();
 });
 
-/* ============ SAVE / LOAD (localStorage) ============ */
+/* ============ SAVE / LOAD ============ */
 
 const STORAGE_KEY = 'meeel-code-v1';
 
 function loadSavedCode(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
+  try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
 }
 
 let saveTimer: number | undefined;
@@ -607,9 +648,7 @@ function saveCode() {
   try {
     localStorage.setItem(STORAGE_KEY, editor.value);
     showSaveIndicator();
-  } catch (e) {
-    // ignore (private mode etc)
-  }
+  } catch {}
 }
 
 function scheduleSave() {
@@ -632,28 +671,12 @@ function showSaveIndicator() {
   }, 2000);
 }
 
-// Load saved code (if any)
 const saved = loadSavedCode();
-if (saved) {
-  editor.value = saved;
-}
+if (saved) editor.value = saved;
 
-editor.addEventListener('input', () => {
-  scheduleSave();
-});
-
-// Also save on blur (mobile keyboard close)
-editor.addEventListener('blur', () => {
-  saveCode();
-});
-
-syncHighlight();
-syncGutter();
-render();
+editor.addEventListener('blur', () => saveCode());
 
 /* ============ PUBLISH MODAL ============ */
-
-import { generateParts } from '../engine/generator';
 
 const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement;
 const publishModal = document.getElementById('publish-modal') as HTMLElement;
@@ -669,30 +692,34 @@ const PUBLISH_STATE_KEY = 'meeel-publish-state-v1';
 
 type PublishTab = 'html' | 'css' | 'readme';
 let currentTab: PublishTab = 'html';
-let cachedParts: { html: string; css: string; readme: string } | null = null;
+let cachedParts: {
+  html: string;
+  css: string;
+  readme: string;
+  pages: PageOutput[];
+} | null = null;
 
 function savePublishState(open: boolean, tab: PublishTab) {
-  try {
-    localStorage.setItem(PUBLISH_STATE_KEY, JSON.stringify({ open, tab }));
-  } catch {}
+  try { localStorage.setItem(PUBLISH_STATE_KEY, JSON.stringify({ open, tab })); } catch {}
 }
 
 function loadPublishState(): { open: boolean; tab: PublishTab } {
   try {
     const raw = localStorage.getItem(PUBLISH_STATE_KEY);
     if (!raw) return { open: false, tab: 'html' };
-    const parsed = JSON.parse(raw);
-    return {
-      open: !!parsed.open,
-      tab: (parsed.tab as PublishTab) || 'html',
-    };
+    const p = JSON.parse(raw);
+    return { open: !!p.open, tab: (p.tab as PublishTab) || 'html' };
   } catch {
     return { open: false, tab: 'html' };
   }
 }
 
-function buildReadme(meeelCode: string): string {
+function buildReadme(meeelCode: string, pages: PageOutput[]): string {
   const date = new Date().toISOString().split('T')[0];
+  const pagesTable = pages
+    .map((p) => `| \`${p.filename}\` | ${p.label} |`)
+    .join('\n');
+
   return `# meeEL
 
 **A language through which you can create and build everything you need.**
@@ -707,10 +734,16 @@ and JavaScript by hand, you write meeEL — and it becomes real code.
 
 ## How to use
 
-1. Open \`index.html\` in any browser.
+1. Open \`index.html\` in any browser. (Or any of the other page files.)
 2. That's it. Everything is self-contained.
 
 No build tools. No dependencies. No setup.
+
+## Pages in this project
+
+| File | Page |
+| ---- | ---- |
+${pagesTable}
 
 ## The meeEL source
 
@@ -721,14 +754,6 @@ ${meeelCode}
 \`\`\`
 
 Edit this code in **meeEL Page** and it will regenerate instantly.
-
-## Files in this folder
-
-| File          | What it is                                |
-| ------------- | ----------------------------------------- |
-| \`index.html\`  | Full page — HTML + CSS together           |
-| \`style.css\`   | Just the CSS (for reference)              |
-| \`README.md\`   | This file                                 |
 
 ## About meeEL
 
@@ -744,18 +769,18 @@ Edit this code in **meeEL Page** and it will regenerate instantly.
 }
 
 function buildParts() {
-  const tokens = lex(editor.value);
-  const ast = parse(tokens);
-  const errors = resolve(ast);
-  if (errors.length > 0) return null;
-
-  const parts = generateParts(ast);
-  const readme = buildReadme(editor.value);
-  return { html: parts.fullHtml, css: parts.css, readme };
+  if (allPages.length === 0) return null;
+  const currentPage = allPages[currentPageIndex];
+  const readme = buildReadme(editor.value, allPages);
+  return {
+    html: currentPage.html,
+    css: currentPage.css,
+    readme,
+    pages: allPages,
+  };
 }
 
 function updateDownloadButtons() {
-  // Secondary button — changes per tab
   if (currentTab === 'html') {
     downloadFileLabel.textContent = 'Download .html';
   } else if (currentTab === 'css') {
@@ -767,15 +792,11 @@ function updateDownloadButtons() {
 
 function switchTab(tab: PublishTab) {
   currentTab = tab;
-  modalTabs.forEach((t) => {
-    t.classList.toggle('active', t.dataset.tab === tab);
-  });
+  modalTabs.forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
   if (!cachedParts) return;
-
   if (tab === 'html') modalCode.textContent = cachedParts.html;
   else if (tab === 'css') modalCode.textContent = cachedParts.css;
   else modalCode.textContent = cachedParts.readme;
-
   updateDownloadButtons();
   savePublishState(true, tab);
 }
@@ -794,7 +815,6 @@ function closePublish() {
 
 publishBtn.addEventListener('click', openPublish);
 publishClose.addEventListener('click', closePublish);
-
 publishModal.addEventListener('click', (e) => {
   if (e.target === publishModal) closePublish();
 });
@@ -842,13 +862,11 @@ function download(filename: string, content: string, mime: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/**
- * Secondary button — downloads the CURRENT tab's file only.
- */
 downloadFile.addEventListener('click', () => {
   if (!cachedParts) return;
+  const currentPage = allPages[currentPageIndex];
   if (currentTab === 'html') {
-    download('index.html', cachedParts.html, 'text/html');
+    download(currentPage.filename, currentPage.html, 'text/html');
   } else if (currentTab === 'css') {
     download('style.css', cachedParts.css, 'text/css');
   } else {
@@ -856,9 +874,6 @@ downloadFile.addEventListener('click', () => {
   }
 });
 
-/**
- * Primary button — downloads everything as a single ZIP file.
- */
 downloadAll.addEventListener('click', async () => {
   if (!cachedParts) return;
 
@@ -871,8 +886,10 @@ downloadAll.addEventListener('click', async () => {
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
 
-    zip.file('index.html', cachedParts.html);
-    zip.file('style.css', cachedParts.css);
+    // Add every page as a separate file
+    for (const page of cachedParts.pages) {
+      zip.file(page.filename, page.html);
+    }
     zip.file('README.md', cachedParts.readme);
 
     const blob = await zip.generateAsync({
@@ -898,19 +915,19 @@ downloadAll.addEventListener('click', async () => {
   }
 });
 
-/* ============ RESTORE PUBLISH STATE ON LOAD ============ */
-
 const initialPublishState = loadPublishState();
 if (initialPublishState.tab) {
   currentTab = initialPublishState.tab;
-  // Set active tab visually
-  modalTabs.forEach((t) => {
-    t.classList.toggle('active', t.dataset.tab === currentTab);
-  });
+  modalTabs.forEach((t) =>
+    t.classList.toggle('active', t.dataset.tab === currentTab)
+  );
 }
 if (initialPublishState.open) {
-  // Wait a moment for editor to render
-  setTimeout(() => {
-    openPublish();
-  }, 100);
+  setTimeout(() => openPublish(), 100);
 }
+
+/* ============ BOOT ============ */
+
+syncHighlight();
+syncGutter();
+render();
