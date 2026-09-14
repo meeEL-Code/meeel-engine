@@ -20,17 +20,19 @@ body {
 
 .logo {
   font-weight: 600;
-  font-size: 18px;
-  letter-spacing: 0.5px;
+  font-size: 17px;
+  letter-spacing: 0.3px;
+  color: #f0f0f0;
 }
 
 .btn-publish {
   background: #0a84ff;
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -58,15 +60,59 @@ body {
 
 .pane-header {
   padding: 6px 12px;
-  background: #2d2d2d;
-  font-size: 11px;
+  background: #252526;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: #888;
+  color: #777;
   border-bottom: 1px solid #333;
 }
 
-/* === Editor with highlight overlay === */
+/* === Editor container with gutter === */
+.editor-container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.gutter {
+  flex-shrink: 0;
+  width: 38px;
+  padding: 14px 8px 14px 4px;
+  background: #1a1a1a;
+  color: #555;
+  text-align: right;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow: hidden;
+  user-select: none;
+  border-right: 1px solid #262626;
+}
+
+.gutter .ln {
+  display: block;
+  position: relative;
+}
+
+.gutter .ln.has-error {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.gutter .ln.has-error::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ff4d4d;
+  transform: translateY(-50%);
+}
+
 .editor-wrap {
   position: relative;
   flex: 1;
@@ -74,7 +120,7 @@ body {
   background: #1e1e1e;
 }
 
-/* === SHARED FONT STYLE — CRITICAL FOR ALIGNMENT === */
+/* === SHARED FONT STYLE — MUST MATCH === */
 .editor-highlight,
 #editor {
   position: absolute;
@@ -87,7 +133,6 @@ body {
   border: none;
   outline: none;
 
-  /* Same font stack for both */
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 13px;
   font-weight: 500;
@@ -116,7 +161,7 @@ body {
   z-index: 2;
   background: transparent;
   color: transparent;
-  -webkit-text-fill-color: transparent;  /* mobile-critical */
+  -webkit-text-fill-color: transparent;
   caret-color: #4fc1ff;
   resize: none;
   -webkit-appearance: none;
@@ -124,16 +169,56 @@ body {
   font-variant-ligatures: none;
 }
 
-/* === Syntax colors — slightly premium === */
-.tok-block      { color: #4fc1ff; font-weight: 600; }   /* block name — bright blue */
-.tok-property   { color: #7ec699; font-weight: 500; }   /* property — soft green */
-.tok-keyword    { color: #f0a868; font-weight: 500; }   /* keyword — warm orange */
-.tok-bracket    { color: #6b7280; }                     /* bracket — muted gray */
-.tok-value      { color: #e8a5a5; }                     /* value — soft red */
+/* === Syntax colors === */
+.tok-block      { color: #4fc1ff; font-weight: 600; }
+.tok-property   { color: #7ec699; font-weight: 500; }
+.tok-keyword    { color: #f0a868; font-weight: 500; }
+.tok-bracket    { color: #6b7280; }
+.tok-value      { color: #e8a5a5; }
+
+/* === Error underline — ONLY on offending token === */
+.tok-error {
+  text-decoration: underline wavy #ff4d4d;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  background: rgba(255, 77, 77, 0.12);
+  border-radius: 2px;
+}
 
 #preview {
   flex: 1;
   border: none;
   background: white;
   width: 100%;
+}
+
+/* === Selection: semi-transparent so syntax colors show through === */
+#editor::selection {
+  background: rgba(79, 193, 255, 0.28);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+#editor::-moz-selection {
+  background: rgba(79, 193, 255, 0.28);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.editor-highlight::selection {
+  background: transparent;
+}
+
+/* Suggestion icon (SVG) */
+.sugg-icon {
+  flex-shrink: 0;
+  color: #86efac;
+  opacity: 0.9;
+}
+
+/* SVG icon helpers */
+.sugg-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #86efac;
 }
