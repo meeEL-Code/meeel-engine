@@ -40,6 +40,11 @@ export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
   { suffix: '-title', def: { tag: 'h1' } },
   { suffix: '-toggle', def: { tag: 'input' } },
   { suffix: '-row', def: { tag: 'div' } },
+  { suffix: '-input', def: { tag: 'div' } },
+  { suffix: '-field', def: { tag: 'div' } },
+  { suffix: '-wrapper', def: { tag: 'div' } },
+  { suffix: '-box', def: { tag: 'div' } },
+  { suffix: '-bar', def: { tag: 'div' } },
 ];
 
 export function resolveBlock(name: string): BlockDef | null {
@@ -60,6 +65,9 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'font-size': { css: 'font-size' },
   'font-weight': { css: 'font-weight' },
   'font-style': { css: 'font-style' },
+  'letter-spacing': { css: 'letter-spacing' },
+  'line-height': { css: 'line-height' },
+  'text-align': { css: 'text-align' },
   'padding': { css: 'padding' },
   'margin': { css: 'margin' },
   'border': {
@@ -67,6 +75,11 @@ export const PROPERTIES: Record<string, PropertyDef> = {
     transform: (v) => v.replace(/-/g, ' '),
   },
   'border-radius': { css: 'border-radius' },
+  'box-shadow': {
+    css: 'box-shadow',
+    transform: (v) => v.replace(/-/g, ' '),
+  },
+  'opacity': { css: 'opacity' },
   'width': { css: 'width' },
   'height': { css: 'height' },
   'content': { css: '', special: 'content' },
@@ -85,6 +98,11 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   'underline': { 'text-decoration': 'underline' },
   'bold': { 'font-weight': 'bold' },
   'italic': { 'font-style': 'italic' },
+  'round': { 'border-radius': '999px' },
+  'shadow': { 'box-shadow': '0 4px 12px rgba(0,0,0,0.08)' },
+  'no-border': { 'border': 'none' },
+  'pointer': { 'cursor': 'pointer' },
+  'full-width': { 'width': '100%' },
 };
 
 export function isParametricKeyword(name: string): boolean {

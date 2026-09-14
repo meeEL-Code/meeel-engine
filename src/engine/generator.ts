@@ -37,8 +37,9 @@ export function generate(root: BlockNode): string {
 <title>meeEL Output</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: sans-serif; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 img { display: block; }
+button { font-family: inherit; }
 
 ${cssText}
 </style>
@@ -65,7 +66,7 @@ function generateBlock(
   const textParts: string[] = [];
   const childLines: string[] = [];
 
-  // Defaults
+  // Defaults by block type
   if (id === 'page' || id.startsWith('page-')) {
     css['width'] = '100%';
     css['min-height'] = '100vh';
@@ -84,16 +85,24 @@ function generateBlock(
     css['flex-direction'] = 'row';
     css['justify-content'] = 'space-between';
     css['align-items'] = 'center';
-    css['width'] = '100%';
+    css['gap'] = '10px';
   }
   if (id === 'card' || id.startsWith('card-')) {
     css['display'] = 'flex';
     css['flex-direction'] = 'column';
   }
-  if (id === 'divider' || id.startsWith('divider-')) {
+  if (id === 'divider' || id.startsWith('divider-') || id.endsWith('-divider')) {
     css['display'] = 'flex';
     css['align-items'] = 'center';
     css['justify-content'] = 'center';
+    css['width'] = '100%';
+    css['gap'] = '12px';
+    css['color'] = '#888';
+    css['font-size'] = '13px';
+  }
+  if (id === 'input-bar' || id.endsWith('-bar') || id.endsWith('-field')) {
+    css['display'] = 'flex';
+    css['align-items'] = 'center';
     css['width'] = '100%';
   }
 
@@ -104,7 +113,6 @@ function generateBlock(
   for (const child of block.children) {
     if (child.kind === 'keyword') {
       const kw = child.name;
-
       if (POSITION_KEYWORDS.has(kw)) {
         switch (kw) {
           case 'top': hasTop = true; break;
@@ -118,7 +126,6 @@ function generateBlock(
         Object.assign(css, KEYWORD_CSS[kw]);
       }
     } else if (child.kind === 'property') {
-      // Skip parametric keywords — handled in Pass 3
       if (isParametricKeyword(child.name)) continue;
 
       const propDef = PROPERTIES[child.name];
@@ -140,7 +147,7 @@ function generateBlock(
     }
   }
 
-  // Decide positioning mode
+  // Positioning
   const verticalFix = hasTop || hasBottom || hasMiddle;
   let transformX = false, transformY = false;
 
@@ -153,12 +160,11 @@ function generateBlock(
     if (hasRight) css['right'] = '0';
     if (hasCenter) { css['left'] = '50%'; transformX = true; }
   } else {
-    // Flow mode: horizontal keywords become align-self / margin auto
     if (hasCenter) {
       css['align-self'] = 'center';
       css['text-align'] = 'center';
-      css['margin-left'] = 'auto';
-      css['margin-right'] = 'auto';
+      if (!css['margin-left']) css['margin-left'] = 'auto';
+      if (!css['margin-right']) css['margin-right'] = 'auto';
     }
     if (hasLeft) {
       css['align-self'] = 'flex-start';
@@ -182,7 +188,7 @@ function generateBlock(
     }
   }
 
-  // Pass 3: parametric positioning — margin on self
+  // Pass 3: parametric positioning
   for (const sub of block.children) {
     let pname: string | null = null;
     let gap = '0px';
@@ -203,43 +209,81 @@ function generateBlock(
     else if (parsed.relation === 'left-of') css['margin-right'] = gap;
   }
 
-  cssRules[`#${id}`] = css;
+  // Smart input detection
+  const hasInputType = block.children.some(
+    (c) => c.kind === 'property' && c.name === 'input-type'
+  );
+  const hasBlockChildren = block.children.some((c) => c.kind === 'block');
+  let finalTag = def.tag;
 
-  // Toggle → checkbox
+  if (hasInputType && !hasBlockChildren) {
+    finalTag = 'input';
+  }
+
+  // AUTO PREMIUM STYLING FOR BUTTONS
+  if (finalTag === 'button') {
+    css['display'] = 'inline-flex';
+    css['align-items'] = 'center';
+    css['justify-content'] = 'center';
+    css['gap'] = '8px';
+    css['cursor'] = 'pointer';
+    css['border'] = 'none';
+    css['text-align'] = 'center';
+    css['font-family'] = 'inherit';
+    css['font-weight'] = '500';
+    css['letter-spacing'] = '0.3px';
+    css['transition'] = 'all 0.2s ease';
+  }
+
+  // AUTO STYLING FOR INPUTS
+  if (finalTag === 'input') {
+    css['border'] = 'none';
+    css['outline'] = 'none';
+    css['font-family'] = 'inherit';
+    css['width'] = css['width'] || '100%';
+  }
+
+  // Toggle
   if (id === 'toggle' || id.startsWith('toggle-')) {
     attrs['type'] = 'checkbox';
   }
 
-  // Input-bar inside: inject default input if not present? Keep simple.
+  cssRules[`#${id}`] = css;
 
+  // Build tag string
   const attrStr = Object.entries(attrs)
     .map(([k, v]) => `${k}="${escapeHtml(v)}"`)
     .join(' ');
   const attrPart = attrStr ? ' ' + attrStr : '';
 
-  const tag = def.tag;
-
-  if (VOID_TAGS.has(tag)) {
-    if (childLines.length > 0) {
-      throw new Error(
-        `Block '${id}' (${tag}) cannot contain children at line ${block.line}`
-      );
-    }
-    return `${indent}<${tag} id="${id}"${attrPart}>`;
+  if (VOID_TAGS.has(finalTag)) {
+    return `${indent}<${finalTag} id="${id}"${attrPart}>`;
   }
 
   const text = textParts.map(escapeHtml).join('');
   const innerParts: string[] = [];
+
+  // Divider: wrap text with lines (pseudo-elements via span)
+  if (id === 'divider' || id.startsWith('divider-') || id.endsWith('-divider')) {
+    if (text) {
+      return `${indent}<${finalTag} id="${id}"${attrPart}>
+${indent}  <span class="meeel-divider-line"></span>
+${indent}  <span>${text}</span>
+${indent}  <span class="meeel-divider-line"></span>
+${indent}</${finalTag}>`;
+    }
+  }
+
   if (text) innerParts.push(text);
   if (childLines.length > 0) innerParts.push(childLines.join('\n'));
 
   if (innerParts.length === 0) {
-    return `${indent}<${tag} id="${id}"${attrPart}></${tag}>`;
+    return `${indent}<${finalTag} id="${id}"${attrPart}></${finalTag}>`;
   }
 
-  return `${indent}<${tag} id="${id}"${attrPart}>
+  return `${indent}<${finalTag} id="${id}"${attrPart}>
 ${innerParts.join('\n')}
-${indent}</${tag}>`;
+${indent}</${finalTag}>`;
 }
 
 function escapeHtml(s: string): string {
