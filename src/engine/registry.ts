@@ -48,6 +48,10 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
   'option': { tag: 'option' },
   'option-group': { tag: 'div' },
   'custom-select': { tag: 'div' },
+  'table': { tag: 'table' },
+  'heading': { tag: 'tr' },
+  'table-row': { tag: 'tr' },
+  'cell': { tag: 'td' },
   'dropdown': { tag: 'input' },
   'label': { tag: 'label' },
   'row': { tag: 'div' },
@@ -214,6 +218,32 @@ export function parseParametric(name: string): { relation: string; reference: st
  *  home-page  → home.html
  *  chat-room  → chat-room.html
  */
+/**
+ * Blocks that are naturally allowed to repeat within the same parent.
+ * (e.g. table cells, table rows, radio buttons, options)
+ * Duplicate-name check is skipped for these.
+ */
+export const REPEATABLE_NAMES = new Set<string>([
+  'cell',
+  'table-cell',
+  'table-row',
+  'heading',
+  'table-heading',
+  'option',
+  'radio',
+  'link',
+  'button',
+]);
+
+export function isRepeatable(name: string): boolean {
+  if (REPEATABLE_NAMES.has(name)) return true;
+  // Also allow numbered/suffixed variants like cell-1, table-row-2
+  for (const r of REPEATABLE_NAMES) {
+    if (name.startsWith(r + '-')) return true;
+  }
+  return false;
+}
+
 export function pageToFilename(name: string): string {
   if (name === 'page') return 'index.html';
   let base = name;

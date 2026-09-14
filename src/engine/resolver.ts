@@ -7,6 +7,7 @@ import {
   FIXED_BLOCKS,
   SUFFIX_BLOCKS,
   isParametricKeyword,
+  isRepeatable,
   parseParametric,
 } from './registry';
 
@@ -55,14 +56,17 @@ function checkBlock(
         continue;
       }
 
-      if (seen.has(child.name)) {
-        errors.push({
-          message: `Duplicate block name '${child.name}'. Names must be unique per page.`,
-          line: child.line,
-          token: child.name,
-        });
+      // Skip duplicate check for repeatable blocks (cell, table-row, option, etc.)
+      if (!isRepeatable(child.name)) {
+        if (seen.has(child.name)) {
+          errors.push({
+            message: `Duplicate block name '${child.name}'. Names must be unique per page.`,
+            line: child.line,
+            token: child.name,
+          });
+        }
+        seen.add(child.name);
       }
-      seen.add(child.name);
 
       checkBlock(child, allNames, errors);
     } else if (child.kind === 'property') {

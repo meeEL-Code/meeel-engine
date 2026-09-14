@@ -413,6 +413,49 @@ button { font-family: inherit; }
 .meeel-toggle-label {
   font-size: 14px;
   color: inherit;
+}
+/* ============ Table ============ */
+.meeel-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--table-bg, #ffffff);
+  border: 1px solid var(--table-border, #e5e5e5);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.meeel-table th,
+.meeel-table td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--table-border, #e5e5e5);
+}
+.meeel-table th {
+  background: var(--table-header-bg, #f7f7f7);
+  color: var(--table-header-color, #555555);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.meeel-table td {
+  color: var(--table-color, #1a1a1a);
+  font-weight: 500;
+}
+.meeel-table tr:last-child td {
+  border-bottom: none;
+}
+.meeel-table tbody tr:hover td {
+  background: var(--table-row-hover, #fafafa);
+}
+.meeel-table .meeel-table-cell-right {
+  text-align: right;
+}
+.meeel-table .meeel-table-cell-center {
+  text-align: center;
 }`;
 
 function isKind(id: string, kind: string): boolean {
@@ -839,6 +882,11 @@ function generateBlock(
 
   const id = block.name;
 
+  // ============ SPECIAL: TABLE ============
+  if (isKind(id, 'table')) {
+    return renderTable(block, cssRules, indent);
+  }
+
   // ============ SPECIAL: TOGGLE ============
   if (isKind(id, 'toggle')) {
     return renderToggle(block, cssRules, indent);
@@ -1164,6 +1212,156 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ TABLE RENDERER ============ */
+
+function renderTable(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let bgColor = '#ffffff';
+  let borderColor = '#e5e5e5';
+  let headerBg = '#f7f7f7';
+  let headerColor = '#555555';
+  let textColor = '#1a1a1a';
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'background-color') { bgColor = val; continue; }
+      if (propDef.css === 'color') { textColor = val; continue; }
+      if (propDef.css === 'border') { borderColor = val; continue; }
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  wrapperCss['--table-bg'] = bgColor;
+  wrapperCss['--table-border'] = borderColor;
+  wrapperCss['--table-header-bg'] = headerBg;
+  wrapperCss['--table-header-color'] = headerColor;
+  wrapperCss['--table-color'] = textColor;
+  cssRules[id] = wrapperCss;
+
+  const headingBlock = block.children.find(
+    (c) => c.kind === 'block' && (c.name === 'heading' || c.name === 'table-heading')
+  ) as BlockNode | undefined;
+
+  const dataRows = block.children.filter(
+    (c) => c.kind === 'block' && (c.name === 'table-row')
+  ) as BlockNode[];
+
+  let headHtml = '';
+  if (headingBlock) {
+    const headCells = headingBlock.children.filter(
+      (c) => c.kind === 'block' && (c.name === 'cell' || c.name === 'table-cell')
+    ) as BlockNode[];
+
+    const cellHtml = headCells
+      .map((cell) => renderTableCell(cell, true, indent + '      '))
+      .join('\n');
+
+    headHtml = `${indent}  <thead>
+${indent}    <tr>
+${cellHtml}
+${indent}    </tr>
+${indent}  </thead>`;
+  }
+
+  const bodyRowsHtml = dataRows
+    .map((row) => {
+      const cells = row.children.filter(
+        (c) => c.kind === 'block' && (c.name === 'cell' || c.name === 'table-cell')
+      ) as BlockNode[];
+
+      const cellHtml = cells
+        .map((cell) => renderTableCell(cell, false, indent + '      '))
+        .join('\n');
+
+      return `${indent}    <tr>
+${cellHtml}
+${indent}    </tr>`;
+    })
+    .join('\n');
+
+  const bodyHtml =
+    dataRows.length > 0
+      ? `${indent}  <tbody>
+${bodyRowsHtml}
+${indent}  </tbody>`
+      : '';
+
+  return `${indent}<table id="${id}" class="meeel-table">
+${headHtml}
+${bodyHtml}
+${indent}</table>`;
+}
+
+function renderTableCell(
+  block: BlockNode,
+  isHeader: boolean,
+  indent: string
+): string {
+  const tag = isHeader ? 'th' : 'td';
+  let content = '';
+  const cellCss: Record<string, string> = {};
+  let alignRight = false;
+  let alignCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      if (child.name === 'right') alignRight = true;
+      else if (child.name === 'center') alignCenter = true;
+      else if (KEYWORD_CSS[child.name]) Object.assign(cellCss, KEYWORD_CSS[child.name]);
+    } else if (child.kind === 'property') {
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+      if (propDef.special === 'content') content = child.value;
+      else if (propDef.special) continue;
+      else {
+        const val = propDef.transform ? propDef.transform(child.value) : child.value;
+        cellCss[propDef.css] = val;
+      }
+    }
+  }
+
+  const classes: string[] = [];
+  if (alignRight) classes.push('meeel-table-cell-right');
+  if (alignCenter) classes.push('meeel-table-cell-center');
+
+  const classAttr = classes.length > 0 ? ` class="${classes.join(' ')}"` : '';
+  const styleAttr = Object.keys(cellCss).length > 0
+    ? ` style="${Object.entries(cellCss).map(([k, v]) => `${k}: ${v}`).join('; ')}"`
+    : '';
+
+  return `${indent}<${tag}${classAttr}${styleAttr}>${escapeHtml(content)}</${tag}>`;
 }
 
 function isDarkColor(color: string): boolean {
