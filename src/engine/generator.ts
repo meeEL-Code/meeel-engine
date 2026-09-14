@@ -100,6 +100,8 @@ function generateBlock(
     css['width'] = '100%';
     css['min-height'] = '100vh';
     css['position'] = 'relative';
+    css['display'] = 'flex';
+    css['flex-direction'] = 'column';
   }
 
   if (isKind(id, 'nav-bar')) {
