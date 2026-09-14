@@ -38,7 +38,8 @@ function collectNames(block: BlockNode, names: Set<string>): void {
 function checkBlock(
   block: BlockNode,
   allNames: Set<string>,
-  errors: ResolveError[]
+  errors: ResolveError[],
+  parentName = ''
 ): void {
   const seen = new Set<string>();
 
@@ -68,7 +69,7 @@ function checkBlock(
         seen.add(child.name);
       }
 
-      checkBlock(child, allNames, errors);
+      checkBlock(child, allNames, errors, block.name);
     } else if (child.kind === 'property') {
       if (isParametricKeyword(child.name)) {
         const parsed = parseParametric(child.name);
@@ -108,6 +109,10 @@ function checkBlock(
         });
       }
     } else if (child.kind === 'keyword') {
+      // Inside an `icon` block, allow the first keyword as the icon name
+      if (block.name === 'icon' || block.name.startsWith('icon-')) {
+        continue;
+      }
       if (POSITION_KEYWORDS.has(child.name)) {
         // ok
       } else if (KEYWORD_CSS[child.name]) {

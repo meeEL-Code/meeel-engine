@@ -414,6 +414,61 @@ button { font-family: inherit; }
   font-size: 14px;
   color: inherit;
 }
+/* ============ Sidebar ============ */
+.meeel-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--sidebar-bg, #1a1a1a);
+  border-radius: var(--sidebar-radius, 12px);
+  font-family: inherit;
+  width: var(--sidebar-width, 240px);
+  min-width: var(--sidebar-width, 240px);
+}
+.meeel-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--sidebar-color, #b0b0b0);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.meeel-sidebar-item:hover {
+  background: var(--sidebar-hover, rgba(255,255,255,0.06));
+  color: var(--sidebar-color-hover, #ffffff);
+}
+.meeel-sidebar-item.selected {
+  background: var(--sidebar-selected-bg, rgba(10,132,255,0.15));
+  color: var(--sidebar-selected-color, #0a84ff);
+  font-weight: 600;
+}
+.meeel-sidebar-item-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: var(--sidebar-icon-filter, none);
+}
+.meeel-sidebar-item.selected .meeel-sidebar-item-icon {
+  filter: var(--sidebar-icon-filter-selected, none);
+}
+.meeel-sidebar-item-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ============ Charts ============ */
 .meeel-chart {
   display: block;
@@ -1281,6 +1336,11 @@ function generateBlock(
 
   const id = block.name;
 
+  // ============ SPECIAL: SIDEBAR ============
+  if (isKind(id, 'sidebar')) {
+    return renderSidebar(block, cssRules, indent);
+  }
+
   // ============ SPECIAL: CHARTS ============
   if (isKind(id, 'bar-chart')) {
     return renderBarChart(block, cssRules, indent);
@@ -1647,6 +1707,117 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ SIDEBAR RENDERER ============ */
+
+function renderSidebar(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let bgColor = '#1a1a1a';
+  let color = '#b0b0b0';
+  let width = '240px';
+  let radius = '12px';
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'background-color') { bgColor = val; continue; }
+      if (propDef.css === 'color') { color = val; continue; }
+      if (propDef.css === 'width') { width = val; continue; }
+      if (propDef.css === 'border-radius') { radius = val; continue; }
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  wrapperCss['--sidebar-bg'] = bgColor;
+  wrapperCss['--sidebar-color'] = color;
+  wrapperCss['--sidebar-width'] = width;
+  wrapperCss['--sidebar-radius'] = radius;
+  cssRules[id] = wrapperCss;
+
+  const items = block.children.filter(
+    (c) => c.kind === 'block' && isKind(c.name, 'sidebar-item')
+  ) as BlockNode[];
+
+  const itemsHtml = items
+    .map((item) => {
+      let iconUrl = '';
+      let labelText = '';
+      let openTarget = '';
+      let isSelected = false;
+
+      for (const c of item.children) {
+        if (c.kind === 'keyword' && c.name === 'selected') {
+          isSelected = true;
+        } else if (c.kind === 'property') {
+          const propDef = PROPERTIES[c.name];
+          if (!propDef) continue;
+          if (propDef.special === 'src') {
+            iconUrl = ICONS[c.value] || c.value;
+          } else if (propDef.special === 'toggle-label') {
+            labelText = c.value;
+          } else if (propDef.special === 'open') {
+            openTarget = pageToFilename(c.value);
+          }
+        } else if (c.kind === 'block' && (c.name === 'icon' || c.name.startsWith('icon-'))) {
+          // Support natural `icon-[home]` syntax — first keyword becomes icon name
+          for (const sub of c.children) {
+            if (sub.kind === 'keyword') {
+              iconUrl = ICONS[sub.name] || sub.name;
+              break;
+            } else if (sub.kind === 'property' && sub.name === 'url') {
+              iconUrl = ICONS[sub.value] || sub.value;
+              break;
+            }
+          }
+        }
+      }
+
+      const cls = 'meeel-sidebar-item' + (isSelected ? ' selected' : '');
+      const hrefAttr = openTarget ? ` href="${escapeHtml(openTarget)}"` : '';
+      const dataAttr = openTarget ? ` data-meeel-target="${escapeHtml(openTarget)}"` : '';
+
+      const iconHtml = iconUrl
+        ? `<img class="meeel-sidebar-item-icon" src="${escapeHtml(iconUrl)}" alt="">`
+        : '';
+
+      return `${indent}  <a id="${item.name}" class="${cls}"${hrefAttr}${dataAttr}>
+${indent}    ${iconHtml}<span class="meeel-sidebar-item-label">${escapeHtml(labelText)}</span>
+${indent}  </a>`;
+    })
+    .join('\n');
+
+  return `${indent}<nav id="${id}" class="meeel-sidebar">
+${itemsHtml}
+${indent}</nav>`;
 }
 
 /* ============ CHART HELPERS ============ */
