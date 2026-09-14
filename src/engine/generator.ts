@@ -6,20 +6,40 @@ import {
   KEYWORD_CSS,
   isParametricKeyword,
   parseParametric,
+  ICONS,
 } from './registry';
 
 const VOID_TAGS = new Set(['img', 'input']);
 
 const BASE_CSS = `* { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-img { display: block; }
+img { display: block; object-fit: cover; }
 button { font-family: inherit; }
 .meeel-divider-line {
   flex: 1;
   height: 1px;
   background: currentColor;
   opacity: 0.3;
+}
+.meeel-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #6b4a3a;
+  color: white;
+  font-weight: bold;
+  font-size: 32px;
 }`;
+
+// Helper: check if a name matches a "kind" (fixed or suffix)
+function isKind(id: string, kind: string): boolean {
+  if (id === kind) return true;
+  if (id.startsWith(kind + '-')) return true;
+  if (id.endsWith('-' + kind)) return true;
+  // for suffixes like -row, -icon
+  if (id.includes('-') && id.split('-').includes(kind)) return true;
+  return false;
+}
 
 export function generate(root: BlockNode): string {
   const cssRules: Record<string, Record<string, string>> = {};
@@ -74,32 +94,41 @@ function generateBlock(
   const textParts: string[] = [];
   const childLines: string[] = [];
 
-  // Defaults by block type
-  if (id === 'page' || id.startsWith('page-')) {
+  // ============ DEFAULTS BY BLOCK KIND ============
+
+  if (isKind(id, 'page')) {
     css['width'] = '100%';
     css['min-height'] = '100vh';
     css['position'] = 'relative';
   }
-  if (id === 'nav-bar' || id.startsWith('nav-bar-')) {
+
+  if (isKind(id, 'nav-bar')) {
     css['width'] = '100%';
-    css['height'] = '56px';
     css['display'] = 'flex';
     css['align-items'] = 'center';
     css['justify-content'] = 'space-between';
-    css['padding'] = '0 16px';
   }
-  if (id === 'row' || id.startsWith('row-')) {
+
+  // FIX: check endsWith too
+  if (isKind(id, 'row')) {
     css['display'] = 'flex';
     css['flex-direction'] = 'row';
-    css['justify-content'] = 'space-between';
     css['align-items'] = 'center';
-    css['gap'] = '10px';
+    css['width'] = '100%';
   }
-  if (id === 'card' || id.startsWith('card-')) {
+
+  if (isKind(id, 'column')) {
+    css['display'] = 'flex';
+    css['flex-direction'] = 'column';
+    css['width'] = '100%';
+  }
+
+  if (isKind(id, 'card')) {
     css['display'] = 'flex';
     css['flex-direction'] = 'column';
   }
-  if (id === 'divider' || id.startsWith('divider-') || id.endsWith('-divider')) {
+
+  if (isKind(id, 'divider')) {
     css['display'] = 'flex';
     css['align-items'] = 'center';
     css['justify-content'] = 'center';
@@ -108,16 +137,25 @@ function generateBlock(
     css['color'] = '#888';
     css['font-size'] = '13px';
   }
-  if (id === 'input-bar' || id.endsWith('-bar') || id.endsWith('-field')) {
+
+  if (isKind(id, 'input-bar') || isKind(id, 'input-field') || isKind(id, 'field')) {
     css['display'] = 'flex';
     css['align-items'] = 'center';
     css['width'] = '100%';
   }
 
+  if (isKind(id, 'profile-row') || isKind(id, 'profile')) {
+    css['display'] = 'flex';
+    css['flex-direction'] = 'row';
+    css['align-items'] = 'center';
+    css['gap'] = '16px';
+  }
+
   let hasTop = false, hasBottom = false, hasMiddle = false;
   let hasLeft = false, hasRight = false, hasCenter = false;
 
-  // Pass 1: keywords + properties
+  // ============ PASS 1: keywords + properties ============
+
   for (const child of block.children) {
     if (child.kind === 'keyword') {
       const kw = child.name;
@@ -143,7 +181,12 @@ function generateBlock(
         );
       }
 
-      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      let val = propDef.transform ? propDef.transform(child.value) : child.value;
+
+      // ICON SUBSTITUTION
+      if (propDef.special === 'src' && ICONS[val]) {
+        val = ICONS[val];
+      }
 
       if (propDef.special === 'content') textParts.push(val);
       else if (propDef.special === 'src') attrs['src'] = val;
@@ -155,7 +198,8 @@ function generateBlock(
     }
   }
 
-  // Positioning
+  // ============ POSITIONING ============
+
   const verticalFix = hasTop || hasBottom || hasMiddle;
   let transformX = false, transformY = false;
 
@@ -189,14 +233,16 @@ function generateBlock(
   else if (transformX) css['transform'] = 'translateX(-50%)';
   else if (transformY) css['transform'] = 'translateY(-50%)';
 
-  // Pass 2: nested blocks
+  // ============ PASS 2: nested blocks ============
+
   for (const child of block.children) {
     if (child.kind === 'block') {
       childLines.push(generateBlock(child, cssRules, indent + '  '));
     }
   }
 
-  // Pass 3: parametric positioning
+  // ============ PASS 3: parametric ============
+
   for (const sub of block.children) {
     let pname: string | null = null;
     let gap = '0px';
@@ -217,7 +263,7 @@ function generateBlock(
     else if (parsed.relation === 'left-of') css['margin-right'] = gap;
   }
 
-  // Smart input detection
+  // ============ SMART INPUT DETECTION ============
   const hasInputType = block.children.some(
     (c) => c.kind === 'property' && c.name === 'input-type'
   );
@@ -228,14 +274,16 @@ function generateBlock(
     finalTag = 'input';
   }
 
-  // AUTO PREMIUM STYLING FOR BUTTONS
+  // ============ AUTO STYLING ============
+
+  // Buttons
   if (finalTag === 'button') {
     css['display'] = 'inline-flex';
     css['align-items'] = 'center';
     css['justify-content'] = 'center';
     css['gap'] = '8px';
     css['cursor'] = 'pointer';
-    css['border'] = 'none';
+    css['border'] = css['border'] || 'none';
     css['text-align'] = 'center';
     css['font-family'] = 'inherit';
     css['font-weight'] = '500';
@@ -243,12 +291,26 @@ function generateBlock(
     css['transition'] = 'all 0.2s ease';
   }
 
-  // AUTO STYLING FOR INPUTS
+  // Inputs
   if (finalTag === 'input') {
-    css['border'] = 'none';
+    css['border'] = css['border'] || 'none';
     css['outline'] = 'none';
     css['font-family'] = 'inherit';
     if (!css['width']) css['width'] = '100%';
+  }
+
+  // Icons: proper sizing
+  if (id.endsWith('-icon') || id === 'icon') {
+    css['display'] = 'block';
+    if (!css['width']) css['width'] = '24px';
+    if (!css['height']) css['height'] = '24px';
+    css['object-fit'] = 'contain';
+  }
+
+  // Avatar: circular + fallback
+  if (isKind(id, 'avatar') || isKind(id, 'logo')) {
+    css['object-fit'] = 'cover';
+    css['display'] = 'block';
   }
 
   // Toggle
@@ -258,7 +320,8 @@ function generateBlock(
 
   cssRules[`#${id}`] = css;
 
-  // Build tag string
+  // ============ BUILD HTML ============
+
   const attrStr = Object.entries(attrs)
     .map(([k, v]) => `${k}="${escapeHtml(v)}"`)
     .join(' ');
@@ -271,15 +334,13 @@ function generateBlock(
   const text = textParts.map(escapeHtml).join('');
   const innerParts: string[] = [];
 
-  // Divider: wrap text with lines
-  if (id === 'divider' || id.startsWith('divider-') || id.endsWith('-divider')) {
-    if (text) {
-      return `${indent}<${finalTag} id="${id}"${attrPart}>
+  // Divider with lines
+  if (isKind(id, 'divider') && text) {
+    return `${indent}<${finalTag} id="${id}"${attrPart}>
 ${indent}  <span class="meeel-divider-line"></span>
 ${indent}  <span>${text}</span>
 ${indent}  <span class="meeel-divider-line"></span>
 ${indent}</${finalTag}>`;
-    }
   }
 
   if (text) innerParts.push(text);

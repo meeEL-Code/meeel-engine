@@ -8,6 +8,21 @@ export interface PropertyDef {
   transform?: (v: string) => string;
 }
 
+// Built-in SVG icons as data URLs
+export const ICONS: Record<string, string> = {
+  'bell': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  'search': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  'settings': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  'back': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
+  'arrow': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+  'mic': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
+  'lens': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg>',
+  'plus': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  'eye': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  'menu': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+  'more': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+};
+
 export const FIXED_BLOCKS: Record<string, BlockDef> = {
   'page': { tag: 'div' },
   'nav-bar': { tag: 'nav' },
@@ -17,6 +32,7 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
   'text': { tag: 'span' },
   'image': { tag: 'img' },
   'logo': { tag: 'img' },
+  'avatar': { tag: 'img' },
   'card': { tag: 'div' },
   'input': { tag: 'input' },
   'divider': { tag: 'div' },
@@ -26,6 +42,14 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
   'dropdown': { tag: 'input' },
   'label': { tag: 'label' },
   'row': { tag: 'div' },
+  'column': { tag: 'div' },
+  'box': { tag: 'div' },
+  'info': { tag: 'div' },
+  'wrapper': { tag: 'div' },
+  'section': { tag: 'div' },
+  'header': { tag: 'div' },
+  'footer': { tag: 'div' },
+  'container': { tag: 'div' },
 };
 
 export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
@@ -40,6 +64,7 @@ export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
   { suffix: '-title', def: { tag: 'h1' } },
   { suffix: '-toggle', def: { tag: 'input' } },
   { suffix: '-row', def: { tag: 'div' } },
+  { suffix: '-column', def: { tag: 'div' } },
   { suffix: '-input', def: { tag: 'div' } },
   { suffix: '-field', def: { tag: 'div' } },
   { suffix: '-wrapper', def: { tag: 'div' } },
@@ -52,6 +77,8 @@ export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
   { suffix: '-content', def: { tag: 'div' } },
   { suffix: '-group', def: { tag: 'div' } },
   { suffix: '-container', def: { tag: 'div' } },
+  { suffix: '-name', def: { tag: 'span' } },
+  { suffix: '-handle', def: { tag: 'span' } },
 ];
 
 export function resolveBlock(name: string): BlockDef | null {
@@ -121,6 +148,7 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   'full-width': { 'width': '100%' },
   'gap-small': { 'gap': '8px' },
   'gap-medium': { 'gap': '16px' },
+  'gap-large': { 'gap': '24px' },
 };
 
 export function isParametricKeyword(name: string): boolean {
