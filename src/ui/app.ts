@@ -386,11 +386,60 @@ function render() {
     updatePageSelector();
     renderCurrentPage();
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
     syncGutter();
     syncHighlight();
-    renderMessage('Parse Error', escapeHtml(message));
+
+    // ParseError with line info?
+    const parseErr = err as { line?: number; message?: string; suggestion?: string };
+    if (typeof parseErr.line === 'number') {
+      errorMap.set(parseErr.line, undefined);
+      syncGutter();
+      syncHighlight();
+      renderParseError({
+        message: parseErr.message || 'Parse error',
+        line: parseErr.line,
+        suggestion: parseErr.suggestion,
+      });
+    } else {
+      const message = err instanceof Error ? err.message : String(err);
+      renderMessage('Parse Error', escapeHtml(message));
+    }
   }
+}
+
+function renderParseError(err: {
+  message: string;
+  line: number;
+  suggestion?: string;
+}) {
+  const cardsHtml = `
+    <div class="err-card">
+      <div class="err-head">
+        <span class="line-chip">Line ${err.line}</span>
+        <span class="type-badge type-generic">Structure</span>
+      </div>
+      <div class="err-msg">${escapeHtml(err.message)}</div>
+      ${
+        err.suggestion
+          ? `<div class="suggestion">
+              <span class="sugg-icon">${SVG_BULB}</span>
+              <span class="sugg-text">${escapeHtml(err.suggestion)}</span>
+            </div>`
+          : ''
+      }
+    </div>
+  `;
+
+  const body = `
+    <div class="err-panel">
+      <div class="err-header">
+        <span class="err-icon">${SVG_WARN}</span>
+        <span class="err-title">1 error</span>
+      </div>
+      <div class="err-list">${cardsHtml}</div>
+    </div>
+  `;
+  renderMessage('', body, true);
 }
 
 function renderCurrentPage() {

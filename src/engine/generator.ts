@@ -214,7 +214,29 @@ export function generateParts(root: BlockNode): GenerateParts {
     }
   }
 
-  const cssText = buildCssText(cssRules, modeCss.mobile, modeCss.tablet, modeCss.desktop);
+  // Global auto-stack: rows become columns on mobile (unless user overrides)
+  // We add this as low-priority — user's mobile-mode overrides still win via CSS order.
+  const globalMobileRules: Record<string, string> = {};
+  const globalMobileBucket: CSSBucket = {};
+  for (const name of Object.keys(cssRules)) {
+    if (isKind(name, 'row') || isKind(name, 'profile-row') || isKind(name, 'buttons-row') || isKind(name, 'action-row')) {
+      // Only if user did NOT explicitly override this row in mobile-mode
+      if (!modeCss.mobile[name]) {
+        globalMobileBucket[name] = {
+          'flex-direction': 'column',
+          'gap': '12px',
+        };
+      }
+    }
+  }
+
+  // Merge global mobile rules BEFORE user's mobile overrides (so user wins)
+  const mergedMobile: CSSBucket = { ...globalMobileBucket };
+  for (const [name, rules] of Object.entries(modeCss.mobile)) {
+    mergedMobile[name] = { ...(mergedMobile[name] || {}), ...rules };
+  }
+
+  const cssText = buildCssText(cssRules, mergedMobile, modeCss.tablet, modeCss.desktop);
   const css = `${BASE_CSS}\n\n${cssText}`;
   const fullHtml = wrapHtml(finalHtml, css);
 
@@ -243,8 +265,22 @@ function collectOverrideCss(block: BlockNode): Record<string, string> {
   const css: Record<string, string> = {};
   for (const child of block.children) {
     if (child.kind === 'keyword') {
-      if (POSITION_KEYWORDS.has(child.name)) {
-        switch (child.name) {
+      const kw = child.name;
+
+      // Layout direction keywords (responsive override)
+      if (kw === 'row') {
+        css['flex-direction'] = 'row';
+        css['display'] = 'flex';
+        continue;
+      }
+      if (kw === 'column') {
+        css['flex-direction'] = 'column';
+        css['display'] = 'flex';
+        continue;
+      }
+
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
           case 'top': css['top'] = '0'; break;
           case 'bottom': css['bottom'] = '0'; break;
           case 'left': css['left'] = '0'; break;
@@ -252,8 +288,8 @@ function collectOverrideCss(block: BlockNode): Record<string, string> {
           case 'center': css['left'] = '50%'; break;
           case 'middle': css['top'] = '50%'; break;
         }
-      } else if (KEYWORD_CSS[child.name]) {
-        Object.assign(css, KEYWORD_CSS[child.name]);
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(css, KEYWORD_CSS[kw]);
       }
     } else if (child.kind === 'property') {
       if (isParametricKeyword(child.name)) continue;

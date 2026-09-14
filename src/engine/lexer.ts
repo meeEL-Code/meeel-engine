@@ -76,9 +76,23 @@ export function lex(source: string): Token[] {
         advance();
         pushToken(TokenType.DASH_BRACKET, '-[', line, col);
 
-        // Read value on same line (for properties)
+        // Read value until matching ']' (with bracket depth tracking)
         let val = '';
-        while (i < source.length && peek() !== '\n' && peek() !== ']') {
+        let depth = 1;
+        while (i < source.length) {
+          const c = peek();
+          if (c === '\n') break;
+          if (c === '[') {
+            depth++;
+            val += advance();
+            continue;
+          }
+          if (c === ']') {
+            depth--;
+            if (depth === 0) break;
+            val += advance();
+            continue;
+          }
           val += advance();
         }
         if (val.trim().length > 0) {
