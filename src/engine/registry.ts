@@ -217,12 +217,10 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'close-text': { css: '', special: 'modal-close' },
   'tooltip-text': { css: '', special: 'placeholder' },
   'badge-color': { css: '', special: 'badge-color' },
-  'tooltip-text': { css: '', special: 'placeholder' },
   'badge-bg': { css: '', special: 'badge-bg' },
   'min': { css: '', special: 'slider-min' },
   'max': { css: '', special: 'slider-max' },
   'step': { css: '', special: 'slider-step' },
-  'value': { css: '', special: 'slider-value' },
   'fill-color': { css: '', special: 'slider-fill' },
   'track-color': { css: '', special: 'slider-track' },
   'show-value': { css: '', special: 'slider-show-value' },
@@ -230,7 +228,6 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'off-color': { css: '', special: 'toggle-off-color' },
   'default-state': { css: '', special: 'toggle-state' },
   'label-text': { css: '', special: 'toggle-label' },
-  'value': { css: '', special: 'value' },
 };
 
 export const POSITION_KEYWORDS = new Set([
