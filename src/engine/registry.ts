@@ -44,6 +44,10 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
   'checkbox': { tag: 'input' },
   'radio': { tag: 'input' },
   'radio-group': { tag: 'div' },
+  'select': { tag: 'select' },
+  'option': { tag: 'option' },
+  'option-group': { tag: 'div' },
+  'custom-select': { tag: 'div' },
   'dropdown': { tag: 'input' },
   'label': { tag: 'label' },
   'row': { tag: 'div' },
@@ -64,6 +68,8 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
 
 export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
   { suffix: '-page', def: { tag: 'div' } },
+  { suffix: '-select', def: { tag: 'select' } },
+  { suffix: '-custom-select', def: { tag: 'div' } },
   { suffix: '-icon', def: { tag: 'img' } },
   { suffix: '-text', def: { tag: 'span' } },
   { suffix: '-image', def: { tag: 'img' } },
@@ -176,6 +182,8 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   'full-width': { 'width': '100%' },
   'hidden': { 'display': 'none' },
   'checked': {},
+  'selected': {},
+  'disabled': { 'opacity': '0.5', 'pointer-events': 'none' },
   'font-tiny': { 'font-size': '10px' },
   'font-small': { 'font-size': '13px' },
   'font-medium': { 'font-size': '16px' },

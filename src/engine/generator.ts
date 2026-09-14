@@ -22,6 +22,167 @@ button { font-family: inherit; }
   background: currentColor;
   opacity: 0.3;
 }
+/* ============ Custom Select ============ */
+.meeel-cselect {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+  font-family: inherit;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.meeel-cselect-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+  padding-left: 2px;
+}
+.meeel-cselect-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--cselect-bg, #f5f5f5);
+  color: var(--cselect-color, #1a1a1a);
+  border: 1px solid var(--cselect-border, #e0e0e0);
+  border-radius: var(--cselect-radius, 8px);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+.meeel-cselect-btn:hover {
+  background: var(--cselect-bg-hover, #ececec);
+}
+.meeel-cselect.open .meeel-cselect-btn {
+  border-color: var(--cselect-focus, #0a84ff);
+  background: var(--cselect-bg-focus, #ffffff);
+}
+.meeel-cselect-arrow {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  color: currentColor;
+  opacity: 0.6;
+}
+.meeel-cselect.open .meeel-cselect-arrow {
+  transform: rotate(180deg);
+}
+.meeel-cselect-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--cselect-menu-bg, #ffffff);
+  border: 1px solid var(--cselect-menu-border, #e0e0e0);
+  border-radius: var(--cselect-radius, 8px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.meeel-cselect.open .meeel-cselect-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.meeel-cselect-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: calc(var(--cselect-radius, 8px) - 2px);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cselect-menu-color, #1a1a1a);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.meeel-cselect-option:hover {
+  background: var(--cselect-option-hover, rgba(10, 132, 255, 0.10));
+}
+.meeel-cselect-option.active {
+  background: var(--cselect-option-active, rgba(10, 132, 255, 0.14));
+  color: var(--cselect-focus, #0a84ff);
+  font-weight: 600;
+}
+.meeel-cselect-option-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+.meeel-cselect-option-check {
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0;
+  color: var(--cselect-focus, #0a84ff);
+}
+.meeel-cselect-option.active .meeel-cselect-option-check {
+  opacity: 1;
+}
+
+/* ============ Select (native dropdown) ============ */
+.meeel-select {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+  font-family: inherit;
+}
+.meeel-select-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+  padding-left: 2px;
+}
+.meeel-select select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  padding: 10px 36px 10px 12px;
+  background-color: var(--select-bg, #f5f5f5);
+  color: var(--select-color, #1a1a1a);
+  border: 1px solid var(--select-border, #e0e0e0);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px 14px;
+}
+.meeel-select select:hover {
+  background-color: var(--select-bg-hover, #ececec);
+}
+.meeel-select select:focus {
+  border-color: var(--select-focus, #0a84ff);
+  background-color: var(--select-bg-focus, #ffffff);
+}
+.meeel-select select option {
+  padding: 8px;
+  background: white;
+  color: #1a1a1a;
+}
+
 /* ============ Checkbox + Radio ============ */
 .meeel-checkbox,
 .meeel-radio {
@@ -693,6 +854,16 @@ function generateBlock(
     return renderRadioGroup(block, cssRules, indent);
   }
 
+  // ============ SPECIAL: CUSTOM SELECT ============
+  if (id === 'custom-select' || id.endsWith('-custom-select') || isKind(id, 'custom-select')) {
+    return renderCustomSelect(block, cssRules, indent);
+  }
+
+  // ============ SPECIAL: SELECT ============
+  if (isKind(id, 'select')) {
+    return renderSelect(block, cssRules, indent);
+  }
+
   // ============ SPECIAL: CHECKBOX ============
   if (isKind(id, 'checkbox')) {
     return renderCheckbox(block, cssRules, indent);
@@ -993,6 +1164,337 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function isDarkColor(color: string): boolean {
+  if (!color) return false;
+  const c = color.trim().toLowerCase();
+  if (c === 'black' || c === '#000' || c === '#000000') return true;
+  if (c === 'white' || c === '#fff' || c === '#ffffff') return false;
+  if (c.startsWith('#')) {
+    let hex = c.slice(1);
+    if (hex.length === 3) {
+      hex = hex.split('').map((ch) => ch + ch).join('');
+    }
+    if (hex.length === 6) {
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      // Brightness formula
+      return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+    }
+  }
+  return false;
+}
+
+/* ============ CUSTOM SELECT RENDERER ============ */
+
+function renderCustomSelect(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let labelText = '';
+  let bgColor = '#f5f5f5';
+  let textColor = '#1a1a1a';
+  let borderColor = '#e0e0e0';
+  let focusColor = '#0a84ff';
+  let radius = '8px';
+
+  const options: Array<{ value: string; label: string; icon?: string; selected: boolean }> = [];
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'toggle-label') { labelText = child.value; continue; }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'background-color') { bgColor = val; continue; }
+      if (propDef.css === 'color') { textColor = val; continue; }
+      if (propDef.css === 'border') { borderColor = val; continue; }
+      if (propDef.css === 'border-radius') { radius = val; continue; }
+      wrapperCss[propDef.css] = val;
+    } else if (child.kind === 'block') {
+      if (isKind(child.name, 'option')) {
+        options.push(parseCustomOption(child));
+      }
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  wrapperCss['--cselect-bg'] = bgColor;
+  wrapperCss['--cselect-color'] = textColor;
+  wrapperCss['--cselect-border'] = borderColor;
+  wrapperCss['--cselect-focus'] = focusColor;
+  wrapperCss['--cselect-radius'] = radius;
+
+  // Menu colors: if button bg is dark, menu is dark; else menu is light.
+  const isDarkBg = isDarkColor(bgColor);
+  wrapperCss['--cselect-menu-bg'] = isDarkBg ? '#1e1e1e' : '#ffffff';
+  wrapperCss['--cselect-menu-color'] = isDarkBg ? '#e0e0e0' : '#1a1a1a';
+  wrapperCss['--cselect-menu-border'] = isDarkBg ? '#333333' : '#e0e0e0';
+  wrapperCss['--cselect-option-hover'] = isDarkBg ? 'rgba(255,255,255,0.08)' : 'rgba(10,132,255,0.10)';
+  wrapperCss['--cselect-option-active'] = isDarkBg ? 'rgba(10,132,255,0.24)' : 'rgba(10,132,255,0.14)';
+
+  cssRules[id] = wrapperCss;
+
+  if (options.length === 0) {
+    options.push({ value: '', label: 'Choose...', selected: true });
+  }
+
+  // Ensure exactly one option is selected
+  let selectedIdx = options.findIndex((o) => o.selected);
+  if (selectedIdx === -1) {
+    selectedIdx = 0;
+    options[0].selected = true;
+  }
+
+  const selected = options[selectedIdx];
+
+  const optionHtml = options
+    .map((o, i) => {
+      const activeCls = i === selectedIdx ? ' active' : '';
+      const iconHtml = o.icon
+        ? `\n      <img class="meeel-cselect-option-icon" src="${escapeHtml(o.icon)}" alt="">`
+        : '';
+      return `${indent}      <div class="meeel-cselect-option${activeCls}" data-value="${escapeHtml(o.value)}" data-index="${i}">${iconHtml}
+${indent}        <span>${escapeHtml(o.label)}</span>
+${indent}        <svg class="meeel-cselect-option-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+${indent}      </div>`;
+    })
+    .join('\n');
+
+  const labelHtml = labelText
+    ? `\n${indent}  <span class="meeel-cselect-label">${escapeHtml(labelText)}</span>`
+    : '';
+
+  const selectedIconHtml = selected.icon
+    ? `\n      <img class="meeel-cselect-option-icon" src="${escapeHtml(selected.icon)}" alt="">`
+    : '';
+
+  // JS to toggle menu + select option (no framework)
+  const jsVar = `__meeel_cselect_${id.replace(/[^a-z0-9]/g, '_')}`;
+
+  return `${indent}<div id="${id}" class="meeel-cselect" data-cselect>
+${indent}  <button type="button" class="meeel-cselect-btn" onclick="(function(btn){
+${indent}    var root = btn.closest('[data-cselect]');
+${indent}    var wasOpen = root.classList.contains('open');
+${indent}    document.querySelectorAll('[data-cselect].open').forEach(function(el){ el.classList.remove('open'); });
+${indent}    if (!wasOpen) root.classList.add('open');
+${indent}  })(this)">
+${indent}    <span class="meeel-cselect-current">${selectedIconHtml}
+${indent}      <span>${escapeHtml(selected.label)}</span>
+${indent}    </span>
+${indent}    <svg class="meeel-cselect-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+${indent}  </button>
+${indent}  <div class="meeel-cselect-menu">
+${optionHtml}
+${indent}  </div>
+${indent}</div>
+${indent}<script>
+(function(){
+  var root = document.getElementById('${id}');
+  if (!root) return;
+  var btn = root.querySelector('.meeel-cselect-btn');
+  var menu = root.querySelector('.meeel-cselect-menu');
+  var currentEl = root.querySelector('.meeel-cselect-current');
+  menu.addEventListener('click', function(e){
+    var opt = e.target.closest('.meeel-cselect-option');
+    if (!opt) return;
+    var idx = parseInt(opt.getAttribute('data-index'), 10);
+    var options = ${JSON.stringify(options.map(o => ({ value: o.value, label: o.label, icon: o.icon || null })))};
+    var chosen = options[idx];
+    if (!chosen) return;
+    var iconHtml = chosen.icon
+      ? '<img class="meeel-cselect-option-icon" src="' + chosen.icon + '" alt="">'
+      : '';
+    currentEl.innerHTML = iconHtml + '<span>' + chosen.label.replace(/</g,'&lt;') + '</span>';
+    root.querySelectorAll('.meeel-cselect-option').forEach(function(el){ el.classList.remove('active'); });
+    opt.classList.add('active');
+    root.classList.remove('open');
+    root.setAttribute('data-value', chosen.value);
+  });
+  document.addEventListener('click', function(e){
+    if (!root.contains(e.target)) root.classList.remove('open');
+  });
+})();
+</script>`;
+}
+
+function parseCustomOption(block: BlockNode): { value: string; label: string; icon?: string; selected: boolean } {
+  let label = '';
+  let value = '';
+  let icon = '';
+  let selected = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      if (child.name === 'selected') selected = true;
+    } else if (child.kind === 'property') {
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+      if (propDef.special === 'content') label = child.value;
+      else if (propDef.special === 'value') value = child.value;
+      else if (propDef.special === 'src') icon = child.value;
+    }
+  }
+
+  if (!label) {
+    const base = block.name.replace(/^option-?/, '');
+    label = base || 'Option';
+  }
+  if (!value) value = label;
+
+  return { value, label, icon: icon || undefined, selected };
+}
+
+/* ============ SELECT RENDERER ============ */
+
+function renderSelect(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let labelText = '';
+  let bgColor = '#f5f5f5';
+  let textColor = '#1a1a1a';
+  let borderColor = '#e0e0e0';
+  let focusColor = '#0a84ff';
+
+  const options: Array<{ value: string; label: string; selected: boolean }> = [];
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'toggle-label') { labelText = child.value; continue; }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'background-color') { bgColor = val; continue; }
+      if (propDef.css === 'color') { textColor = val; continue; }
+      if (propDef.css === 'border') {
+        borderColor = val;
+        continue;
+      }
+      wrapperCss[propDef.css] = val;
+    } else if (child.kind === 'block') {
+      if (isKind(child.name, 'option')) {
+        const opt = parseOption(child);
+        options.push(opt);
+      } else if (child.name === 'option-group' || child.name.endsWith('-options')) {
+        // Options inside a group
+        for (const sub of child.children) {
+          if (sub.kind === 'block' && isKind(sub.name, 'option')) {
+            options.push(parseOption(sub));
+          }
+        }
+      }
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  wrapperCss['--select-bg'] = bgColor;
+  wrapperCss['--select-color'] = textColor;
+  wrapperCss['--select-border'] = borderColor;
+  wrapperCss['--select-focus'] = focusColor;
+  cssRules[id] = wrapperCss;
+
+  // If no options provided, add a placeholder
+  if (options.length === 0) {
+    options.push({ value: '', label: 'Choose...', selected: true });
+  }
+
+  const optionHtml = options
+    .map((o) => {
+      const sel = o.selected ? ' selected' : '';
+      return `${indent}    <option value="${escapeHtml(o.value)}"${sel}>${escapeHtml(o.label)}</option>`;
+    })
+    .join('\n');
+
+  const labelHtml = labelText
+    ? `\n${indent}  <label class="meeel-select-label" for="${id}-input">${escapeHtml(labelText)}</label>`
+    : '';
+
+  return `${indent}<div id="${id}" class="meeel-select">${labelHtml}
+${indent}  <select id="${id}-input" name="${id}">
+${optionHtml}
+${indent}  </select>
+${indent}</div>`;
+}
+
+function parseOption(block: BlockNode): { value: string; label: string; selected: boolean } {
+  let label = '';
+  let value = '';
+  let selected = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      if (child.name === 'selected') selected = true;
+    } else if (child.kind === 'property') {
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+      if (propDef.special === 'content') label = child.value;
+      else if (propDef.special === 'value') value = child.value;
+    }
+  }
+
+  if (!label) {
+    // use block name as fallback
+    const base = block.name.replace(/^option-?/, '');
+    label = base || 'Option';
+  }
+  if (!value) value = label;
+
+  return { value, label, selected };
 }
 
 /* ============ CHECKBOX RENDERER ============ */
