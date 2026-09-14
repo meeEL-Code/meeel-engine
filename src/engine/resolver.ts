@@ -102,6 +102,14 @@ function checkBlock(
             suggestion: sug ? `Did you mean '${sug}'?` : undefined,
           });
         }
+      } else if (PROPERTIES[child.name]) {
+        // Bare property name — missing its value
+        errors.push({
+          message: `Property '${child.name}' needs a value. Use '${child.name}-[value]'`,
+          line: child.line,
+          token: child.name,
+          suggestion: `Add a value: '${child.name}-[value]'`,
+        });
       } else {
         const kwNames = [
           ...Array.from(POSITION_KEYWORDS),

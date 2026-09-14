@@ -1,6 +1,6 @@
 import { Token, TokenType } from '../grammar/tokens';
 import { AstNode, BlockNode } from '../grammar/ast';
-import { resolveBlock } from './registry';
+import { resolveBlock, PROPERTIES } from './registry';
 
 export function parse(tokens: Token[]): BlockNode {
   let index = 0;
@@ -43,6 +43,11 @@ export function parse(tokens: Token[]): BlockNode {
         advance(); // consume -[
         const afterDash = peek();
 
+        // ==== DECISION: known property vs known block vs unknown ====
+        const isKnownProperty = name in PROPERTIES;
+        const isKnownBlock = resolveBlock(name) !== null;
+
+        // ---- 1) Same-line value: name-[value] ----
         if (afterDash && afterDash.type === TokenType.VALUE) {
           const value = advance().value;
           const close = peek();
@@ -53,11 +58,17 @@ export function parse(tokens: Token[]): BlockNode {
           }
           advance(); // consume ]
 
-          // DECISION: is this a block or a property?
-          const def = resolveBlock(name);
-          if (def) {
-            // It's a block with single-line content.
-            // Split value by whitespace → treat each as keyword.
+          if (isKnownProperty) {
+            // Always property
+            const prop: AstNode = {
+              kind: 'property',
+              name,
+              value,
+              line: tok.line,
+            };
+            stack[stack.length - 1].children.push(prop);
+          } else if (isKnownBlock) {
+            // Single-line block: split value by whitespace → keywords
             const block: BlockNode = {
               kind: 'block',
               name,
@@ -74,7 +85,7 @@ export function parse(tokens: Token[]): BlockNode {
             }
             stack[stack.length - 1].children.push(block);
           } else {
-            // It's a property
+            // Unknown name — default to property (safer, shorter)
             const prop: AstNode = {
               kind: 'property',
               name,
@@ -86,13 +97,55 @@ export function parse(tokens: Token[]): BlockNode {
           continue;
         }
 
+        // ---- 2) Empty brackets: name-[] ----
         if (afterDash && afterDash.type === TokenType.CLOSE) {
-          throw new Error(
-            `Empty block/property '${name}-[]' at line ${tok.line}`
-          );
+          advance(); // consume ]
+          if (isKnownProperty) {
+            // Property with empty value — silent, normal during typing
+            const prop: AstNode = {
+              kind: 'property',
+              name,
+              value: '',
+              line: tok.line,
+            };
+            stack[stack.length - 1].children.push(prop);
+          }
+          // If block or unknown — silently skip empty `[]`
+          continue;
         }
 
-        // Multi-line block: name-[ \n ...
+        // ---- 3) Multi-line: name-[ \n ... \n ] ----
+        if (isKnownProperty) {
+          // Property: read value across lines until we hit `]`
+          let value = '';
+          while (index < tokens.length) {
+            const t = tokens[index];
+            if (t.type === TokenType.CLOSE) {
+              advance(); // consume ]
+              break;
+            }
+            if (t.type === TokenType.EOF) {
+              throw new Error(
+                `Missing closing ']' for '${name}' at line ${tok.line}`
+              );
+            }
+            if (t.type === TokenType.NEWLINE) {
+              advance();
+              continue;
+            }
+            value += advance().value;
+          }
+          const prop: AstNode = {
+            kind: 'property',
+            name,
+            value: value.trim(),
+            line: tok.line,
+          };
+          stack[stack.length - 1].children.push(prop);
+          continue;
+        }
+
+        // Otherwise: block (known or unknown)
         const block: BlockNode = {
           kind: 'block',
           name,

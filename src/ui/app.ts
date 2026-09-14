@@ -280,15 +280,40 @@ function acceptSuggestion(idx: number) {
 
   const before = editor.value.slice(0, word.start);
   const after = editor.value.slice(word.end);
-  const insert = s.name;
+
+  // Detect current line's leading whitespace (for nested indentation)
+  const lineStart = before.lastIndexOf('\n') + 1;
+  const currentLine = before.slice(lineStart);
+  const indentMatch = currentLine.match(/^(\s*)/);
+  const currentIndent = indentMatch ? indentMatch[1] : '';
+  const innerIndent = currentIndent + '  ';
+
+  let insert = s.name;
+  let cursorOffset = insert.length;
+
+  if (s.category === 'block') {
+    // Insert: name-[\n<indent+2>\n<indent>]
+    // cursor lands on the inner line so user can type children
+    const inner = '';
+    insert = s.name + '-[\n' + innerIndent + inner + '\n' + currentIndent + ']';
+    cursorOffset = s.name.length + 2 + innerIndent.length;
+  } else if (s.category === 'property') {
+    // Insert: name-[]
+    // cursor lands between [ and ]
+    insert = s.name + '-[]';
+    cursorOffset = s.name.length + 2;
+  }
+  // keyword: just insert the name, cursor at end
+
   editor.value = before + insert + after;
-  const newPos = word.start + insert.length;
+  const newPos = word.start + cursorOffset;
   editor.selectionStart = editor.selectionEnd = newPos;
 
   clearSuggestions();
   syncHighlight();
   syncGutter();
   render();
+  editor.focus();
 }
 
 function clearSuggestions() {
