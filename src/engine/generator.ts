@@ -414,6 +414,69 @@ button { font-family: inherit; }
   font-size: 14px;
   color: inherit;
 }
+/* ============ Charts ============ */
+.meeel-chart {
+  display: block;
+  font-family: inherit;
+  background: var(--chart-bg, #ffffff);
+  border: 1px solid var(--chart-border, #e5e5e5);
+  border-radius: var(--chart-radius, 12px);
+  padding: 18px;
+  width: 100%;
+}
+.meeel-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.meeel-chart-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--chart-label-color, #888888);
+  font-weight: 500;
+  gap: 4px;
+}
+.meeel-chart-labels span {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meeel-chart-donut-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto;
+}
+.meeel-chart-donut-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--chart-color, #1a1a1a);
+}
+.meeel-chart-donut-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.meeel-chart-donut-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
 /* ============ Modal ============ */
 .meeel-modal {
   display: inline-block;
@@ -1185,6 +1248,17 @@ function generateBlock(
 
   const id = block.name;
 
+  // ============ SPECIAL: CHARTS ============
+  if (isKind(id, 'bar-chart')) {
+    return renderBarChart(block, cssRules, indent);
+  }
+  if (isKind(id, 'line-chart')) {
+    return renderLineChart(block, cssRules, indent);
+  }
+  if (isKind(id, 'donut-chart')) {
+    return renderDonutChart(block, cssRules, indent);
+  }
+
   // ============ SPECIAL: MODAL ============
   if (isKind(id, 'modal')) {
     return renderModal(block, cssRules, indent);
@@ -1540,6 +1614,267 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ CHART HELPERS ============ */
+
+interface ChartSetup {
+  wrapperCss: Record<string, string>;
+  data: number[];
+  labels: string[];
+  color: string;
+  height: number;
+  bgColor: string;
+  borderColor: string;
+  radius: string;
+  labelColor: string;
+}
+
+function parseChartSetup(block: BlockNode): ChartSetup {
+  const wrapperCss: Record<string, string> = {};
+  let dataStr = '';
+  let labelsStr = '';
+  let color = '#0a84ff';
+  let height = 200;
+  let bgColor = '#ffffff';
+  let borderColor = '#e5e5e5';
+  let radius = '12px';
+  let labelColor = '#888888';
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (KEYWORD_CSS[kw]) Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'chart-data') { dataStr = child.value; continue; }
+      if (propDef.special === 'chart-labels') { labelsStr = child.value; continue; }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'color') { color = val; continue; }
+      if (propDef.css === 'height') { height = parseFloat(val) || 200; continue; }
+      if (propDef.css === 'background-color') { bgColor = val; continue; }
+      if (propDef.css === 'border') { borderColor = val; continue; }
+      if (propDef.css === 'border-radius') { radius = val; continue; }
+      if (propDef.css === 'font-size') { wrapperCss['--chart-label-color'] = val; continue; }
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  const data = dataStr
+    .split(/\s+/)
+    .map((s) => parseFloat(s))
+    .filter((n) => !isNaN(n));
+
+  const labels = labelsStr ? labelsStr.split(/\s+/) : [];
+
+  return { wrapperCss, data, labels, color, height, bgColor, borderColor, radius, labelColor };
+}
+
+function applyChartPositioning(
+  wrapperCss: Record<string, string>,
+  block: BlockNode
+): void {
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      }
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+}
+
+function labelsRow(labels: string[], indent: string): string {
+  if (labels.length === 0) return '';
+  const spans = labels.map((l) => `<span>${escapeHtml(l)}</span>`).join('');
+  return `${indent}  <div class="meeel-chart-labels">${spans}</div>`;
+}
+
+/* ============ BAR CHART ============ */
+
+function renderBarChart(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const setup = parseChartSetup(block);
+  applyChartPositioning(setup.wrapperCss, block);
+
+  setup.wrapperCss['--chart-bg'] = setup.bgColor;
+  setup.wrapperCss['--chart-border'] = setup.borderColor;
+  setup.wrapperCss['--chart-radius'] = setup.radius;
+  setup.wrapperCss['--chart-color'] = setup.color;
+  cssRules[id] = setup.wrapperCss;
+
+  const data = setup.data.length > 0 ? setup.data : [10, 25, 40, 30, 55, 70, 45];
+  const max = Math.max(...data, 1);
+  const H = 200;
+  const W = 100;
+  const n = data.length;
+  // Gap proportional to available space (small fixed gap in 100-unit viewBox)
+  const gap = n > 1 ? Math.min(3, W / (n * 4)) : 0;
+  const barW = Math.max(1, (W - gap * (n - 1)) / n);
+
+  const bars = data
+    .map((v, i) => {
+      const h = (v / max) * (H - 10);
+      const x = i * (barW + gap);
+      const y = H - h;
+      return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${h.toFixed(2)}" rx="3" fill="${setup.color}"/>`;
+    })
+    .join('');
+
+  return `${indent}<div id="${id}" class="meeel-chart">
+${indent}  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="height: ${setup.height}px">
+${indent}    <g>${bars}</g>
+${indent}  </svg>
+${labelsRow(setup.labels, indent)}
+${indent}</div>`;
+}
+
+/* ============ LINE CHART ============ */
+
+function renderLineChart(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const setup = parseChartSetup(block);
+  applyChartPositioning(setup.wrapperCss, block);
+
+  setup.wrapperCss['--chart-bg'] = setup.bgColor;
+  setup.wrapperCss['--chart-border'] = setup.borderColor;
+  setup.wrapperCss['--chart-radius'] = setup.radius;
+  cssRules[id] = setup.wrapperCss;
+
+  const data = setup.data.length > 1 ? setup.data : [10, 20, 15, 30, 45, 35, 60];
+  const max = Math.max(...data, 1);
+  const H = 100;
+  const W = 100;
+  const n = data.length;
+  const stepX = n > 1 ? W / (n - 1) : W;
+
+  const points = data.map((v, i) => {
+    const x = i * stepX;
+    const y = H - (v / max) * (H - 4) - 2;
+    return { x, y };
+  });
+
+  const pathD = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+    .join(' ');
+
+  // Area fill path
+  const areaD = `${pathD} L ${W} ${H} L 0 ${H} Z`;
+
+  const dots = points
+    .map((p) => `<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="1.5" fill="${setup.color}"/>`)
+    .join('');
+
+  return `${indent}<div id="${id}" class="meeel-chart">
+${indent}  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="height: ${setup.height}px">
+${indent}    <defs>
+${indent}      <linearGradient id="${id}-grad" x1="0" y1="0" x2="0" y2="1">
+${indent}        <stop offset="0%" stop-color="${setup.color}" stop-opacity="0.35"/>
+${indent}        <stop offset="100%" stop-color="${setup.color}" stop-opacity="0"/>
+${indent}      </linearGradient>
+${indent}    </defs>
+${indent}    <path d="${areaD}" fill="url(#${id}-grad)"/>
+${indent}    <path d="${pathD}" fill="none" stroke="${setup.color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+${indent}    ${dots}
+${indent}  </svg>
+${labelsRow(setup.labels, indent)}
+${indent}</div>`;
+}
+
+/* ============ DONUT CHART ============ */
+
+function renderDonutChart(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const setup = parseChartSetup(block);
+  applyChartPositioning(setup.wrapperCss, block);
+
+  // Extract value + label
+  let value = 75;
+  let labelText = '';
+  let maxValue = 100;
+
+  for (const child of block.children) {
+    if (child.kind === 'property') {
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+      if (propDef.special === 'chart-value') {
+        const v = parseFloat(child.value);
+        if (!isNaN(v)) value = v;
+      }
+      if (propDef.special === 'chart-max') {
+        const m = parseFloat(child.value);
+        if (!isNaN(m)) maxValue = m;
+      }
+      if (propDef.special === 'toggle-label') labelText = child.value;
+    }
+  }
+
+  if (setup.data.length > 0) value = setup.data[0];
+
+  setup.wrapperCss['--chart-bg'] = setup.bgColor;
+  setup.wrapperCss['--chart-border'] = setup.borderColor;
+  setup.wrapperCss['--chart-radius'] = setup.radius;
+  setup.wrapperCss['--chart-color'] = '#1a1a1a';
+  cssRules[id] = setup.wrapperCss;
+
+  const R = 42;
+  const C = 2 * Math.PI * R;
+  const pct = Math.max(0, Math.min(1, value / maxValue));
+  const dash = C * pct;
+  const rest = C - dash;
+
+  const cx = 60;
+  const cy = 60;
+
+  const labelHtml = labelText
+    ? `${indent}    <div class="meeel-chart-donut-text">${escapeHtml(labelText)}</div>`
+    : '';
+
+  return `${indent}<div id="${id}" class="meeel-chart">
+${indent}  <div class="meeel-chart-donut-wrap">
+${indent}    <svg viewBox="0 0 120 120" style="width: 100%; height: 100%;">
+${indent}      <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${setup.color}" stroke-opacity="0.15" stroke-width="12"/>
+${indent}      <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${setup.color}" stroke-width="12"
+${indent}        stroke-dasharray="${dash.toFixed(2)} ${rest.toFixed(2)}"
+${indent}        stroke-linecap="round"
+${indent}        transform="rotate(-90 ${cx} ${cy})"/>
+${indent}    </svg>
+${indent}    <div class="meeel-chart-donut-label">
+${indent}      <div class="meeel-chart-donut-value">${value}</div>
+${labelHtml}
+${indent}    </div>
+${indent}  </div>
+${indent}</div>`;
 }
 
 /* ============ MODAL RENDERER ============ */
