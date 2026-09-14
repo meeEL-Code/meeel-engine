@@ -151,6 +151,14 @@ function generateBlock(
     css['gap'] = '16px';
   }
 
+  // Auto-column for box/info containers
+  if (id.endsWith('-box') || id.endsWith('-info') || id === 'box' || id === 'info') {
+    css['display'] = 'flex';
+    css['flex-direction'] = 'column';
+    css['justify-content'] = 'center';
+    if (!css['gap']) css['gap'] = '4px';
+  }
+
   let hasTop = false, hasBottom = false, hasMiddle = false;
   let hasLeft = false, hasRight = false, hasCenter = false;
 
@@ -307,10 +315,16 @@ function generateBlock(
     css['object-fit'] = 'contain';
   }
 
-  // Avatar: circular + fallback
+  // Avatar: circular + placeholder fallback
   if (isKind(id, 'avatar') || isKind(id, 'logo')) {
     css['object-fit'] = 'cover';
     css['display'] = 'block';
+    if (!attrs['src'] || attrs['src'] === 'avatar' || attrs['src'] === 'logo') {
+      // Use a placeholder SVG with rounded background
+      const bg = '#8b5a44';
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="38" r="18" fill="white" opacity="0.85"/><path d="M50 62 c-18 0 -30 12 -30 26 h60 c0 -14 -12 -26 -30 -26 z" fill="white" opacity="0.85"/></svg>`;
+      attrs['src'] = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
   }
 
   // Toggle
