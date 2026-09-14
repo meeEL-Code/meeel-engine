@@ -46,6 +46,8 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
   'mobile-mode': { tag: 'div' },
   'tablet-mode': { tag: 'div' },
   'desktop-mode': { tag: 'div' },
+  'dark-mode': { tag: 'div' },
+  'toggle-active': { tag: 'div' },
   'box': { tag: 'div' },
   'info': { tag: 'div' },
   'wrapper': { tag: 'div' },
@@ -137,6 +139,11 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'open': { css: '', special: 'open' },
   'load': { css: '', special: 'open' },
   'call': { css: '', special: 'open' },
+  'from-toggle': { css: '', special: 'from-toggle' },
+  'on-color': { css: '', special: 'toggle-on-color' },
+  'off-color': { css: '', special: 'toggle-off-color' },
+  'default-state': { css: '', special: 'toggle-state' },
+  'label-text': { css: '', special: 'toggle-label' },
   'value': { css: '', special: 'value' },
 };
 

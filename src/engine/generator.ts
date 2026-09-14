@@ -21,6 +21,54 @@ button { font-family: inherit; }
   height: 1px;
   background: currentColor;
   opacity: 0.3;
+}
+/* ============ Toggle switch ============ */
+.meeel-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.meeel-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.meeel-toggle-slider {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--off-color, #555);
+  border-radius: 999px;
+  transition: background 0.22s ease;
+  flex-shrink: 0;
+}
+.meeel-toggle-slider::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.meeel-toggle input:checked + .meeel-toggle-slider {
+  background: var(--on-color, #16a34a);
+}
+.meeel-toggle input:checked + .meeel-toggle-slider::before {
+  transform: translateX(20px);
+}
+.meeel-toggle-label {
+  font-size: 14px;
+  color: inherit;
 }`;
 
 function isKind(id: string, kind: string): boolean {
@@ -111,12 +159,18 @@ export function generateParts(root: BlockNode): GenerateParts {
     };
   }
 
-  // Separate mode blocks from regular children
+  // Separate mode blocks + conditional blocks from regular children
   const defaultChildren: AstNode[] = [];
   const modeBlocks: BlockNode[] = [];
+  const conditionalBlocks: BlockNode[] = [];
   for (const child of page.children) {
     if (child.kind === 'block' && getModeKind(child.name)) {
       modeBlocks.push(child);
+    } else if (
+      child.kind === 'block' &&
+      (child.name === 'dark-mode' || child.name === 'toggle-active')
+    ) {
+      conditionalBlocks.push(child);
     } else {
       defaultChildren.push(child);
     }
@@ -236,8 +290,52 @@ export function generateParts(root: BlockNode): GenerateParts {
     mergedMobile[name] = { ...(mergedMobile[name] || {}), ...rules };
   }
 
+  // ============ CONDITIONAL (toggle-driven) CSS ============
+  const conditionalCssParts: string[] = [];
+  for (const condBlock of conditionalBlocks) {
+    // Find toggle name from `from-toggle-[X]` property
+    let toggleName = '';
+    for (const c of condBlock.children) {
+      if (c.kind === 'property' && c.name === 'from-toggle') {
+        toggleName = c.value;
+        break;
+      }
+    }
+    if (!toggleName) continue;
+
+    const prefix = `#page:has(#${toggleName} input:checked)`;
+
+    // For each child block inside dark-mode: generate override CSS
+    const lines: string[] = [];
+    for (const c of condBlock.children) {
+      if (c.kind !== 'block') continue;
+      if (c.name === toggleName) continue;
+      const overrideCss = collectOverrideCss(c);
+      if (Object.keys(overrideCss).length === 0) continue;
+
+      // If name === 'page', target page itself; else descendant
+      const selector = c.name === 'page'
+        ? `#page:has(#${toggleName} input:checked)`
+        : `#page:has(#${toggleName} input:checked) #${c.name}`;
+
+      const body = Object.entries(overrideCss)
+        .map(([k, v]) => `  ${k}: ${v};`)
+        .join('\n');
+      lines.push(`${selector} {\n${body}\n}`);
+    }
+    if (lines.length > 0) {
+      conditionalCssParts.push(
+        `/* ============ Conditional (${toggleName}) ============ */\n` + lines.join('\n\n')
+      );
+    }
+  }
+  // =========================================================
+
   const cssText = buildCssText(cssRules, mergedMobile, modeCss.tablet, modeCss.desktop);
-  const css = `${BASE_CSS}\n\n${cssText}`;
+  const finalCss = conditionalCssParts.length > 0
+    ? cssText + '\n\n' + conditionalCssParts.join('\n\n')
+    : cssText;
+  const css = `${BASE_CSS}\n\n${finalCss}`;
   const fullHtml = wrapHtml(finalHtml, css);
 
   return { html: finalHtml, css, fullHtml };
@@ -396,6 +494,13 @@ function generateBlock(
   }
 
   const id = block.name;
+
+  // ============ SPECIAL: TOGGLE ============
+  if (isKind(id, 'toggle')) {
+    return renderToggle(block, cssRules, indent);
+  }
+  // =========================================
+
   const css: Record<string, string> = {};
   const attrs: Record<string, string> = {};
   const textParts: string[] = [];
@@ -680,4 +785,129 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ TOGGLE RENDERER ============ */
+
+function renderToggle(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let onColor = '#16a34a';
+  let offColor = '#555';
+  let defaultChecked = false;
+  let labelText = '';
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'toggle-on-color') {
+        onColor = child.value;
+        continue;
+      }
+      if (propDef.special === 'toggle-off-color') {
+        offColor = child.value;
+        continue;
+      }
+      if (propDef.special === 'toggle-state') {
+        defaultChecked = child.value === 'on';
+        continue;
+      }
+      if (propDef.special === 'toggle-label') {
+        labelText = child.value;
+        continue;
+      }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  // Positioning
+  const verticalFix = hasTop || hasBottom || hasMiddle;
+  let transformX = false, transformY = false;
+
+  if (verticalFix) {
+    wrapperCss['position'] = 'absolute';
+    if (hasTop) wrapperCss['top'] = '0';
+    if (hasBottom) wrapperCss['bottom'] = '0';
+    if (hasMiddle) { wrapperCss['top'] = '50%'; transformY = true; }
+    if (hasLeft) wrapperCss['left'] = '0';
+    if (hasRight) wrapperCss['right'] = '0';
+    if (hasCenter) { wrapperCss['left'] = '50%'; transformX = true; }
+  } else {
+    if (hasCenter) {
+      wrapperCss['align-self'] = 'center';
+      if (!wrapperCss['margin-left']) wrapperCss['margin-left'] = 'auto';
+      if (!wrapperCss['margin-right']) wrapperCss['margin-right'] = 'auto';
+    }
+    if (hasLeft) wrapperCss['align-self'] = 'flex-start';
+    if (hasRight) {
+      wrapperCss['align-self'] = 'flex-end';
+      wrapperCss['margin-left'] = 'auto';
+    }
+  }
+
+  if (transformX && transformY) wrapperCss['transform'] = 'translate(-50%, -50%)';
+  else if (transformX) wrapperCss['transform'] = 'translateX(-50%)';
+  else if (transformY) wrapperCss['transform'] = 'translateY(-50%)';
+
+  // Parametric
+  for (const sub of block.children) {
+    let pname: string | null = null;
+    let gap = '0px';
+    if (sub.kind === 'keyword' && isParametricKeyword(sub.name)) {
+      pname = sub.name;
+    } else if (sub.kind === 'property' && isParametricKeyword(sub.name)) {
+      pname = sub.name;
+      gap = sub.value;
+    }
+    if (!pname) continue;
+    const parsed = parseParametric(pname);
+    if (!parsed) continue;
+    if (parsed.relation === 'below') wrapperCss['margin-top'] = gap;
+    else if (parsed.relation === 'above') wrapperCss['margin-bottom'] = gap;
+    else if (parsed.relation === 'right-of') wrapperCss['margin-left'] = gap;
+    else if (parsed.relation === 'left-of') wrapperCss['margin-right'] = gap;
+  }
+
+  // Per-toggle CSS variables for colors
+  wrapperCss['--on-color'] = onColor;
+  wrapperCss['--off-color'] = offColor;
+
+  cssRules[id] = wrapperCss;
+
+  const labelHtml = labelText
+    ? `\n${indent}  <span class="meeel-toggle-label">${escapeHtml(labelText)}</span>`
+    : '';
+  const checkedAttr = defaultChecked ? ' checked' : '';
+
+  return `${indent}<label id="${id}" class="meeel-toggle">
+${indent}  <input type="checkbox"${checkedAttr}>
+${indent}  <span class="meeel-toggle-slider"></span>${labelHtml}
+${indent}</label>`;
 }
