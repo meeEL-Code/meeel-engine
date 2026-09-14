@@ -61,6 +61,20 @@ function escapeHtml(s: string): string {
 
 function highlightNormal(line: string): string {
   const trimmed = line.trim();
+
+  // Comment line — whole line
+  if (trimmed.startsWith('#')) {
+    return `<span class="tok-comment">${escapeHtml(line)}</span>`;
+  }
+
+  // Inline comment after content
+  const commentIdx = line.indexOf('#');
+  if (commentIdx > 0) {
+    const before = line.slice(0, commentIdx);
+    const comment = line.slice(commentIdx);
+    return highlightNormal(before) + `<span class="tok-comment">${escapeHtml(comment)}</span>`;
+  }
+
   if (trimmed === ']') {
     return line.replace(']', '<span class="tok-bracket">]</span>');
   }
@@ -767,9 +781,10 @@ const downloadFileLabel = document.getElementById('download-file-label') as HTML
 
 const PUBLISH_STATE_KEY = 'meeel-publish-state-v1';
 
-type PublishTab = 'html' | 'css' | 'readme';
-let currentTab: PublishTab = 'html';
+type PublishTab = 'meeel' | 'html' | 'css' | 'readme';
+let currentTab: PublishTab = 'meeel';
 let cachedParts: {
+  meeel: string;
   html: string;
   css: string;
   readme: string;
@@ -785,7 +800,7 @@ function loadPublishState(): { open: boolean; tab: PublishTab } {
     const raw = localStorage.getItem(PUBLISH_STATE_KEY);
     if (!raw) return { open: false, tab: 'html' };
     const p = JSON.parse(raw);
-    return { open: !!p.open, tab: (p.tab as PublishTab) || 'html' };
+    return { open: !!p.open, tab: (p.tab as PublishTab) || 'meeel' };
   } catch {
     return { open: false, tab: 'html' };
   }
@@ -850,6 +865,7 @@ function buildParts() {
   const currentPage = allPages[currentPageIndex];
   const readme = buildReadme(editor.value, allPages);
   return {
+    meeel: editor.value,          // source code
     html: currentPage.htmlFile,   // external-link version
     css: currentPage.css,
     readme,
@@ -858,7 +874,9 @@ function buildParts() {
 }
 
 function updateDownloadButtons() {
-  if (currentTab === 'html') {
+  if (currentTab === 'meeel') {
+    downloadFileLabel.textContent = 'Download .meeel';
+  } else if (currentTab === 'html') {
     downloadFileLabel.textContent = 'Download .html';
   } else if (currentTab === 'css') {
     downloadFileLabel.textContent = 'Download .css';
@@ -871,7 +889,8 @@ function switchTab(tab: PublishTab) {
   currentTab = tab;
   modalTabs.forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
   if (!cachedParts) return;
-  if (tab === 'html') modalCode.textContent = cachedParts.html;
+  if (tab === 'meeel') modalCode.textContent = cachedParts.meeel;
+  else if (tab === 'html') modalCode.textContent = cachedParts.html;
   else if (tab === 'css') modalCode.textContent = cachedParts.css;
   else modalCode.textContent = cachedParts.readme;
   updateDownloadButtons();
@@ -942,7 +961,12 @@ function download(filename: string, content: string, mime: string) {
 downloadFile.addEventListener('click', () => {
   if (!cachedParts) return;
   const currentPage = allPages[currentPageIndex];
-  if (currentTab === 'html') {
+  if (currentTab === 'meeel') {
+    const filename = currentPage.filename.replace(/\.html$/, '.meeel');
+    // Use application/octet-stream — browsers respect the exact filename
+    // (text/plain on Android Chrome appends .txt to unknown extensions)
+    download(filename, cachedParts.meeel, 'application/octet-stream');
+  } else if (currentTab === 'html') {
     download(currentPage.filename, currentPage.htmlFile, 'text/html');
   } else if (currentTab === 'css') {
     download(currentPage.cssFilename, currentPage.css, 'text/css');
@@ -968,6 +992,12 @@ downloadAll.addEventListener('click', async () => {
       zip.file(page.filename, page.htmlFile);
       zip.file(page.cssFilename, page.css);
     }
+    // meeEL source
+    const firstPage = cachedParts.pages[0];
+    const meeelFilename = firstPage
+      ? firstPage.filename.replace(/\.html$/, '.meeel')
+      : 'source.meeel';
+    zip.file(meeelFilename, cachedParts.meeel);
     zip.file('README.md', cachedParts.readme);
 
     const blob = await zip.generateAsync({
@@ -1002,6 +1032,188 @@ if (initialPublishState.tab) {
 }
 if (initialPublishState.open) {
   setTimeout(() => openPublish(), 100);
+}
+
+/* ============ IMPORT ============ */
+
+const importBtn = document.getElementById('import-btn') as HTMLButtonElement | null;
+const importInput = document.getElementById('import-input') as HTMLInputElement | null;
+
+function loadMeeelFile(file: File): void {
+  // Size check: 1 MB max
+  if (file.size > 1024 * 1024) {
+    alert(`File too large (${(file.size / 1024).toFixed(0)} KB). Max size is 1 MB.`);
+    return;
+  }
+
+  // Extension check
+  const okExt = /\.(meeel|me|txt)$/i.test(file.name);
+  if (!okExt) {
+    const proceed = confirm(
+      `"${file.name}" doesn't have a .meeel extension.\n\nTry to load it anyway?`
+    );
+    if (!proceed) return;
+  }
+
+  // Warn if editor has content (avoid accidental overwrite)
+  const currentCode = editor.value.trim();
+  const isDefault = currentCode === DEFAULT_CODE.trim() || currentCode.length === 0;
+  if (!isDefault) {
+    const proceed = confirm(
+      `Loading "${file.name}" will replace your current code.\n\nContinue?`
+    );
+    if (!proceed) return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = (e.target?.result as string) || '';
+    editor.value = text;
+    syncHighlight();
+    syncGutter();
+    render();
+    saveCode();
+    editor.focus();
+  };
+  reader.onerror = () => {
+    alert('Could not read the file.');
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+if (importBtn && importInput) {
+  importBtn.addEventListener('click', () => {
+    importInput.value = ''; // reset so same file can be re-selected
+    importInput.click();
+  });
+
+  importInput.addEventListener('change', () => {
+    const file = importInput.files?.[0];
+    if (file) loadMeeelFile(file);
+  });
+}
+
+/* ---- Drag & drop on editor area ---- */
+const editorContainer = document.querySelector('.editor-container') as HTMLElement | null;
+
+if (editorContainer) {
+  // Create overlay element
+  const overlay = document.createElement('div');
+  overlay.className = 'drop-overlay';
+  overlay.innerHTML = `
+    <div class="drop-overlay-icon">↓</div>
+    <div class="drop-overlay-text">Drop .meeel file to load</div>
+  `;
+  editorContainer.appendChild(overlay);
+
+  let dragDepth = 0;
+
+  editorContainer.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth++;
+    overlay.classList.add('active');
+  });
+
+  editorContainer.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  editorContainer.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth--;
+    if (dragDepth <= 0) {
+      dragDepth = 0;
+      overlay.classList.remove('active');
+    }
+  });
+
+  editorContainer.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth = 0;
+    overlay.classList.remove('active');
+
+    const file = e.dataTransfer?.files?.[0];
+    if (file) loadMeeelFile(file);
+  });
+}
+
+/* Also allow drop anywhere on the page */
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+  // Only handle if not already handled by editorContainer
+  if (e.defaultPrevented) return;
+  e.preventDefault();
+  const file = e.dataTransfer?.files?.[0];
+  if (file) loadMeeelFile(file);
+});
+
+/* ============ PREVIEW FULLSCREEN ============ */
+
+const fullscreenBtn = document.getElementById('preview-fullscreen') as HTMLButtonElement | null;
+const previewPane = document.querySelector('.preview-pane') as HTMLElement | null;
+
+if (fullscreenBtn && previewPane) {
+  fullscreenBtn.addEventListener('click', async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (previewPane.requestFullscreen) {
+        await previewPane.requestFullscreen();
+      } else if ((previewPane as any).webkitRequestFullscreen) {
+        (previewPane as any).webkitRequestFullscreen();
+      } else {
+        // Fallback: CSS-based fullscreen overlay
+        toggleFallbackFullscreen();
+      }
+    } catch (err) {
+      // If native fullscreen fails, use CSS fallback
+      toggleFallbackFullscreen();
+    }
+  });
+
+  // Listen for fullscreen change to update the icon
+  const updateIcon = () => {
+    const isFull = !!(document.fullscreenElement || previewPane.classList.contains('fallback-fullscreen'));
+    const svg = fullscreenBtn.querySelector('svg');
+    if (!svg) return;
+    if (isFull) {
+      svg.innerHTML = `
+        <path d="M8 3v3a2 2 0 0 1-2 2H3"/>
+        <path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
+        <path d="M3 16h3a2 2 0 0 1 2 2v3"/>
+        <path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
+      `;
+    } else {
+      svg.innerHTML = `
+        <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+        <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+        <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+        <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+      `;
+    }
+  };
+
+  document.addEventListener('fullscreenchange', updateIcon);
+  document.addEventListener('webkitfullscreenchange', updateIcon);
+
+  function toggleFallbackFullscreen() {
+    previewPane.classList.toggle('fallback-fullscreen');
+    document.body.style.overflow = previewPane.classList.contains('fallback-fullscreen')
+      ? 'hidden'
+      : '';
+    updateIcon();
+  }
+
+  // ESC key to exit fallback
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && previewPane.classList.contains('fallback-fullscreen')) {
+      toggleFallbackFullscreen();
+    }
+  });
 }
 
 /* ============ BOOT ============ */

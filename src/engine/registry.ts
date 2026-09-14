@@ -135,12 +135,31 @@ export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
 ];
 
 export function resolveBlock(name: string): BlockDef | null {
+  // 1) Exact match
   if (FIXED_BLOCKS[name]) return FIXED_BLOCKS[name];
+
+  // 2) Strip trailing -N (e.g. card-1 → card, text-2 → text)
   const base = name.replace(/-\d+$/, '');
   if (FIXED_BLOCKS[base]) return FIXED_BLOCKS[base];
+
+  // 3) Suffix match (e.g. xyz-icon → icon, action-row → row)
   for (const { suffix, def } of SUFFIX_BLOCKS) {
     if (name.endsWith(suffix)) return def;
   }
+
+  // 4) Prefix match — only for container-style blocks
+  //    (e.g. row-stats → row, row-header → row, card-custom → card)
+  const PREFIX_BLOCKS = [
+    'row', 'column', 'card', 'sidebar',
+    'page', 'nav-bar', 'input-bar',
+    'accordion', 'tabs', 'modal',
+  ];
+  for (const prefix of PREFIX_BLOCKS) {
+    if (name.startsWith(prefix + '-')) {
+      return FIXED_BLOCKS[prefix] || null;
+    }
+  }
+
   return null;
 }
 

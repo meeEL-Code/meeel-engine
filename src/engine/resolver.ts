@@ -113,6 +113,13 @@ function checkBlock(
       if (block.name === 'icon' || block.name.startsWith('icon-')) {
         continue;
       }
+
+      // Special: 'row' and 'column' bare keywords → flex-direction override
+      // (used inside mode blocks like mobile-mode to change layout direction)
+      if (child.name === 'row' || child.name === 'column') {
+        continue;
+      }
+
       if (POSITION_KEYWORDS.has(child.name)) {
         // ok
       } else if (KEYWORD_CSS[child.name]) {

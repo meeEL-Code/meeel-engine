@@ -4,13 +4,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>meeEL Page</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="theme-color" content="#0a84ff" />
   <link rel="stylesheet" href="/src/ui/style.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="logo">meeEL Page</div>
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 64 64" width="22" height="22" aria-hidden="true">
+        <rect width="64" height="64" rx="14" ry="14" fill="#0a84ff"/>
+        <path d="M18 48 L18 28 Q18 22 25 22 Q32 22 32 28 L32 48 M32 28 Q32 22 39 22 Q46 22 46 28 L46 48"
+              fill="none" stroke="#ffffff" stroke-width="5"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>meeEL Page</span>
+    </div>
     <div class="topbar-right">
       <span id="save-indicator" class="save-indicator"></span>
+      <button id="import-btn" class="btn-import" title="Import .meeel file" aria-label="Import">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </button>
       <button id="publish-btn" class="btn-publish" title="Publish" aria-label="Publish">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -18,6 +35,7 @@
           <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
       </button>
+      <input type="file" id="import-input" accept=".meeel,.me,.txt" hidden>
     </div>
   </header>
 
@@ -36,7 +54,17 @@
     <section class="pane preview-pane">
       <div class="pane-header">
         <span>Preview</span>
-        <select id="page-selector" class="page-selector" hidden></select>
+        <div class="preview-controls">
+          <select id="page-selector" class="page-selector" hidden></select>
+          <button id="preview-fullscreen" class="btn-icon" title="Full screen" aria-label="Full screen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+              <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+              <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <iframe id="preview"></iframe>
     </section>
@@ -61,7 +89,8 @@
       </div>
 
       <div class="modal-tabs">
-        <button class="modal-tab active" data-tab="html">HTML</button>
+        <button class="modal-tab active" data-tab="meeel">meeEL</button>
+        <button class="modal-tab" data-tab="html">HTML</button>
         <button class="modal-tab" data-tab="css">CSS</button>
         <button class="modal-tab" data-tab="readme">README</button>
       </div>

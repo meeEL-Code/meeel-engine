@@ -45,6 +45,15 @@ export function lex(source: string): Token[] {
       continue;
     }
 
+    // Comment: '#' to end of line
+    if (ch === '#') {
+      // Skip until newline (or end)
+      while (i < source.length && peek() !== '\n') {
+        advance();
+      }
+      continue;
+    }
+
     // Name (starts with lowercase letter)
     if (ch >= 'a' && ch <= 'z') {
       const startLine = line;
