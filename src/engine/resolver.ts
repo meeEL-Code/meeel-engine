@@ -140,6 +140,20 @@ function lev(a: string, b: string): number {
 }
 
 function findClosest(input: string, candidates: string[], maxDist = 3): string | null {
+  // If input has trailing -N, try both with and without, and re-attach
+  const numMatch = input.match(/^(.*?)(-\d+)$/);
+  if (numMatch) {
+    const base = numMatch[1];
+    const suffix = numMatch[2];
+    // Try with base (then re-attach suffix)
+    const baseSug = findClosestRaw(base, candidates, maxDist);
+    if (baseSug !== null) return baseSug + suffix;
+    // Fallback: compare full input
+  }
+  return findClosestRaw(input, candidates, maxDist);
+}
+
+function findClosestRaw(input: string, candidates: string[], maxDist: number): string | null {
   let best: string | null = null;
   let bestDist = maxDist + 1;
   for (const c of candidates) {
