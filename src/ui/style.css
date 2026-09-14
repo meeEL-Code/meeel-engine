@@ -295,3 +295,20 @@ body {
   margin-left: auto;
   padding-left: 12px;
 }
+
+/* Save indicator */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.save-indicator {
+  font-size: 11px;
+  color: #777;
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  user-select: none;
+}

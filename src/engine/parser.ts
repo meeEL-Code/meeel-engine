@@ -117,7 +117,7 @@ export function parse(tokens: Token[]): BlockNode {
         // ---- 3) Multi-line: name-[ \n ... \n ] ----
         if (isKnownProperty) {
           // Property: read value across lines until we hit `]`
-          let value = '';
+          const parts: string[] = [];
           while (index < tokens.length) {
             const t = tokens[index];
             if (t.type === TokenType.CLOSE) {
@@ -133,12 +133,12 @@ export function parse(tokens: Token[]): BlockNode {
               advance();
               continue;
             }
-            value += advance().value;
+            parts.push(advance().value);
           }
           const prop: AstNode = {
             kind: 'property',
             name,
-            value: value.trim(),
+            value: parts.join(' ').trim(),
             line: tok.line,
           };
           stack[stack.length - 1].children.push(prop);

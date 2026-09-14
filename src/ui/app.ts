@@ -589,6 +589,64 @@ editor.addEventListener('keydown', (e) => {
   }
 });
 
+/* ============ SAVE / LOAD (localStorage) ============ */
+
+const STORAGE_KEY = 'meeel-code-v1';
+
+function loadSavedCode(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+let saveTimer: number | undefined;
+
+function saveCode() {
+  try {
+    localStorage.setItem(STORAGE_KEY, editor.value);
+    showSaveIndicator();
+  } catch (e) {
+    // ignore (private mode etc)
+  }
+}
+
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(saveCode, 800);
+}
+
+const saveIndicator = document.getElementById('save-indicator') as HTMLElement | null;
+
+function showSaveIndicator() {
+  if (!saveIndicator) return;
+  const t = new Date();
+  const hh = String(t.getHours()).padStart(2, '0');
+  const mm = String(t.getMinutes()).padStart(2, '0');
+  const ss = String(t.getSeconds()).padStart(2, '0');
+  saveIndicator.textContent = `Saved ${hh}:${mm}:${ss}`;
+  saveIndicator.style.opacity = '1';
+  setTimeout(() => {
+    if (saveIndicator) saveIndicator.style.opacity = '0.5';
+  }, 2000);
+}
+
+// Load saved code (if any)
+const saved = loadSavedCode();
+if (saved) {
+  editor.value = saved;
+}
+
+editor.addEventListener('input', () => {
+  scheduleSave();
+});
+
+// Also save on blur (mobile keyboard close)
+editor.addEventListener('blur', () => {
+  saveCode();
+});
+
 syncHighlight();
 syncGutter();
 render();
