@@ -1216,6 +1216,60 @@ if (fullscreenBtn && previewPane) {
   });
 }
 
+/* ============ PWA — SERVICE WORKER + INSTALL ============ */
+
+const installBtn = document.getElementById('install-btn') as HTMLButtonElement | null;
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .then((reg) => {
+        // Optional: log for debugging
+        // console.log('SW registered:', reg.scope);
+      })
+      .catch((err) => {
+        // console.warn('SW registration failed:', err);
+      });
+  });
+}
+
+// Capture install prompt
+let deferredInstallPrompt: any = null;
+
+window.addEventListener('beforeinstallprompt', (e: Event) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (installBtn) installBtn.hidden = false;
+});
+
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) {
+      // Fallback — show instructions
+      alert(
+        'To install:\n\n' +
+          'Android (Chrome): tap ⋮ menu → "Install app"\n' +
+          'iOS (Safari): tap Share → "Add to Home Screen"'
+      );
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    const result = await deferredInstallPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+      installBtn.hidden = true;
+    }
+    deferredInstallPrompt = null;
+  });
+}
+
+// Hide button once installed
+window.addEventListener('appinstalled', () => {
+  if (installBtn) installBtn.hidden = true;
+  deferredInstallPrompt = null;
+});
+
 /* ============ BOOT ============ */
 
 syncHighlight();

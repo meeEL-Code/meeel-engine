@@ -749,3 +749,30 @@ body {
   display: block;
   flex-shrink: 0;
 }
+
+/* ============ Install (PWA) Button ============ */
+.btn-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #0a84ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.btn-install:hover {
+  background: #0070e0;
+}
+.btn-install:active {
+  transform: scale(0.96);
+}
+.btn-install[hidden] {
+  display: none;
+}
