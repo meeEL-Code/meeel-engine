@@ -38,6 +38,7 @@ export function generate(root: BlockNode): string {
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: sans-serif; }
+img { display: block; }
 
 ${cssText}
 </style>
@@ -73,11 +74,31 @@ function generateBlock(
   if (id === 'nav-bar' || id.startsWith('nav-bar-')) {
     css['width'] = '100%';
     css['height'] = '56px';
+    css['display'] = 'flex';
+    css['align-items'] = 'center';
+    css['justify-content'] = 'space-between';
+    css['padding'] = '0 16px';
+  }
+  if (id === 'row' || id.startsWith('row-')) {
+    css['display'] = 'flex';
+    css['flex-direction'] = 'row';
+    css['justify-content'] = 'space-between';
+    css['align-items'] = 'center';
+    css['width'] = '100%';
+  }
+  if (id === 'card' || id.startsWith('card-')) {
+    css['display'] = 'flex';
+    css['flex-direction'] = 'column';
+  }
+  if (id === 'divider' || id.startsWith('divider-')) {
+    css['display'] = 'flex';
+    css['align-items'] = 'center';
+    css['justify-content'] = 'center';
+    css['width'] = '100%';
   }
 
-  let hasPosition = false;
-  let transformX = false;
-  let transformY = false;
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
 
   // Pass 1: keywords + properties
   for (const child of block.children) {
@@ -85,21 +106,21 @@ function generateBlock(
       const kw = child.name;
 
       if (POSITION_KEYWORDS.has(kw)) {
-        hasPosition = true;
         switch (kw) {
-          case 'top': css['top'] = '0'; break;
-          case 'bottom': css['bottom'] = '0'; break;
-          case 'left': css['left'] = '0'; break;
-          case 'right': css['right'] = '0'; break;
-          case 'center': css['left'] = '50%'; transformX = true; break;
-          case 'middle': css['top'] = '50%'; transformY = true; break;
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
         }
       } else if (KEYWORD_CSS[kw]) {
         Object.assign(css, KEYWORD_CSS[kw]);
-      } else if (isParametricKeyword(kw)) {
-        // handled in Pass 3
       }
     } else if (child.kind === 'property') {
+      // Skip parametric keywords — handled in Pass 3
+      if (isParametricKeyword(child.name)) continue;
+
       const propDef = PROPERTIES[child.name];
       if (!propDef) {
         throw new Error(
@@ -109,35 +130,50 @@ function generateBlock(
 
       const val = propDef.transform ? propDef.transform(child.value) : child.value;
 
-      if (propDef.special === 'content') {
-        textParts.push(val);
-      } else if (propDef.special === 'src') {
-        attrs['src'] = val;
-      } else if (propDef.special === 'type') {
-        attrs['type'] = val;
-      } else if (propDef.special === 'placeholder') {
-        attrs['placeholder'] = val;
-      } else if (propDef.special === 'href') {
-        attrs['href'] = val;
-      } else if (propDef.special === 'value') {
-        attrs['value'] = val;
-      } else {
-        css[propDef.css] = val;
-      }
+      if (propDef.special === 'content') textParts.push(val);
+      else if (propDef.special === 'src') attrs['src'] = val;
+      else if (propDef.special === 'type') attrs['type'] = val;
+      else if (propDef.special === 'placeholder') attrs['placeholder'] = val;
+      else if (propDef.special === 'href') attrs['href'] = val;
+      else if (propDef.special === 'value') attrs['value'] = val;
+      else css[propDef.css] = val;
     }
   }
 
-  if (hasPosition) {
+  // Decide positioning mode
+  const verticalFix = hasTop || hasBottom || hasMiddle;
+  let transformX = false, transformY = false;
+
+  if (verticalFix) {
     css['position'] = 'absolute';
+    if (hasTop) css['top'] = '0';
+    if (hasBottom) css['bottom'] = '0';
+    if (hasMiddle) { css['top'] = '50%'; transformY = true; }
+    if (hasLeft) css['left'] = '0';
+    if (hasRight) css['right'] = '0';
+    if (hasCenter) { css['left'] = '50%'; transformX = true; }
+  } else {
+    // Flow mode: horizontal keywords become align-self / margin auto
+    if (hasCenter) {
+      css['align-self'] = 'center';
+      css['text-align'] = 'center';
+      css['margin-left'] = 'auto';
+      css['margin-right'] = 'auto';
+    }
+    if (hasLeft) {
+      css['align-self'] = 'flex-start';
+      css['text-align'] = 'left';
+    }
+    if (hasRight) {
+      css['align-self'] = 'flex-end';
+      css['text-align'] = 'right';
+      css['margin-left'] = 'auto';
+    }
   }
 
-  if (transformX && transformY) {
-    css['transform'] = 'translate(-50%, -50%)';
-  } else if (transformX) {
-    css['transform'] = 'translateX(-50%)';
-  } else if (transformY) {
-    css['transform'] = 'translateY(-50%)';
-  }
+  if (transformX && transformY) css['transform'] = 'translate(-50%, -50%)';
+  else if (transformX) css['transform'] = 'translateX(-50%)';
+  else if (transformY) css['transform'] = 'translateY(-50%)';
 
   // Pass 2: nested blocks
   for (const child of block.children) {
@@ -146,58 +182,35 @@ function generateBlock(
     }
   }
 
-  // Pass 3: parametric positioning — apply as margins to children
-  for (const child of block.children) {
-    if (child.kind !== 'block') continue;
-    const childCss = cssRules[`#${child.name}`];
-    if (!childCss) continue;
-
-    for (const sub of child.children) {
-      let pname: string | null = null;
-      let gap = '0px';
-      if (sub.kind === 'keyword' && isParametricKeyword(sub.name)) {
-        pname = sub.name;
-      } else if (sub.kind === 'property' && isParametricKeyword(sub.name)) {
-        pname = sub.name;
-        gap = sub.value;
-      }
-      if (!pname) continue;
-
-      const parsed = parseParametric(pname);
-      if (!parsed) continue;
-
-      if (parsed.relation === 'below') childCss['margin-top'] = gap;
-      else if (parsed.relation === 'above') childCss['margin-bottom'] = gap;
-      else if (parsed.relation === 'right-of') childCss['margin-left'] = gap;
-      else if (parsed.relation === 'left-of') childCss['margin-right'] = gap;
+  // Pass 3: parametric positioning — margin on self
+  for (const sub of block.children) {
+    let pname: string | null = null;
+    let gap = '0px';
+    if (sub.kind === 'keyword' && isParametricKeyword(sub.name)) {
+      pname = sub.name;
+    } else if (sub.kind === 'property' && isParametricKeyword(sub.name)) {
+      pname = sub.name;
+      gap = sub.value;
     }
+    if (!pname) continue;
+
+    const parsed = parseParametric(pname);
+    if (!parsed) continue;
+
+    if (parsed.relation === 'below') css['margin-top'] = gap;
+    else if (parsed.relation === 'above') css['margin-bottom'] = gap;
+    else if (parsed.relation === 'right-of') css['margin-left'] = gap;
+    else if (parsed.relation === 'left-of') css['margin-right'] = gap;
   }
 
   cssRules[`#${id}`] = css;
 
-  // Special handling for toggle
+  // Toggle → checkbox
   if (id === 'toggle' || id.startsWith('toggle-')) {
     attrs['type'] = 'checkbox';
   }
 
-  // Special handling for dropdown
-  if (id.endsWith('-dropdown') && !attrs['type']) {
-    if (attrs['value']) {
-      const v = attrs['value'];
-      delete attrs['value'];
-      const opt = `<option>${escapeHtml(v)}</option>`;
-      const attrStr = Object.entries(attrs)
-        .map(([k, v]) => `${k}="${escapeHtml(v)}"`)
-        .join(' ');
-      const attrPart = attrStr ? ' ' + attrStr : '';
-      return `${indent}<input id="${id}"${attrPart} value="${escapeHtml(v)}">`;
-    }
-  }
-
-  // Special handling for divider (text on line)
-  if (id === 'divider' || id.startsWith('divider-')) {
-    // already handled as div
-  }
+  // Input-bar inside: inject default input if not present? Keep simple.
 
   const attrStr = Object.entries(attrs)
     .map(([k, v]) => `${k}="${escapeHtml(v)}"`)

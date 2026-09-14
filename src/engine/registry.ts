@@ -25,6 +25,7 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
   'toggle': { tag: 'input' },
   'dropdown': { tag: 'input' },
   'label': { tag: 'label' },
+  'row': { tag: 'div' },
 };
 
 export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
@@ -38,6 +39,7 @@ export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
   { suffix: '-link', def: { tag: 'a' } },
   { suffix: '-title', def: { tag: 'h1' } },
   { suffix: '-toggle', def: { tag: 'input' } },
+  { suffix: '-row', def: { tag: 'div' } },
 ];
 
 export function resolveBlock(name: string): BlockDef | null {
