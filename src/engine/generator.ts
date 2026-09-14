@@ -31,34 +31,306 @@ function isKind(id: string, kind: string): boolean {
   return false;
 }
 
+type ModeKind = 'mobile' | 'tablet' | 'desktop';
+
+function getModeKind(name: string): ModeKind | null {
+  if (name === 'mobile-mode' || name.startsWith('mobile-mode-')) return 'mobile';
+  if (name === 'tablet-mode' || name.startsWith('tablet-mode-')) return 'tablet';
+  if (name === 'desktop-mode' || name.startsWith('desktop-mode-')) return 'desktop';
+  return null;
+}
+
+type CSSBucket = Record<string, Record<string, string>>;
+
 export interface GenerateParts {
   html: string;
   css: string;
   fullHtml: string;
 }
 
-export function generateParts(root: BlockNode): GenerateParts {
-  const cssRules: Record<string, Record<string, string>> = {};
-  const bodyLines: string[] = [];
+export interface PageOutput {
+  name: string;
+  filename: string;
+  label: string;
+  html: string;
+  css: string;
+}
 
+/* ============ MAIN: generate all pages ============ */
+
+export function generatePages(root: BlockNode): PageOutput[] {
+  const topBlocks: BlockNode[] = [];
   for (const child of root.children) {
-    if (child.kind === 'block') {
-      bodyLines.push(generateBlock(child, cssRules, ''));
+    if (child.kind === 'block') topBlocks.push(child);
+  }
+  if (topBlocks.length === 0) return [];
+
+  return topBlocks.map((b) => {
+    const singleRoot: BlockNode = {
+      kind: 'block',
+      name: '<root>',
+      children: [b],
+      line: 0,
+    };
+    const parts = generateParts(singleRoot);
+    const { filename, label } = pageFilename(b.name);
+    return {
+      name: b.name,
+      filename,
+      label,
+      html: parts.fullHtml,
+      css: parts.css,
+    };
+  });
+}
+
+function pageFilename(name: string): { filename: string; label: string } {
+  if (name === 'page') return { filename: 'index.html', label: 'Page' };
+  let base = name;
+  if (name.endsWith('-page')) base = name.slice(0, -5);
+  if (!base) base = name;
+  const filename = base + '.html';
+  const label =
+    base
+      .split('-')
+      .filter(Boolean)
+      .map((w) => w[0].toUpperCase() + w.slice(1))
+      .join(' ') || 'Page';
+  return { filename, label };
+}
+
+/* ============ generateParts — handles responsive modes ============ */
+
+export function generateParts(root: BlockNode): GenerateParts {
+  const page = root.children.find((c) => c.kind === 'block') as BlockNode | undefined;
+  if (!page) {
+    return {
+      html: '',
+      css: BASE_CSS,
+      fullHtml: wrapHtml('', BASE_CSS),
+    };
+  }
+
+  // Separate mode blocks from regular children
+  const defaultChildren: AstNode[] = [];
+  const modeBlocks: BlockNode[] = [];
+  for (const child of page.children) {
+    if (child.kind === 'block' && getModeKind(child.name)) {
+      modeBlocks.push(child);
+    } else {
+      defaultChildren.push(child);
     }
   }
 
-  const cssText = Object.entries(cssRules)
-    .map(([sel, rules]) => {
-      const body = Object.entries(rules)
-        .map(([k, v]) => `  ${k}: ${v};`)
-        .join('\n');
-      return `${sel} {\n${body}\n}`;
-    })
-    .join('\n\n');
+  // Generate page HTML/CSS with only default children
+  const cssRules: CSSBucket = {};
+  const pageWithDefaults: BlockNode = { ...page, children: defaultChildren };
+  const html = generateBlock(pageWithDefaults, cssRules, '');
 
-  const html = bodyLines.join('\n');
+  // Collect all default element names (for override matching)
+  const defaultNames = new Set<string>();
+  for (const child of defaultChildren) {
+    if (child.kind === 'block') {
+      defaultNames.add(child.name);
+      collectNames(child, defaultNames);
+    }
+  }
+
+  // Process each mode block
+  const modeCss: Record<ModeKind, CSSBucket> = { mobile: {}, tablet: {}, desktop: {} };
+  const modeOnlyElements: Record<ModeKind, BlockNode[]> = {
+    mobile: [], tablet: [], desktop: [],
+  };
+
+  for (const modeBlock of modeBlocks) {
+    const kind = getModeKind(modeBlock.name);
+    if (!kind) continue;
+    for (const child of modeBlock.children) {
+      if (child.kind !== 'block') continue;
+      if (defaultNames.has(child.name)) {
+        // Override — merge into mode bucket
+        const overrideCss = collectOverrideCss(child);
+        modeCss[kind][child.name] = {
+          ...(modeCss[kind][child.name] || {}),
+          ...overrideCss,
+        };
+        collectNestedOverrides(child, modeCss[kind], defaultNames);
+      } else {
+        // Mode-only element
+        modeOnlyElements[kind].push(child);
+      }
+    }
+  }
+
+  // Generate HTML + CSS for mode-only elements (hidden by default)
+  for (const kind of ['mobile', 'tablet', 'desktop'] as const) {
+    for (const el of modeOnlyElements[kind]) {
+      // Generate HTML + CSS for this element
+      const elCss: CSSBucket = {};
+      const elHtml = generateBlock(el, elCss, '  ');
+
+      // Add to page HTML — insert just before closing </div>
+      // Simpler: we regenerate by appending. Skip for v1, or handle by HTML string manipulation.
+      // For now, put mode-only elements inside their own wrapper div that is hidden by default.
+      const wrapperId = `__mode-${kind}-${el.name}`;
+      const wrapperHtml = `  <div id="${wrapperId}" style="display: contents">\n  ${elHtml}\n  </div>`;
+      const wrapperCss: Record<string, string> = { display: 'contents' };
+      cssRules[wrapperId] = wrapperCss;
+
+      // Mark the element itself as display:none by default
+      const realId = el.name;
+      const realCss = elCss[realId] || {};
+      const originalDisplay = realCss['display'] || 'block';
+      cssRules[realId] = { ...realCss, display: 'none' };
+      modeCss[kind][realId] = {
+        ...(modeCss[kind][realId] || {}),
+        display: originalDisplay,
+      };
+
+      // Append wrapper HTML to page — need to inject before closing </div>
+      // We'll handle this via post-processing
+      (html as any); // suppress unused
+      // Actually simpler: store for later injection
+      if (!modeOnlyHtml[kind]) modeOnlyHtml[kind] = [];
+      modeOnlyHtml[kind].push(wrapperHtml);
+    }
+  }
+
+  // Build final HTML by injecting mode-only wrappers before last </div>
+  let finalHtml = html;
+  const allModeOnlyHtml = [
+    ...(modeOnlyHtml.mobile || []),
+    ...(modeOnlyHtml.tablet || []),
+    ...(modeOnlyHtml.desktop || []),
+  ];
+  if (allModeOnlyHtml.length > 0) {
+    const lastClose = finalHtml.lastIndexOf('</div>');
+    if (lastClose !== -1) {
+      finalHtml =
+        finalHtml.slice(0, lastClose) +
+        allModeOnlyHtml.join('\n') +
+        '\n' +
+        finalHtml.slice(lastClose);
+    }
+  }
+
+  const cssText = buildCssText(cssRules, modeCss.mobile, modeCss.tablet, modeCss.desktop);
   const css = `${BASE_CSS}\n\n${cssText}`;
-  const fullHtml = `<!DOCTYPE html>
+  const fullHtml = wrapHtml(finalHtml, css);
+
+  return { html: finalHtml, css, fullHtml };
+}
+
+const modeOnlyHtml: Record<ModeKind, string[]> = { mobile: [], tablet: [], desktop: [] };
+
+export function generate(root: BlockNode): string {
+  return generateParts(root).fullHtml;
+}
+
+/* ============ Helpers ============ */
+
+function collectNames(block: BlockNode, names: Set<string>): void {
+  for (const child of block.children) {
+    if (child.kind === 'block') {
+      if (getModeKind(child.name)) continue;
+      names.add(child.name);
+      collectNames(child, names);
+    }
+  }
+}
+
+function collectOverrideCss(block: BlockNode): Record<string, string> {
+  const css: Record<string, string> = {};
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      if (POSITION_KEYWORDS.has(child.name)) {
+        switch (child.name) {
+          case 'top': css['top'] = '0'; break;
+          case 'bottom': css['bottom'] = '0'; break;
+          case 'left': css['left'] = '0'; break;
+          case 'right': css['right'] = '0'; break;
+          case 'center': css['left'] = '50%'; break;
+          case 'middle': css['top'] = '50%'; break;
+        }
+      } else if (KEYWORD_CSS[child.name]) {
+        Object.assign(css, KEYWORD_CSS[child.name]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+      if (propDef.special) continue;
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      css[propDef.css] = val;
+    }
+  }
+  return css;
+}
+
+function collectNestedOverrides(
+  block: BlockNode,
+  bucket: CSSBucket,
+  defaultNames: Set<string>
+): void {
+  for (const child of block.children) {
+    if (child.kind === 'block') {
+      if (defaultNames.has(child.name)) {
+        const overrideCss = collectOverrideCss(child);
+        bucket[child.name] = {
+          ...(bucket[child.name] || {}),
+          ...overrideCss,
+        };
+      }
+      collectNestedOverrides(child, bucket, defaultNames);
+    }
+  }
+}
+
+function renderBlock(name: string, rules: Record<string, string>, indent: string): string {
+  const body = Object.entries(rules)
+    .map(([k, v]) => `${indent}  ${k}: ${v};`)
+    .join('\n');
+  return `${indent}#${name} {\n${body}\n${indent}}`;
+}
+
+function buildCssText(
+  defaultRules: CSSBucket,
+  mobileRules: CSSBucket,
+  tabletRules: CSSBucket,
+  desktopRules: CSSBucket
+): string {
+  const parts: string[] = [];
+
+  for (const [name, rules] of Object.entries(defaultRules)) {
+    parts.push(renderBlock(name, rules, ''));
+  }
+
+  if (Object.keys(mobileRules).length > 0) {
+    const inner = Object.entries(mobileRules)
+      .map(([name, rules]) => renderBlock(name, rules, '  '))
+      .join('\n\n');
+    parts.push(`/* ============ Mobile (0 – 767px) ============ */\n@media (max-width: 767px) {\n${inner}\n}`);
+  }
+
+  if (Object.keys(tabletRules).length > 0) {
+    const inner = Object.entries(tabletRules)
+      .map(([name, rules]) => renderBlock(name, rules, '  '))
+      .join('\n\n');
+    parts.push(`/* ============ Tablet (768 – 1023px) ============ */\n@media (min-width: 768px) and (max-width: 1023px) {\n${inner}\n}`);
+  }
+
+  if (Object.keys(desktopRules).length > 0) {
+    const inner = Object.entries(desktopRules)
+      .map(([name, rules]) => renderBlock(name, rules, '  '))
+      .join('\n\n');
+    parts.push(`/* ============ Desktop (1024px+) ============ */\n@media (min-width: 1024px) {\n${inner}\n}`);
+  }
+
+  return parts.join('\n\n');
+}
+
+function wrapHtml(html: string, css: string): string {
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -73,17 +345,13 @@ ${css}
 ${html}
 </body>
 </html>`;
-
-  return { html, css, fullHtml };
 }
 
-export function generate(root: BlockNode): string {
-  return generateParts(root).fullHtml;
-}
+/* ============ generateBlock — single block HTML/CSS ============ */
 
 function generateBlock(
   block: BlockNode,
-  cssRules: Record<string, Record<string, string>>,
+  cssRules: CSSBucket,
   indent: string
 ): string {
   const def = resolveBlock(block.name);
@@ -200,9 +468,8 @@ function generateBlock(
       else if (propDef.special === 'placeholder') attrs['placeholder'] = val;
       else if (propDef.special === 'href') attrs['href'] = val;
       else if (propDef.special === 'open') {
-        // Convert page name → filename, then apply as navigation
         const targetFilename = pageToFilename(val);
-        attrs['data-open'] = targetFilename;
+        attrs['data-meeel-target'] = targetFilename;
       }
       else if (propDef.special === 'value') attrs['value'] = val;
       else css[propDef.css] = val;
@@ -242,8 +509,10 @@ function generateBlock(
   else if (transformX) css['transform'] = 'translateX(-50%)';
   else if (transformY) css['transform'] = 'translateY(-50%)';
 
+  // Nested children — skip mode blocks
   for (const child of block.children) {
     if (child.kind === 'block') {
+      if (getModeKind(child.name)) continue;
       childLines.push(generateBlock(child, cssRules, indent + '  '));
     }
   }
@@ -271,7 +540,9 @@ function generateBlock(
   const hasInputType = block.children.some(
     (c) => c.kind === 'property' && c.name === 'input-type'
   );
-  const hasBlockChildren = block.children.some((c) => c.kind === 'block');
+  const hasBlockChildren = block.children.some(
+    (c) => c.kind === 'block' && !getModeKind(c.name)
+  );
   let finalTag = def.tag;
 
   if (hasInputType && !hasBlockChildren) {
@@ -320,14 +591,9 @@ function generateBlock(
     attrs['type'] = 'checkbox';
   }
 
-  // Navigation: convert data-open to actual behavior
-  if (attrs['data-open']) {
-    const target = attrs['data-open'];
-    delete attrs['data-open'];
-
-    // Always tag the target so preview can intercept
-    attrs['data-meeel-target'] = target;
-
+  // Convert data-meeel-target to actual behavior
+  if (attrs['data-meeel-target']) {
+    const target = attrs['data-meeel-target'];
     if (finalTag === 'a') {
       attrs['href'] = target;
     } else {
@@ -337,7 +603,7 @@ function generateBlock(
     }
   }
 
-  cssRules[`#${id}`] = css;
+  cssRules[id] = css;
 
   const attrStr = Object.entries(attrs)
     .map(([k, v]) => `${k}="${escapeHtml(v)}"`)
@@ -378,59 +644,4 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-/* ============ MULTI-PAGE SUPPORT ============ */
-
-export interface PageOutput {
-  name: string;      // original block name: "page", "home-page"
-  filename: string;  // "index.html", "home.html"
-  label: string;     // "Page", "Home", "Chat Room"
-  html: string;      // full self-contained HTML
-  css: string;       // just the CSS
-}
-
-export function generatePages(root: BlockNode): PageOutput[] {
-  const topBlocks: BlockNode[] = [];
-  for (const child of root.children) {
-    if (child.kind === 'block') topBlocks.push(child);
-  }
-
-  if (topBlocks.length === 0) return [];
-
-  return topBlocks.map((b) => {
-    const singleRoot: BlockNode = {
-      kind: 'block',
-      name: '<root>',
-      children: [b],
-      line: 0,
-    };
-    const parts = generateParts(singleRoot);
-    const { filename, label } = pageFilename(b.name);
-    return {
-      name: b.name,
-      filename,
-      label,
-      html: parts.fullHtml,
-      css: parts.css,
-    };
-  });
-}
-
-function pageFilename(name: string): { filename: string; label: string } {
-  if (name === 'page') return { filename: 'index.html', label: 'Page' };
-
-  let base = name;
-  if (name.endsWith('-page')) base = name.slice(0, -5);
-  if (!base) base = name;
-
-  const filename = base + '.html';
-  const label =
-    base
-      .split('-')
-      .filter(Boolean)
-      .map((w) => w[0].toUpperCase() + w.slice(1))
-      .join(' ') || 'Page';
-
-  return { filename, label };
 }
