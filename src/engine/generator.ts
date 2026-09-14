@@ -104,9 +104,11 @@ function generateBlock(
 
   if (isKind(id, 'nav-bar')) {
     css['width'] = '100%';
+    css['min-height'] = '56px';
     css['display'] = 'flex';
     css['align-items'] = 'center';
     css['justify-content'] = 'space-between';
+    css['padding'] = '0 16px';
   }
 
   // FIX: check endsWith too
