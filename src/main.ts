@@ -3,50 +3,32 @@ import { parse } from './engine/parser';
 import { resolve } from './engine/resolver';
 import { generate } from './engine/generator';
 
-
-
 const source = `page-[
-  background-color-[black]
-
-  nav-bar-[
-    top
-    menu-icon-[
-      left
-      url-[xyz]
-    ]
-  ]
+  background-color-[#f0f0f0]
 
   text-1-[
-    center
+    padding-[20px]
     content-[Hello]
+    font-size-[24px]
+    background-color-[#ffe0e0]
   ]
 
   text-2-[
-    below-text-1-[20px]
-    center
+    below-text-1-[30px]
+    padding-[20px]
     content-[World]
+    font-size-[24px]
+    background-color-[#e0ffe0]
   ]
 ]
 `;
 
 const tokens = lex(source);
 const ast = parse(tokens);
-
 const errors = resolve(ast);
-
 if (errors.length > 0) {
-  console.log('════════════════════════════════');
-  console.log('meeEL Errors Found');
-  console.log('════════════════════════════════');
-  for (const e of errors) {
-    console.log(`  Line ${e.line}: ${e.message}`);
-  }
-  console.log('════════════════════════════════');
-  console.log(`Total: ${errors.length} error(s)`);
-  console.log('Fix the errors above and try again.');
+  console.log('Errors:', errors);
   process.exit(1);
 }
-
-console.log('✓ No errors. Generating HTML...');
 const html = generate(ast);
 console.log(html);
