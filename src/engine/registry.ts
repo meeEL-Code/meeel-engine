@@ -45,6 +45,13 @@ export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
   { suffix: '-wrapper', def: { tag: 'div' } },
   { suffix: '-box', def: { tag: 'div' } },
   { suffix: '-bar', def: { tag: 'div' } },
+  { suffix: '-info', def: { tag: 'div' } },
+  { suffix: '-section', def: { tag: 'div' } },
+  { suffix: '-header', def: { tag: 'div' } },
+  { suffix: '-footer', def: { tag: 'div' } },
+  { suffix: '-content', def: { tag: 'div' } },
+  { suffix: '-group', def: { tag: 'div' } },
+  { suffix: '-container', def: { tag: 'div' } },
 ];
 
 export function resolveBlock(name: string): BlockDef | null {
@@ -68,8 +75,16 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'letter-spacing': { css: 'letter-spacing' },
   'line-height': { css: 'line-height' },
   'text-align': { css: 'text-align' },
-  'padding': { css: 'padding' },
-  'margin': { css: 'margin' },
+  'padding': { css: 'padding', transform: (v) => v.replace(/-/g, ' ') },
+  'padding-top': { css: 'padding-top' },
+  'padding-bottom': { css: 'padding-bottom' },
+  'padding-left': { css: 'padding-left' },
+  'padding-right': { css: 'padding-right' },
+  'margin': { css: 'margin', transform: (v) => v.replace(/-/g, ' ') },
+  'margin-top': { css: 'margin-top' },
+  'margin-bottom': { css: 'margin-bottom' },
+  'margin-left': { css: 'margin-left' },
+  'margin-right': { css: 'margin-right' },
   'border': {
     css: 'border',
     transform: (v) => v.replace(/-/g, ' '),
@@ -82,6 +97,7 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'opacity': { css: 'opacity' },
   'width': { css: 'width' },
   'height': { css: 'height' },
+  'gap': { css: 'gap' },
   'content': { css: '', special: 'content' },
   'url': { css: '', special: 'src' },
   'input-type': { css: '', special: 'type' },
@@ -103,6 +119,8 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   'no-border': { 'border': 'none' },
   'pointer': { 'cursor': 'pointer' },
   'full-width': { 'width': '100%' },
+  'gap-small': { 'gap': '8px' },
+  'gap-medium': { 'gap': '16px' },
 };
 
 export function isParametricKeyword(name: string): boolean {
