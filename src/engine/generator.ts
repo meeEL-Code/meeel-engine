@@ -22,6 +22,103 @@ button { font-family: inherit; }
   background: currentColor;
   opacity: 0.3;
 }
+/* ============ Slider ============ */
+.meeel-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+  font-family: inherit;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.meeel-slider-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  background: var(--track-color, #e0e0e0);
+  border-radius: 999px;
+  overflow: visible;
+}
+.meeel-slider-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--fill-color, #0a84ff);
+  border-radius: 999px;
+  pointer-events: none;
+  transition: width 0.05s linear;
+}
+.meeel-slider input {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  z-index: 2;
+}
+.meeel-slider-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border: 2px solid var(--fill-color, #0a84ff);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  pointer-events: none;
+  transition: left 0.05s linear;
+  z-index: 1;
+}
+.meeel-slider-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: inherit;
+  white-space: nowrap;
+}
+.meeel-slider-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fill-color, #0a84ff);
+  min-width: 36px;
+  text-align: right;
+  font-family: ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ Progress bar ============ */
+.meeel-progress {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: var(--track-color, #e0e0e0);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.meeel-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--fill-color, #0a84ff);
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
 /* ============ Toggle switch ============ */
 .meeel-toggle {
   display: inline-flex;
@@ -499,6 +596,16 @@ function generateBlock(
   if (isKind(id, 'toggle')) {
     return renderToggle(block, cssRules, indent);
   }
+
+  // ============ SPECIAL: SLIDER ============
+  if (isKind(id, 'slider')) {
+    return renderSlider(block, cssRules, indent);
+  }
+
+  // ============ SPECIAL: PROGRESS BAR ============
+  if (isKind(id, 'progress-bar') || id.endsWith('-progress')) {
+    return renderProgressBar(block, cssRules, indent);
+  }
   // =========================================
 
   const css: Record<string, string> = {};
@@ -785,6 +892,271 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ SLIDER RENDERER ============ */
+
+function renderSlider(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+
+  let min = '0';
+  let max = '100';
+  let step = '1';
+  let value = '50';
+  let fillColor = '#0a84ff';
+  let trackColor = '#e0e0e0';
+  let labelText = '';
+  let showValue = true;
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'slider-min') { min = child.value.replace('px', ''); continue; }
+      if (propDef.special === 'slider-max') { max = child.value.replace('px', ''); continue; }
+      if (propDef.special === 'slider-step') { step = child.value.replace('px', ''); continue; }
+      if (propDef.special === 'slider-value') { value = child.value.replace('px', ''); continue; }
+      if (propDef.special === 'slider-fill') { fillColor = child.value; continue; }
+      if (propDef.special === 'slider-track') { trackColor = child.value; continue; }
+      if (propDef.special === 'toggle-label') { labelText = child.value; continue; }
+      if (propDef.special === 'slider-show-value') { showValue = child.value !== 'no'; continue; }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  // Positioning
+  const verticalFix = hasTop || hasBottom || hasMiddle;
+  let transformX = false, transformY = false;
+
+  if (verticalFix) {
+    wrapperCss['position'] = 'absolute';
+    if (hasTop) wrapperCss['top'] = '0';
+    if (hasBottom) wrapperCss['bottom'] = '0';
+    if (hasMiddle) { wrapperCss['top'] = '50%'; transformY = true; }
+    if (hasLeft) wrapperCss['left'] = '0';
+    if (hasRight) wrapperCss['right'] = '0';
+    if (hasCenter) { wrapperCss['left'] = '50%'; transformX = true; }
+  } else {
+    if (hasCenter) {
+      wrapperCss['align-self'] = 'center';
+      if (!wrapperCss['margin-left']) wrapperCss['margin-left'] = 'auto';
+      if (!wrapperCss['margin-right']) wrapperCss['margin-right'] = 'auto';
+    }
+    if (hasLeft) wrapperCss['align-self'] = 'flex-start';
+    if (hasRight) {
+      wrapperCss['align-self'] = 'flex-end';
+      wrapperCss['margin-left'] = 'auto';
+    }
+  }
+
+  if (transformX && transformY) wrapperCss['transform'] = 'translate(-50%, -50%)';
+  else if (transformX) wrapperCss['transform'] = 'translateX(-50%)';
+  else if (transformY) wrapperCss['transform'] = 'translateY(-50%)';
+
+  // Parametric
+  for (const sub of block.children) {
+    let pname: string | null = null;
+    let gap = '0px';
+    if (sub.kind === 'keyword' && isParametricKeyword(sub.name)) pname = sub.name;
+    else if (sub.kind === 'property' && isParametricKeyword(sub.name)) {
+      pname = sub.name; gap = sub.value;
+    }
+    if (!pname) continue;
+    const parsed = parseParametric(pname);
+    if (!parsed) continue;
+    if (parsed.relation === 'below') wrapperCss['margin-top'] = gap;
+    else if (parsed.relation === 'above') wrapperCss['margin-bottom'] = gap;
+    else if (parsed.relation === 'right-of') wrapperCss['margin-left'] = gap;
+    else if (parsed.relation === 'left-of') wrapperCss['margin-right'] = gap;
+  }
+
+  wrapperCss['--fill-color'] = fillColor;
+  wrapperCss['--track-color'] = trackColor;
+
+  cssRules[id] = wrapperCss;
+
+  // Compute initial fill % for inline style
+  const minNum = parseFloat(min);
+  const maxNum = parseFloat(max);
+  const valNum = parseFloat(value);
+  const pct = maxNum > minNum ? ((valNum - minNum) / (maxNum - minNum)) * 100 : 50;
+  const pctStr = pct.toFixed(2) + '%';
+
+  const labelHtml = labelText
+    ? `\n${indent}  <span class="meeel-slider-label">${escapeHtml(labelText)}</span>`
+    : '';
+
+  const valueHtml = showValue
+    ? `\n${indent}  <span class="meeel-slider-value" id="${id}-value">${escapeHtml(value)}</span>`
+    : '';
+
+  // Unique script id to wire JS (minimal JS, no framework)
+  const scriptId = `__meeel_slider_${id.replace(/[^a-z0-9]/g, '_')}`;
+
+  return `${indent}<div id="${id}" class="meeel-slider">${labelHtml}
+${indent}  <div class="meeel-slider-track">
+${indent}    <div class="meeel-slider-fill" id="${id}-fill" style="width: ${pctStr}"></div>
+${indent}    <input type="range" min="${escapeHtml(min)}" max="${escapeHtml(max)}" step="${escapeHtml(step)}" value="${escapeHtml(value)}"
+${indent}      oninput="(function(el){
+${indent}        var v = el.value;
+${indent}        var min = parseFloat(el.min), max = parseFloat(el.max);
+${indent}        var pct = ((v - min) / (max - min)) * 100;
+${indent}        document.getElementById('${id}-fill').style.width = pct + '%';
+${indent}        var thumb = document.getElementById('${id}-thumb');
+${indent}        if (thumb) thumb.style.left = pct + '%';
+${indent}        var val = document.getElementById('${id}-value');
+${indent}        if (val) val.textContent = v;
+${indent}      })(this)"
+${indent}      onchange="(function(el){
+${indent}        var v = el.value;
+${indent}        var min = parseFloat(el.min), max = parseFloat(el.max);
+${indent}        var pct = ((v - min) / (max - min)) * 100;
+${indent}        document.getElementById('${id}-fill').style.width = pct + '%';
+${indent}        var thumb = document.getElementById('${id}-thumb');
+${indent}        if (thumb) thumb.style.left = pct + '%';
+${indent}        var val = document.getElementById('${id}-value');
+${indent}        if (val) val.textContent = v;
+${indent}        document.documentElement.style.setProperty('--${id}-value', v);
+${indent}      })(this)">
+${indent}    <div class="meeel-slider-thumb" id="${id}-thumb" style="left: ${pctStr}"></div>
+${indent}  </div>${valueHtml}
+${indent}</div>`;
+}
+
+/* ============ PROGRESS BAR RENDERER ============ */
+
+function renderProgressBar(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+
+  let value = '50';
+  let fillColor = '#0a84ff';
+  let trackColor = '#e0e0e0';
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'slider-value') { value = child.value; continue; }
+      if (propDef.special === 'slider-fill') { fillColor = child.value; continue; }
+      if (propDef.special === 'slider-track') { trackColor = child.value; continue; }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  const verticalFix = hasTop || hasBottom || hasMiddle;
+  let transformX = false, transformY = false;
+
+  if (verticalFix) {
+    wrapperCss['position'] = 'absolute';
+    if (hasTop) wrapperCss['top'] = '0';
+    if (hasBottom) wrapperCss['bottom'] = '0';
+    if (hasMiddle) { wrapperCss['top'] = '50%'; transformY = true; }
+    if (hasLeft) wrapperCss['left'] = '0';
+    if (hasRight) wrapperCss['right'] = '0';
+    if (hasCenter) { wrapperCss['left'] = '50%'; transformX = true; }
+  } else {
+    if (hasCenter) {
+      wrapperCss['align-self'] = 'center';
+      if (!wrapperCss['margin-left']) wrapperCss['margin-left'] = 'auto';
+      if (!wrapperCss['margin-right']) wrapperCss['margin-right'] = 'auto';
+    }
+    if (hasLeft) wrapperCss['align-self'] = 'flex-start';
+    if (hasRight) {
+      wrapperCss['align-self'] = 'flex-end';
+      wrapperCss['margin-left'] = 'auto';
+    }
+  }
+
+  if (transformX && transformY) wrapperCss['transform'] = 'translate(-50%, -50%)';
+  else if (transformX) wrapperCss['transform'] = 'translateX(-50%)';
+  else if (transformY) wrapperCss['transform'] = 'translateY(-50%)';
+
+  for (const sub of block.children) {
+    let pname: string | null = null;
+    let gap = '0px';
+    if (sub.kind === 'keyword' && isParametricKeyword(sub.name)) pname = sub.name;
+    else if (sub.kind === 'property' && isParametricKeyword(sub.name)) {
+      pname = sub.name; gap = sub.value;
+    }
+    if (!pname) continue;
+    const parsed = parseParametric(pname);
+    if (!parsed) continue;
+    if (parsed.relation === 'below') wrapperCss['margin-top'] = gap;
+    else if (parsed.relation === 'above') wrapperCss['margin-bottom'] = gap;
+    else if (parsed.relation === 'right-of') wrapperCss['margin-left'] = gap;
+    else if (parsed.relation === 'left-of') wrapperCss['margin-right'] = gap;
+  }
+
+  wrapperCss['--fill-color'] = fillColor;
+  wrapperCss['--track-color'] = trackColor;
+
+  cssRules[id] = wrapperCss;
+
+  // Convert value to percentage if it's a number, else assume %
+  let pct = value;
+  if (!pct.endsWith('%')) {
+    const num = parseFloat(pct);
+    if (!isNaN(num)) pct = Math.max(0, Math.min(100, num)) + '%';
+    else pct = '50%';
+  }
+
+  return `${indent}<div id="${id}" class="meeel-progress">
+${indent}  <div class="meeel-progress-fill" style="width: ${escapeHtml(pct)}"></div>
+${indent}</div>`;
 }
 
 /* ============ TOGGLE RENDERER ============ */
