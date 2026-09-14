@@ -22,6 +22,92 @@ button { font-family: inherit; }
   background: currentColor;
   opacity: 0.3;
 }
+/* ============ Checkbox + Radio ============ */
+.meeel-checkbox,
+.meeel-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 14px;
+}
+.meeel-checkbox input,
+.meeel-radio input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.meeel-checkbox-box {
+  position: relative;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #999;
+  border-radius: 5px;
+  background: white;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.meeel-checkbox-box::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 6px;
+  height: 11px;
+  border: solid white;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.15s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.meeel-checkbox input:checked + .meeel-checkbox-box {
+  background: var(--check-color, #0a84ff);
+  border-color: var(--check-color, #0a84ff);
+}
+.meeel-checkbox input:checked + .meeel-checkbox-box::before {
+  transform: rotate(45deg) scale(1);
+}
+
+.meeel-radio-circle {
+  position: relative;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #999;
+  border-radius: 50%;
+  background: white;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.meeel-radio-circle::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.15s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.meeel-radio input:checked + .meeel-radio-circle {
+  background: var(--check-color, #0a84ff);
+  border-color: var(--check-color, #0a84ff);
+}
+.meeel-radio input:checked + .meeel-radio-circle::before {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.meeel-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 /* ============ Slider ============ */
 .meeel-slider {
   display: inline-flex;
@@ -602,6 +688,21 @@ function generateBlock(
     return renderSlider(block, cssRules, indent);
   }
 
+  // ============ SPECIAL: RADIO GROUP ============
+  if (id === 'radio-group' || id.endsWith('-radio-group') || isKind(id, 'radio-group')) {
+    return renderRadioGroup(block, cssRules, indent);
+  }
+
+  // ============ SPECIAL: CHECKBOX ============
+  if (isKind(id, 'checkbox')) {
+    return renderCheckbox(block, cssRules, indent);
+  }
+
+  // ============ SPECIAL: RADIO ============
+  if (isKind(id, 'radio')) {
+    return renderRadio(block, cssRules, indent, '');
+  }
+
   // ============ SPECIAL: PROGRESS BAR ============
   if (isKind(id, 'progress-bar') || id.endsWith('-progress')) {
     return renderProgressBar(block, cssRules, indent);
@@ -892,6 +993,259 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ CHECKBOX RENDERER ============ */
+
+function renderCheckbox(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let labelText = '';
+  let checked = false;
+  let checkColor = '#0a84ff';
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (kw === 'checked') { checked = true; continue; }
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'toggle-label') { labelText = child.value; continue; }
+      if (propDef.special === 'input-checked') { checked = child.value !== 'no'; continue; }
+      if (propDef.special === 'input-check-color') { checkColor = child.value; continue; }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  wrapperCss['--check-color'] = checkColor;
+  cssRules[id] = wrapperCss;
+
+  const checkedAttr = checked ? ' checked' : '';
+  const labelHtml = labelText
+    ? `\n${indent}  <span class="meeel-checkbox-label">${escapeHtml(labelText)}</span>`
+    : '';
+
+  return `${indent}<label id="${id}" class="meeel-checkbox">
+${indent}  <input type="checkbox"${checkedAttr}>
+${indent}  <span class="meeel-checkbox-box"></span>${labelHtml}
+${indent}</label>`;
+}
+
+/* ============ RADIO RENDERER ============ */
+
+function renderRadio(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string,
+  groupName: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let labelText = '';
+  let checked = false;
+  let checkColor = '#0a84ff';
+  let ownGroupName = groupName;
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (kw === 'checked') { checked = true; continue; }
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'toggle-label') { labelText = child.value; continue; }
+      if (propDef.special === 'input-checked') { checked = child.value !== 'no'; continue; }
+      if (propDef.special === 'input-check-color') { checkColor = child.value; continue; }
+      if (propDef.special === 'radio-group-name') { ownGroupName = child.value; continue; }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  wrapperCss['--check-color'] = checkColor;
+  cssRules[id] = wrapperCss;
+
+  const checkedAttr = checked ? ' checked' : '';
+  const nameAttr = ownGroupName ? ` name="${escapeHtml(ownGroupName)}"` : '';
+  const labelHtml = labelText
+    ? `\n${indent}  <span class="meeel-radio-label">${escapeHtml(labelText)}</span>`
+    : '';
+
+  return `${indent}<label id="${id}" class="meeel-radio">
+${indent}  <input type="radio"${nameAttr}${checkedAttr}>
+${indent}  <span class="meeel-radio-circle"></span>${labelHtml}
+${indent}</label>`;
+}
+
+/* ============ RADIO GROUP RENDERER ============ */
+
+function renderRadioGroup(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let groupName = id;
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'radio-group-name') { groupName = child.value; continue; }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  cssRules[id] = wrapperCss;
+
+  const childLines: string[] = [];
+  for (const child of block.children) {
+    if (child.kind === 'block') {
+      if (isKind(child.name, 'radio')) {
+        childLines.push(renderRadio(child, cssRules, indent + '  ', groupName));
+      } else {
+        // Any other block — generate normally
+        childLines.push(generateBlock(child, cssRules, indent + '  '));
+      }
+    }
+  }
+
+  return `${indent}<div id="${id}" class="meeel-radio-group">
+${childLines.join('\n')}
+${indent}</div>`;
+}
+
+/* ============ SHARED POSITIONING HELPERS ============ */
+
+function applyPositioning(
+  css: Record<string, string>,
+  flags: {
+    hasTop: boolean; hasBottom: boolean; hasMiddle: boolean;
+    hasLeft: boolean; hasRight: boolean; hasCenter: boolean;
+  }
+): void {
+  const { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter } = flags;
+  const verticalFix = hasTop || hasBottom || hasMiddle;
+  let transformX = false, transformY = false;
+
+  if (verticalFix) {
+    css['position'] = 'absolute';
+    if (hasTop) css['top'] = '0';
+    if (hasBottom) css['bottom'] = '0';
+    if (hasMiddle) { css['top'] = '50%'; transformY = true; }
+    if (hasLeft) css['left'] = '0';
+    if (hasRight) css['right'] = '0';
+    if (hasCenter) { css['left'] = '50%'; transformX = true; }
+  } else {
+    if (hasCenter) {
+      css['align-self'] = 'center';
+      if (!css['margin-left']) css['margin-left'] = 'auto';
+      if (!css['margin-right']) css['margin-right'] = 'auto';
+    }
+    if (hasLeft) css['align-self'] = 'flex-start';
+    if (hasRight) {
+      css['align-self'] = 'flex-end';
+      css['margin-left'] = 'auto';
+    }
+  }
+
+  if (transformX && transformY) css['transform'] = 'translate(-50%, -50%)';
+  else if (transformX) css['transform'] = 'translateX(-50%)';
+  else if (transformY) css['transform'] = 'translateY(-50%)';
+}
+
+function applyParametric(css: Record<string, string>, block: BlockNode): void {
+  for (const sub of block.children) {
+    let pname: string | null = null;
+    let gap = '0px';
+    if (sub.kind === 'keyword' && isParametricKeyword(sub.name)) pname = sub.name;
+    else if (sub.kind === 'property' && isParametricKeyword(sub.name)) {
+      pname = sub.name; gap = sub.value;
+    }
+    if (!pname) continue;
+    const parsed = parseParametric(pname);
+    if (!parsed) continue;
+    if (parsed.relation === 'below') css['margin-top'] = gap;
+    else if (parsed.relation === 'above') css['margin-bottom'] = gap;
+    else if (parsed.relation === 'right-of') css['margin-left'] = gap;
+    else if (parsed.relation === 'left-of') css['margin-right'] = gap;
+  }
 }
 
 /* ============ SLIDER RENDERER ============ */
