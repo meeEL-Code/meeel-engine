@@ -414,6 +414,135 @@ button { font-family: inherit; }
   font-size: 14px;
   color: inherit;
 }
+/* ============ Modal ============ */
+.meeel-modal {
+  display: inline-block;
+  font-family: inherit;
+}
+.meeel-modal > input {
+  display: none;
+}
+.meeel-modal-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--modal-trigger-bg, #0a84ff);
+  color: var(--modal-trigger-color, #ffffff);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--modal-trigger-radius, 8px);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.meeel-modal-trigger:hover {
+  background: var(--modal-trigger-hover, #0070e0);
+}
+.meeel-modal-trigger:active {
+  transform: scale(0.97);
+}
+.meeel-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+.meeel-modal > input:checked ~ .meeel-modal-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+.meeel-modal-content {
+  background: var(--modal-bg, #ffffff);
+  color: var(--modal-color, #1a1a1a);
+  border-radius: var(--modal-radius, 14px);
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+  transform: translateY(12px) scale(0.98);
+  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.meeel-modal > input:checked ~ .meeel-modal-overlay .meeel-modal-content {
+  transform: translateY(0) scale(1);
+}
+.meeel-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--modal-color, #1a1a1a);
+}
+.meeel-modal-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--modal-color, #1a1a1a);
+  opacity: 0.85;
+  margin-bottom: 20px;
+}
+.meeel-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--modal-close-bg, #1a1a1a);
+  color: var(--modal-close-color, #ffffff);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.meeel-modal-close:hover {
+  background: var(--modal-close-hover, #333333);
+}
+.meeel-modal-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--modal-color, #1a1a1a);
+  opacity: 0.5;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.meeel-modal-x:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+}
+.meeel-modal-content {
+  position: relative;
+}
+
 /* ============ Accordion ============ */
 .meeel-accordion {
   display: block;
@@ -1056,6 +1185,11 @@ function generateBlock(
 
   const id = block.name;
 
+  // ============ SPECIAL: MODAL ============
+  if (isKind(id, 'modal')) {
+    return renderModal(block, cssRules, indent);
+  }
+
   // ============ SPECIAL: ACCORDION ============
   if (isKind(id, 'accordion')) {
     return renderAccordion(block, cssRules, indent);
@@ -1406,6 +1540,108 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ MODAL RENDERER ============ */
+
+function renderModal(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let triggerText = 'Open';
+  let titleText = '';
+  let closeText = 'Close';
+  let contentText = '';
+  let triggerBg = '#0a84ff';
+  let triggerColor = '#ffffff';
+  let modalBg = '#ffffff';
+  let modalColor = '#1a1a1a';
+  let modalRadius = '14px';
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'modal-trigger') { triggerText = child.value; continue; }
+      if (propDef.special === 'modal-title') { titleText = child.value; continue; }
+      if (propDef.special === 'modal-close') { closeText = child.value; continue; }
+      if (propDef.special === 'content') { contentText = child.value; continue; }
+      if (propDef.special) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'background-color') { triggerBg = val; continue; }
+      if (propDef.css === 'color') { triggerColor = val; continue; }
+      if (propDef.css === 'border-radius') { modalRadius = val; continue; }
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  wrapperCss['--modal-trigger-bg'] = triggerBg;
+  wrapperCss['--modal-trigger-color'] = triggerColor;
+  wrapperCss['--modal-bg'] = modalBg;
+  wrapperCss['--modal-color'] = modalColor;
+  wrapperCss['--modal-radius'] = modalRadius;
+  cssRules[id] = wrapperCss;
+
+  const titleHtml = titleText
+    ? `\n${indent}        <div class="meeel-modal-title">${escapeHtml(titleText)}</div>`
+    : '';
+
+  const bodyHtml = contentText
+    ? `${indent}        <div class="meeel-modal-body">${escapeHtml(contentText)}</div>`
+    : '';
+
+  // Any nested blocks go inside the modal body
+  const nestedBlocks: string[] = [];
+  for (const c of block.children) {
+    if (c.kind === 'block') {
+      nestedBlocks.push(generateBlock(c, cssRules, indent + '        '));
+    }
+  }
+
+  const innerBody = nestedBlocks.length > 0
+    ? `${indent}        ${nestedBlocks.join('\n' + indent + '        ')}`
+    : '';
+
+  return `${indent}<div id="${id}" class="meeel-modal">
+${indent}  <input type="checkbox" id="${id}-state">
+${indent}  <label for="${id}-state" class="meeel-modal-trigger">${escapeHtml(triggerText)}</label>
+${indent}  <div class="meeel-modal-overlay">
+${indent}    <div class="meeel-modal-content">
+${indent}      <label for="${id}-state" class="meeel-modal-x" aria-label="Close">
+${indent}        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+${indent}      </label>${titleHtml}
+${indent}      ${bodyHtml}
+${indent}      ${innerBody}
+${indent}      <label for="${id}-state" class="meeel-modal-close">${escapeHtml(closeText)}</label>
+${indent}    </div>
+${indent}  </div>
+${indent}</div>`;
 }
 
 /* ============ ACCORDION RENDERER ============ */
