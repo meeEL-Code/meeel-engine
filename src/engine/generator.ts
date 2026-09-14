@@ -414,6 +414,129 @@ button { font-family: inherit; }
   font-size: 14px;
   color: inherit;
 }
+/* ============ Accordion ============ */
+.meeel-accordion {
+  display: block;
+  width: 100%;
+  font-family: inherit;
+  background: var(--accordion-bg, #ffffff);
+  border: 1px solid var(--accordion-border, #e5e5e5);
+  border-radius: var(--accordion-radius, 12px);
+  overflow: hidden;
+}
+.meeel-accordion-item {
+  border-bottom: 1px solid var(--accordion-border, #e5e5e5);
+}
+.meeel-accordion-item:last-child {
+  border-bottom: none;
+}
+.meeel-accordion-item > input {
+  display: none;
+}
+.meeel-accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accordion-color, #1a1a1a);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease;
+}
+.meeel-accordion-header:hover {
+  background: var(--accordion-header-hover, rgba(0,0,0,0.03));
+}
+.meeel-accordion-arrow {
+  flex-shrink: 0;
+  color: var(--accordion-arrow, #888888);
+  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.meeel-accordion-item > input:checked ~ .meeel-accordion-header .meeel-accordion-arrow {
+  transform: rotate(180deg);
+}
+.meeel-accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.meeel-accordion-item > input:checked ~ .meeel-accordion-content {
+  max-height: 600px;
+}
+.meeel-accordion-body {
+  padding: 0 20px 18px 20px;
+  font-size: 14px;
+  color: var(--accordion-color, #1a1a1a);
+  line-height: 1.6;
+  opacity: 0.85;
+}
+
+/* ============ Badge ============ */
+.meeel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--badge-color, #ffffff);
+  background: var(--badge-bg, #0a84ff);
+  border-radius: 999px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* ============ Tooltip ============ */
+.meeel-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+.meeel-tooltip-trigger {
+  display: inline-block;
+  color: inherit;
+}
+.meeel-tooltip-text {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 6px 12px;
+  background: var(--tooltip-bg, #1a1a1a);
+  color: var(--tooltip-color, #ffffff);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.meeel-tooltip-text::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--tooltip-bg, #1a1a1a);
+}
+.meeel-tooltip:hover .meeel-tooltip-text,
+.meeel-tooltip:focus-within .meeel-tooltip-text {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* ============ Tabs ============ */
 .meeel-tabs {
   display: block;
@@ -933,6 +1056,21 @@ function generateBlock(
 
   const id = block.name;
 
+  // ============ SPECIAL: ACCORDION ============
+  if (isKind(id, 'accordion')) {
+    return renderAccordion(block, cssRules, indent);
+  }
+
+  // ============ SPECIAL: BADGE ============
+  if (isKind(id, 'badge')) {
+    return renderBadge(block, cssRules, indent);
+  }
+
+  // ============ SPECIAL: TOOLTIP ============
+  if (isKind(id, 'tooltip')) {
+    return renderTooltip(block, cssRules, indent);
+  }
+
   // ============ SPECIAL: TABS ============
   if (isKind(id, 'tabs')) {
     return renderTabs(block, cssRules, indent);
@@ -1268,6 +1406,181 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ ACCORDION RENDERER ============ */
+
+function renderAccordion(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let bgColor = '#ffffff';
+  let borderColor = '#e5e5e5';
+  let textColor = '#1a1a1a';
+  let radius = '12px';
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'background-color') { bgColor = val; continue; }
+      if (propDef.css === 'color') { textColor = val; continue; }
+      if (propDef.css === 'border') { borderColor = val; continue; }
+      if (propDef.css === 'border-radius') { radius = val; continue; }
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  wrapperCss['--accordion-bg'] = bgColor;
+  wrapperCss['--accordion-border'] = borderColor;
+  wrapperCss['--accordion-color'] = textColor;
+  wrapperCss['--accordion-radius'] = radius;
+  cssRules[id] = wrapperCss;
+
+  const items = block.children.filter(
+    (c) => c.kind === 'block' && isKind(c.name, 'accordion-item')
+  ) as BlockNode[];
+
+  const itemsHtml = items
+    .map((item, i) => {
+      let titleText = '';
+      let bodyText = '';
+      const nestedBody: string[] = [];
+
+      for (const c of item.children) {
+        if (c.kind === 'property' && c.name === 'label-text') titleText = c.value;
+        else if (c.kind === 'property' && c.name === 'content') bodyText = c.value;
+        else if (c.kind === 'block') nestedBody.push(generateBlock(c, cssRules, indent + '          '));
+      }
+
+      const isOpen = item.children.some(
+        (c) => c.kind === 'keyword' && c.name === 'selected'
+      );
+
+      const checkedAttr = isOpen ? ' checked' : '';
+      const inputId = `${id}-item-${i}`;
+
+      const bodyInner = bodyText
+        ? `${indent}        ${escapeHtml(bodyText)}`
+        : nestedBody.join('\n');
+
+      return `${indent}  <div class="meeel-accordion-item">
+${indent}    <input type="checkbox" id="${inputId}"${checkedAttr}>
+${indent}    <label for="${inputId}" class="meeel-accordion-header">
+${indent}      <span>${escapeHtml(titleText)}</span>
+${indent}      <svg class="meeel-accordion-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+${indent}    </label>
+${indent}    <div class="meeel-accordion-content">
+${indent}      <div class="meeel-accordion-body">
+${bodyInner}
+${indent}      </div>
+${indent}    </div>
+${indent}  </div>`;
+    })
+    .join('\n');
+
+  return `${indent}<div id="${id}" class="meeel-accordion">
+${itemsHtml}
+${indent}</div>`;
+}
+
+/* ============ BADGE RENDERER ============ */
+
+function renderBadge(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let text = '';
+  let badgeColor = '#ffffff';
+  let badgeBg = '#0a84ff';
+
+  for (const child of block.children) {
+    if (child.kind === 'property') {
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+      if (propDef.special === 'content') text = child.value;
+      else if (propDef.special === 'badge-color') badgeColor = child.value;
+      else if (propDef.special === 'badge-bg') badgeBg = child.value;
+      else {
+        const val = propDef.transform ? propDef.transform(child.value) : child.value;
+        wrapperCss[propDef.css] = val;
+      }
+    }
+  }
+
+  wrapperCss['--badge-color'] = badgeColor;
+  wrapperCss['--badge-bg'] = badgeBg;
+  cssRules[id] = wrapperCss;
+
+  return `${indent}<span id="${id}" class="meeel-badge">${escapeHtml(text)}</span>`;
+}
+
+/* ============ TOOLTIP RENDERER ============ */
+
+function renderTooltip(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let triggerText = '';
+  let tooltipText = '';
+  let tooltipBg = '#1a1a1a';
+  let tooltipColor = '#ffffff';
+
+  for (const child of block.children) {
+    if (child.kind === 'property') {
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+      if (propDef.special === 'content') triggerText = child.value;
+      else if (propDef.special === 'placeholder') tooltipText = child.value;
+      else if (propDef.special === 'badge-bg') tooltipBg = child.value;
+      else if (propDef.special === 'badge-color') tooltipColor = child.value;
+      else {
+        const val = propDef.transform ? propDef.transform(child.value) : child.value;
+        wrapperCss[propDef.css] = val;
+      }
+    }
+  }
+
+  wrapperCss['--tooltip-bg'] = tooltipBg;
+  wrapperCss['--tooltip-color'] = tooltipColor;
+  cssRules[id] = wrapperCss;
+
+  return `${indent}<span id="${id}" class="meeel-tooltip">
+${indent}  <span class="meeel-tooltip-trigger">${escapeHtml(triggerText)}</span>
+${indent}  <span class="meeel-tooltip-text">${escapeHtml(tooltipText)}</span>
+${indent}</span>`;
 }
 
 /* ============ TABS RENDERER ============ */
