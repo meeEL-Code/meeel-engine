@@ -414,6 +414,57 @@ button { font-family: inherit; }
   font-size: 14px;
   color: inherit;
 }
+/* ============ Tabs ============ */
+.meeel-tabs {
+  display: block;
+  width: 100%;
+  font-family: inherit;
+  background: var(--tabs-bg, #ffffff);
+  border: 1px solid var(--tabs-border, #e5e5e5);
+  border-radius: var(--tabs-radius, 12px);
+  overflow: hidden;
+}
+.meeel-tabs > input {
+  display: none;
+}
+.meeel-tab-headers {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  background: var(--tabs-header-bg, #f7f7f7);
+  border-bottom: 1px solid var(--tabs-border, #e5e5e5);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.meeel-tab-headers::-webkit-scrollbar {
+  display: none;
+}
+.meeel-tab-headers label {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tabs-label-color, #666666);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+.meeel-tab-headers label:hover {
+  color: var(--tabs-label-hover, #1a1a1a);
+  background: var(--tabs-label-hover-bg, rgba(0,0,0,0.03));
+}
+.meeel-tab-panel {
+  display: none;
+  padding: var(--tabs-padding, 20px);
+  color: var(--tabs-color, #1a1a1a);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
 /* ============ Table ============ */
 .meeel-table {
   width: 100%;
@@ -882,6 +933,11 @@ function generateBlock(
 
   const id = block.name;
 
+  // ============ SPECIAL: TABS ============
+  if (isKind(id, 'tabs')) {
+    return renderTabs(block, cssRules, indent);
+  }
+
   // ============ SPECIAL: TABLE ============
   if (isKind(id, 'table')) {
     return renderTable(block, cssRules, indent);
@@ -1212,6 +1268,149 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ TABS RENDERER ============ */
+
+function renderTabs(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+  let bgColor = '#ffffff';
+  let borderColor = '#e5e5e5';
+  let headerBg = '#f7f7f7';
+  let labelColor = '#666666';
+  let textColor = '#1a1a1a';
+  let activeColor = '#0a84ff';
+  let radius = '12px';
+  let padding = '20px';
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'background-color') { bgColor = val; continue; }
+      if (propDef.css === 'color') { textColor = val; continue; }
+      if (propDef.css === 'border') { borderColor = val; continue; }
+      if (propDef.css === 'border-radius') { radius = val; continue; }
+      if (propDef.css === 'padding') { padding = val; continue; }
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  wrapperCss['--tabs-bg'] = bgColor;
+  wrapperCss['--tabs-border'] = borderColor;
+  wrapperCss['--tabs-header-bg'] = headerBg;
+  wrapperCss['--tabs-label-color'] = labelColor;
+  wrapperCss['--tabs-color'] = textColor;
+  wrapperCss['--tabs-active-color'] = activeColor;
+  wrapperCss['--tabs-radius'] = radius;
+  wrapperCss['--tabs-padding'] = padding;
+  cssRules[id] = wrapperCss;
+
+  // Extract tab children
+  const tabBlocks = block.children.filter(
+    (c) => c.kind === 'block' && isKind(c.name, 'tab')
+  ) as BlockNode[];
+
+  if (tabBlocks.length === 0) {
+    return `${indent}<div id="${id}" class="meeel-tabs"></div>`;
+  }
+
+  // Determine selected
+  let selectedIdx = tabBlocks.findIndex((t) =>
+    t.children.some((c) => c.kind === 'keyword' && c.name === 'selected')
+  );
+  if (selectedIdx === -1) selectedIdx = 0;
+
+  // Build inputs
+  const inputsHtml = tabBlocks
+    .map((_, i) => {
+      const checkedAttr = i === selectedIdx ? ' checked' : '';
+      return `${indent}  <input type="radio" name="${id}-group" id="${id}-input-${i}"${checkedAttr}>`;
+    })
+    .join('\n');
+
+  // Build labels
+  const labelsHtml = tabBlocks
+    .map((tabBlock, i) => {
+      let labelText = '';
+      for (const child of tabBlock.children) {
+        if (child.kind === 'property' && child.name === 'label-text') {
+          labelText = child.value;
+          break;
+        }
+      }
+      if (!labelText) labelText = `Tab ${i + 1}`;
+      return `${indent}    <label for="${id}-input-${i}">${escapeHtml(labelText)}</label>`;
+    })
+    .join('\n');
+
+  // Build panels
+  const panelsHtml = tabBlocks
+    .map((tabBlock, i) => {
+      let contentText = '';
+      const nested: string[] = [];
+
+      for (const child of tabBlock.children) {
+        if (child.kind === 'property' && child.name === 'content') {
+          contentText = child.value;
+        } else if (child.kind === 'block') {
+          nested.push(generateBlock(child, cssRules, indent + '      '));
+        }
+      }
+
+      const inner = contentText
+        ? `${indent}    ${escapeHtml(contentText)}`
+        : nested.join('\n');
+
+      return `${indent}  <div class="meeel-tab-panel" data-idx="${i}">
+${inner}
+${indent}  </div>`;
+    })
+    .join('\n');
+
+  // Build scoped CSS for checked behavior
+  const scopeCss = tabBlocks
+    .map((_, i) => {
+      return `#${id}-input-${i}:checked ~ .meeel-tab-headers label[for="${id}-input-${i}"] { color: var(--tabs-active-color, #0a84ff); border-bottom-color: var(--tabs-active-color, #0a84ff); }\n#${id}-input-${i}:checked ~ .meeel-tab-panel[data-idx="${i}"] { display: block; }`;
+    })
+    .join('\n');
+
+  return `${indent}<div id="${id}" class="meeel-tabs">
+${indent}  <style>${scopeCss}</style>
+${inputsHtml}
+${indent}  <div class="meeel-tab-headers">
+${labelsHtml}
+${indent}  </div>
+${panelsHtml}
+${indent}</div>`;
 }
 
 /* ============ TABLE RENDERER ============ */
