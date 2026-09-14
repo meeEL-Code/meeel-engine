@@ -846,15 +846,18 @@ type CSSBucket = Record<string, Record<string, string>>;
 export interface GenerateParts {
   html: string;
   css: string;
-  fullHtml: string;
+  fullHtml: string;    // for preview — CSS embedded
+  htmlFile: string;    // for publish — links to external CSS file
 }
 
 export interface PageOutput {
   name: string;
-  filename: string;
+  filename: string;      // e.g. "index.html"
+  cssFilename: string;   // e.g. "style.css"
   label: string;
-  html: string;
-  css: string;
+  html: string;          // embedded HTML (for preview)
+  htmlFile: string;      // external-linked HTML (for publish/download)
+  css: string;           // the CSS for this page
 }
 
 /* ============ MAIN: generate all pages ============ */
@@ -873,13 +876,25 @@ export function generatePages(root: BlockNode): PageOutput[] {
       children: [b],
       line: 0,
     };
-    const parts = generateParts(singleRoot);
     const { filename, label } = pageFilename(b.name);
+
+    // CSS filename: single 'page' → 'style.css'; named pages → <pagename>.css
+    let cssFilename: string;
+    if (b.name === 'page') {
+      cssFilename = 'style.css';
+    } else {
+      cssFilename = filename.replace(/\.html$/, '.css');
+    }
+
+    const parts = generateParts(singleRoot, cssFilename);
+
     return {
       name: b.name,
       filename,
+      cssFilename,
       label,
       html: parts.fullHtml,
+      htmlFile: parts.htmlFile,
       css: parts.css,
     };
   });
@@ -902,13 +917,14 @@ function pageFilename(name: string): { filename: string; label: string } {
 
 /* ============ generateParts — handles responsive modes ============ */
 
-export function generateParts(root: BlockNode): GenerateParts {
+export function generateParts(root: BlockNode, cssFilename = 'style.css'): GenerateParts {
   const page = root.children.find((c) => c.kind === 'block') as BlockNode | undefined;
   if (!page) {
     return {
       html: '',
       css: BASE_CSS,
       fullHtml: wrapHtml('', BASE_CSS),
+      htmlFile: wrapHtmlExternal('', cssFilename),
     };
   }
 
@@ -1090,8 +1106,9 @@ export function generateParts(root: BlockNode): GenerateParts {
     : cssText;
   const css = `${BASE_CSS}\n\n${finalCss}`;
   const fullHtml = wrapHtml(finalHtml, css);
+  const htmlFile = wrapHtmlExternal(finalHtml, cssFilename);
 
-  return { html: finalHtml, css, fullHtml };
+  return { html: finalHtml, css, fullHtml, htmlFile };
 }
 
 const modeOnlyHtml: Record<ModeKind, string[]> = { mobile: [], tablet: [], desktop: [] };
@@ -1227,6 +1244,22 @@ function wrapHtml(html: string, css: string): string {
 <style>
 ${css}
 </style>
+</head>
+<body>
+${html}
+</body>
+</html>`;
+}
+
+function wrapHtmlExternal(html: string, cssFilename: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="meeEL — mee Innovations">
+<title>Made with meeEL</title>
+<link rel="stylesheet" href="${cssFilename}">
 </head>
 <body>
 ${html}

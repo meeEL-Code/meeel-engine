@@ -850,7 +850,7 @@ function buildParts() {
   const currentPage = allPages[currentPageIndex];
   const readme = buildReadme(editor.value, allPages);
   return {
-    html: currentPage.html,
+    html: currentPage.htmlFile,   // external-link version
     css: currentPage.css,
     readme,
     pages: allPages,
@@ -943,9 +943,9 @@ downloadFile.addEventListener('click', () => {
   if (!cachedParts) return;
   const currentPage = allPages[currentPageIndex];
   if (currentTab === 'html') {
-    download(currentPage.filename, currentPage.html, 'text/html');
+    download(currentPage.filename, currentPage.htmlFile, 'text/html');
   } else if (currentTab === 'css') {
-    download('style.css', cachedParts.css, 'text/css');
+    download(currentPage.cssFilename, currentPage.css, 'text/css');
   } else {
     download('README.md', cachedParts.readme, 'text/markdown');
   }
@@ -963,9 +963,10 @@ downloadAll.addEventListener('click', async () => {
     const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
 
-    // Add every page as a separate file
+    // Each page → its own HTML + its own CSS
     for (const page of cachedParts.pages) {
-      zip.file(page.filename, page.html);
+      zip.file(page.filename, page.htmlFile);
+      zip.file(page.cssFilename, page.css);
     }
     zip.file('README.md', cachedParts.readme);
 
