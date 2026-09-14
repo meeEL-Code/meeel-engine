@@ -755,19 +755,14 @@ function buildParts() {
 }
 
 function updateDownloadButtons() {
+  // Secondary button — changes per tab
   if (currentTab === 'html') {
-    // HTML tab: hide secondary (it does the same thing as primary)
-    downloadFile.style.display = 'none';
+    downloadFileLabel.textContent = 'Download .html';
+  } else if (currentTab === 'css') {
+    downloadFileLabel.textContent = 'Download .css';
   } else {
-    downloadFile.style.display = 'inline-flex';
-    if (currentTab === 'css') {
-      downloadFileLabel.textContent = 'Download .css';
-    } else {
-      downloadFileLabel.textContent = 'Download .md';
-    }
+    downloadFileLabel.textContent = 'Download .md';
   }
-  const primaryLabel = downloadAll.querySelector('span');
-  if (primaryLabel) primaryLabel.textContent = 'Download Site (.html)';
 }
 
 function switchTab(tab: PublishTab) {
@@ -804,7 +799,6 @@ publishModal.addEventListener('click', (e) => {
   if (e.target === publishModal) closePublish();
 });
 
-// ESC to close
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !publishModal.hidden) closePublish();
 });
@@ -850,9 +844,6 @@ function download(filename: string, content: string, mime: string) {
 
 /**
  * Secondary button — downloads the CURRENT tab's file only.
- *  - HTML tab  → index.html
- *  - CSS tab   → style.css
- *  - README tab → README.md
  */
 downloadFile.addEventListener('click', () => {
   if (!cachedParts) return;
@@ -866,12 +857,45 @@ downloadFile.addEventListener('click', () => {
 });
 
 /**
- * Primary button — always downloads the full working site (index.html).
- * CSS is already embedded in index.html.
+ * Primary button — downloads everything as a single ZIP file.
  */
-downloadAll.addEventListener('click', () => {
+downloadAll.addEventListener('click', async () => {
   if (!cachedParts) return;
-  download('index.html', cachedParts.html, 'text/html');
+
+  const label = downloadAll.querySelector('span');
+  const originalText = label ? label.textContent : '';
+  if (label) label.textContent = 'Zipping...';
+  downloadAll.disabled = true;
+
+  try {
+    const JSZip = (await import('jszip')).default;
+    const zip = new JSZip();
+
+    zip.file('index.html', cachedParts.html);
+    zip.file('style.css', cachedParts.css);
+    zip.file('README.md', cachedParts.readme);
+
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'meeel-site.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    console.error('ZIP failed:', err);
+    alert('Could not create ZIP. Try downloading files individually.');
+  } finally {
+    if (label) label.textContent = originalText;
+    downloadAll.disabled = false;
+  }
 });
 
 /* ============ RESTORE PUBLISH STATE ON LOAD ============ */
