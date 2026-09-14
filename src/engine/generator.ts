@@ -10,6 +10,17 @@ import {
 
 const VOID_TAGS = new Set(['img', 'input']);
 
+const BASE_CSS = `* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+img { display: block; }
+button { font-family: inherit; }
+.meeel-divider-line {
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.3;
+}`;
+
 export function generate(root: BlockNode): string {
   const cssRules: Record<string, Record<string, string>> = {};
   const bodyLines: string[] = [];
@@ -36,10 +47,7 @@ export function generate(root: BlockNode): string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>meeEL Output</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-img { display: block; }
-button { font-family: inherit; }
+${BASE_CSS}
 
 ${cssText}
 </style>
@@ -240,7 +248,7 @@ function generateBlock(
     css['border'] = 'none';
     css['outline'] = 'none';
     css['font-family'] = 'inherit';
-    css['width'] = css['width'] || '100%';
+    if (!css['width']) css['width'] = '100%';
   }
 
   // Toggle
@@ -263,7 +271,7 @@ function generateBlock(
   const text = textParts.map(escapeHtml).join('');
   const innerParts: string[] = [];
 
-  // Divider: wrap text with lines (pseudo-elements via span)
+  // Divider: wrap text with lines
   if (id === 'divider' || id.startsWith('divider-') || id.endsWith('-divider')) {
     if (text) {
       return `${indent}<${finalTag} id="${id}"${attrPart}>
