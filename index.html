@@ -15,7 +15,10 @@
   <main class="layout">
     <section class="pane editor-pane">
       <div class="pane-header">Code</div>
-      <textarea id="editor" spellcheck="false"></textarea>
+      <div class="editor-wrap">
+        <pre class="editor-highlight" aria-hidden="true"><code id="highlight-output"></code></pre>
+        <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+      </div>
     </section>
     <section class="pane preview-pane">
       <div class="pane-header">Preview</div>

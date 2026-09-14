@@ -1,5 +1,6 @@
 import { Token, TokenType } from '../grammar/tokens';
 import { AstNode, BlockNode } from '../grammar/ast';
+import { resolveBlock } from './registry';
 
 export function parse(tokens: Token[]): BlockNode {
   let index = 0;
@@ -20,13 +21,11 @@ export function parse(tokens: Token[]): BlockNode {
     const tok = peek();
     if (!tok || tok.type === TokenType.EOF) break;
 
-    // Skip blank lines
     if (tok.type === TokenType.NEWLINE) {
       advance();
       continue;
     }
 
-    // Close block
     if (tok.type === TokenType.CLOSE) {
       if (stack.length === 1) {
         throw new Error(`Unexpected ']' at line ${tok.line}`);
@@ -36,52 +35,76 @@ export function parse(tokens: Token[]): BlockNode {
       continue;
     }
 
-    // Name: could be keyword, property, or block
     if (tok.type === TokenType.NAME) {
       const name = advance().value;
       const next = peek();
 
-      // Block or property (both start with -[)
       if (next && next.type === TokenType.DASH_BRACKET) {
         advance(); // consume -[
         const afterDash = peek();
 
         if (afterDash && afterDash.type === TokenType.VALUE) {
-          // Property: name-[value]
           const value = advance().value;
           const close = peek();
           if (!close || close.type !== TokenType.CLOSE) {
             throw new Error(
-              `Property '${name}' missing closing ']' at line ${tok.line}`
+              `Missing closing ']' for '${name}' at line ${tok.line}`
             );
           }
           advance(); // consume ]
-          const prop: AstNode = {
-            kind: 'property',
-            name,
-            value,
-            line: tok.line,
-          };
-          stack[stack.length - 1].children.push(prop);
-        } else if (afterDash && afterDash.type === TokenType.CLOSE) {
+
+          // DECISION: is this a block or a property?
+          const def = resolveBlock(name);
+          if (def) {
+            // It's a block with single-line content.
+            // Split value by whitespace → treat each as keyword.
+            const block: BlockNode = {
+              kind: 'block',
+              name,
+              children: [],
+              line: tok.line,
+            };
+            const parts = value.trim().split(/\s+/).filter(Boolean);
+            for (const p of parts) {
+              block.children.push({
+                kind: 'keyword',
+                name: p,
+                line: tok.line,
+              });
+            }
+            stack[stack.length - 1].children.push(block);
+          } else {
+            // It's a property
+            const prop: AstNode = {
+              kind: 'property',
+              name,
+              value,
+              line: tok.line,
+            };
+            stack[stack.length - 1].children.push(prop);
+          }
+          continue;
+        }
+
+        if (afterDash && afterDash.type === TokenType.CLOSE) {
           throw new Error(
             `Empty block/property '${name}-[]' at line ${tok.line}`
           );
-        } else {
-          // Block: name-[ ... ]
-          const block: BlockNode = {
-            kind: 'block',
-            name,
-            children: [],
-            line: tok.line,
-          };
-          stack[stack.length - 1].children.push(block);
-          stack.push(block);
         }
+
+        // Multi-line block: name-[ \n ...
+        const block: BlockNode = {
+          kind: 'block',
+          name,
+          children: [],
+          line: tok.line,
+        };
+        stack[stack.length - 1].children.push(block);
+        stack.push(block);
         continue;
       }
 
-      // Keyword: bare name
+      // Bare keyword
       const kw: AstNode = {
         kind: 'keyword',
         name,

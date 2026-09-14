@@ -15,30 +15,34 @@ export interface ResolveError {
 
 export function resolve(root: BlockNode): ResolveError[] {
   const errors: ResolveError[] = [];
-  checkBlock(root, null, errors);
+
+  // Collect ALL block names in the entire tree (per page)
+  const allNames = new Set<string>();
+  collectNames(root, allNames);
+
+  // Check each block
+  checkBlock(root, allNames, errors);
+
   return errors;
+}
+
+function collectNames(block: BlockNode, names: Set<string>): void {
+  for (const child of block.children) {
+    if (child.kind === 'block') {
+      names.add(child.name);
+      collectNames(child, names);
+    }
+  }
 }
 
 function checkBlock(
   block: BlockNode,
-  parent: BlockNode | null,
+  allNames: Set<string>,
   errors: ResolveError[]
 ): void {
-  // Collect all sibling names (block children of this block)
-  const siblingNames = new Set<string>();
-  for (const child of block.children) {
-    if (child.kind === 'block') {
-      if (siblingNames.has(child.name)) {
-        errors.push({
-          message: `Duplicate block name '${child.name}' in same scope`,
-          line: child.line,
-        });
-      }
-      siblingNames.add(child.name);
-    }
-  }
+  // Duplicate check within the same page
+  const seen = new Set<string>();
 
-  // Check each child
   for (const child of block.children) {
     if (child.kind === 'block') {
       // 1. Block exists?
@@ -50,13 +54,22 @@ function checkBlock(
         });
         continue;
       }
+
+      // 2. Duplicate name check (global per page)
+      if (seen.has(child.name)) {
+        errors.push({
+          message: `Duplicate block name '${child.name}'. Names must be unique per page.`,
+          line: child.line,
+        });
+      }
+      seen.add(child.name);
+
       // Recurse
-      checkBlock(child, block, errors);
+      checkBlock(child, allNames, errors);
     } else if (child.kind === 'property') {
-      // Parametric keywords like below-X-[20px] are properties in AST
       if (isParametricKeyword(child.name)) {
         const parsed = parseParametric(child.name);
-        if (parsed && !blockCanSee(parsed.reference, block, parent)) {
+        if (parsed && !allNames.has(parsed.reference)) {
           errors.push({
             message: `Reference '${parsed.reference}' not found for '${child.name}'`,
             line: child.line,
@@ -75,7 +88,7 @@ function checkBlock(
         // OK
       } else if (isParametricKeyword(child.name)) {
         const parsed = parseParametric(child.name);
-        if (parsed && !blockCanSee(parsed.reference, block, parent)) {
+        if (parsed && !allNames.has(parsed.reference)) {
           errors.push({
             message: `Reference '${parsed.reference}' not found for '${child.name}'`,
             line: child.line,
@@ -89,25 +102,4 @@ function checkBlock(
       }
     }
   }
-}
-
-// Check if a reference name can be seen from the current block
-// Rule: sibling, parent, child
-function blockCanSee(
-  name: string,
-  block: BlockNode,
-  parent: BlockNode | null
-): boolean {
-  // Check siblings (children of this block)
-  for (const child of block.children) {
-    if (child.kind === 'block' && child.name === name) return true;
-  }
-  // Check parent's siblings (our uncles/aunts) — v0.1 allows parent
-  if (parent) {
-    for (const child of parent.children) {
-      if (child.kind === 'block' && child.name === name) return true;
-    }
-  }
-  // Also check our own name? No, a block doesn't reference itself.
-  return false;
 }
