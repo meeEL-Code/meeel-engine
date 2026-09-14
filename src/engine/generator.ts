@@ -11,7 +11,7 @@ import {
 
 const VOID_TAGS = new Set(['img', 'input']);
 
-const BASE_CSS = `* { box-sizing: border-box; margin: 0; padding: 0; }
+export const BASE_CSS = `* { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 img { display: block; object-fit: cover; }
 button { font-family: inherit; }
@@ -20,28 +20,23 @@ button { font-family: inherit; }
   height: 1px;
   background: currentColor;
   opacity: 0.3;
-}
-.meeel-avatar-fallback {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #6b4a3a;
-  color: white;
-  font-weight: bold;
-  font-size: 32px;
 }`;
 
-// Helper: check if a name matches a "kind" (fixed or suffix)
 function isKind(id: string, kind: string): boolean {
   if (id === kind) return true;
   if (id.startsWith(kind + '-')) return true;
   if (id.endsWith('-' + kind)) return true;
-  // for suffixes like -row, -icon
   if (id.includes('-') && id.split('-').includes(kind)) return true;
   return false;
 }
 
-export function generate(root: BlockNode): string {
+export interface GenerateParts {
+  html: string;
+  css: string;
+  fullHtml: string;
+}
+
+export function generateParts(root: BlockNode): GenerateParts {
   const cssRules: Record<string, Record<string, string>> = {};
   const bodyLines: string[] = [];
 
@@ -60,22 +55,29 @@ export function generate(root: BlockNode): string {
     })
     .join('\n\n');
 
-  return `<!DOCTYPE html>
-<html>
+  const html = bodyLines.join('\n');
+  const css = `${BASE_CSS}\n\n${cssText}`;
+  const fullHtml = `<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>meeEL Output</title>
+<meta name="generator" content="meeEL — mee Innovations">
+<title>Made with meeEL</title>
 <style>
-${BASE_CSS}
-
-${cssText}
+${css}
 </style>
 </head>
 <body>
-${bodyLines.join('\n')}
+${html}
 </body>
 </html>`;
+
+  return { html, css, fullHtml };
+}
+
+export function generate(root: BlockNode): string {
+  return generateParts(root).fullHtml;
 }
 
 function generateBlock(
@@ -94,8 +96,6 @@ function generateBlock(
   const textParts: string[] = [];
   const childLines: string[] = [];
 
-  // ============ DEFAULTS BY BLOCK KIND ============
-
   if (isKind(id, 'page')) {
     css['width'] = '100%';
     css['min-height'] = '100vh';
@@ -113,7 +113,6 @@ function generateBlock(
     css['padding'] = '0 16px';
   }
 
-  // FIX: check endsWith too
   if (isKind(id, 'row')) {
     css['display'] = 'flex';
     css['flex-direction'] = 'row';
@@ -155,7 +154,6 @@ function generateBlock(
     css['gap'] = '16px';
   }
 
-  // Auto-column for box/info containers
   if (id.endsWith('-box') || id.endsWith('-info') || id === 'box' || id === 'info') {
     css['display'] = 'flex';
     css['flex-direction'] = 'column';
@@ -165,8 +163,6 @@ function generateBlock(
 
   let hasTop = false, hasBottom = false, hasMiddle = false;
   let hasLeft = false, hasRight = false, hasCenter = false;
-
-  // ============ PASS 1: keywords + properties ============
 
   for (const child of block.children) {
     if (child.kind === 'keyword') {
@@ -188,14 +184,11 @@ function generateBlock(
 
       const propDef = PROPERTIES[child.name];
       if (!propDef) {
-        throw new Error(
-          `Unknown property '${child.name}' at line ${child.line}`
-        );
+        throw new Error(`Unknown property '${child.name}' at line ${child.line}`);
       }
 
       let val = propDef.transform ? propDef.transform(child.value) : child.value;
 
-      // ICON SUBSTITUTION
       if (propDef.special === 'src' && ICONS[val]) {
         val = ICONS[val];
       }
@@ -209,8 +202,6 @@ function generateBlock(
       else css[propDef.css] = val;
     }
   }
-
-  // ============ POSITIONING ============
 
   const verticalFix = hasTop || hasBottom || hasMiddle;
   let transformX = false, transformY = false;
@@ -245,15 +236,11 @@ function generateBlock(
   else if (transformX) css['transform'] = 'translateX(-50%)';
   else if (transformY) css['transform'] = 'translateY(-50%)';
 
-  // ============ PASS 2: nested blocks ============
-
   for (const child of block.children) {
     if (child.kind === 'block') {
       childLines.push(generateBlock(child, cssRules, indent + '  '));
     }
   }
-
-  // ============ PASS 3: parametric ============
 
   for (const sub of block.children) {
     let pname: string | null = null;
@@ -275,7 +262,6 @@ function generateBlock(
     else if (parsed.relation === 'left-of') css['margin-right'] = gap;
   }
 
-  // ============ SMART INPUT DETECTION ============
   const hasInputType = block.children.some(
     (c) => c.kind === 'property' && c.name === 'input-type'
   );
@@ -286,9 +272,6 @@ function generateBlock(
     finalTag = 'input';
   }
 
-  // ============ AUTO STYLING ============
-
-  // Buttons
   if (finalTag === 'button') {
     css['display'] = 'inline-flex';
     css['align-items'] = 'center';
@@ -303,7 +286,6 @@ function generateBlock(
     css['transition'] = 'all 0.2s ease';
   }
 
-  // Inputs
   if (finalTag === 'input') {
     css['border'] = css['border'] || 'none';
     css['outline'] = 'none';
@@ -311,7 +293,6 @@ function generateBlock(
     if (!css['width']) css['width'] = '100%';
   }
 
-  // Icons: proper sizing
   if (id.endsWith('-icon') || id === 'icon') {
     css['display'] = 'block';
     if (!css['width']) css['width'] = '24px';
@@ -319,26 +300,21 @@ function generateBlock(
     css['object-fit'] = 'contain';
   }
 
-  // Avatar: circular + placeholder fallback
   if (isKind(id, 'avatar') || isKind(id, 'logo')) {
     css['object-fit'] = 'cover';
     css['display'] = 'block';
     if (!attrs['src'] || attrs['src'] === 'avatar' || attrs['src'] === 'logo') {
-      // Use a placeholder SVG with rounded background
       const bg = '#8b5a44';
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="${bg}"/><circle cx="50" cy="38" r="18" fill="white" opacity="0.85"/><path d="M50 62 c-18 0 -30 12 -30 26 h60 c0 -14 -12 -26 -30 -26 z" fill="white" opacity="0.85"/></svg>`;
       attrs['src'] = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
     }
   }
 
-  // Toggle
   if (id === 'toggle' || id.startsWith('toggle-')) {
     attrs['type'] = 'checkbox';
   }
 
   cssRules[`#${id}`] = css;
-
-  // ============ BUILD HTML ============
 
   const attrStr = Object.entries(attrs)
     .map(([k, v]) => `${k}="${escapeHtml(v)}"`)
@@ -352,7 +328,6 @@ function generateBlock(
   const text = textParts.map(escapeHtml).join('');
   const innerParts: string[] = [];
 
-  // Divider with lines
   if (isKind(id, 'divider') && text) {
     return `${indent}<${finalTag} id="${id}"${attrPart}>
 ${indent}  <span class="meeel-divider-line"></span>

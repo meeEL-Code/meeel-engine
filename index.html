@@ -11,7 +11,13 @@
     <div class="logo">meeEL Page</div>
     <div class="topbar-right">
       <span id="save-indicator" class="save-indicator"></span>
-      <button id="publish-btn" class="btn-publish">Publish》</button>
+      <button id="publish-btn" class="btn-publish" title="Publish" aria-label="Publish">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
     </div>
   </header>
 
@@ -32,6 +38,65 @@
       <iframe id="preview"></iframe>
     </section>
   </main>
+
+  <!-- Publish Modal -->
+  <div class="modal-backdrop" id="publish-modal" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-brand">
+            <span>meeEL<span class="modal-brand-accent">.</span></span>
+          </div>
+          <div class="modal-subtitle">Publish &amp; Download</div>
+        </div>
+        <button class="modal-close" id="publish-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="html">HTML</button>
+        <button class="modal-tab" data-tab="css">CSS</button>
+        <button class="modal-tab" data-tab="readme">README</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="code-wrap">
+          <button class="copy-btn" id="copy-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span>Copy</span>
+          </button>
+          <pre id="modal-code"><code></code></pre>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="modal-footer-hint">Made by mee Innovations</span>
+        <button class="btn-secondary" id="download-file">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span id="download-file-label">Download HTML</span>
+        </button>
+        <button class="btn-primary" id="download-all">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Download Site (.html)</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="/src/ui/app.ts"></script>
 </body>

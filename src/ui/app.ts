@@ -650,3 +650,243 @@ editor.addEventListener('blur', () => {
 syncHighlight();
 syncGutter();
 render();
+
+/* ============ PUBLISH MODAL ============ */
+
+import { generateParts } from '../engine/generator';
+
+const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement;
+const publishModal = document.getElementById('publish-modal') as HTMLElement;
+const publishClose = document.getElementById('publish-close') as HTMLButtonElement;
+const modalCode = document.querySelector('#modal-code code') as HTMLElement;
+const modalTabs = document.querySelectorAll('.modal-tab') as NodeListOf<HTMLButtonElement>;
+const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
+const downloadFile = document.getElementById('download-file') as HTMLButtonElement;
+const downloadAll = document.getElementById('download-all') as HTMLButtonElement;
+const downloadFileLabel = document.getElementById('download-file-label') as HTMLElement;
+
+const PUBLISH_STATE_KEY = 'meeel-publish-state-v1';
+
+type PublishTab = 'html' | 'css' | 'readme';
+let currentTab: PublishTab = 'html';
+let cachedParts: { html: string; css: string; readme: string } | null = null;
+
+function savePublishState(open: boolean, tab: PublishTab) {
+  try {
+    localStorage.setItem(PUBLISH_STATE_KEY, JSON.stringify({ open, tab }));
+  } catch {}
+}
+
+function loadPublishState(): { open: boolean; tab: PublishTab } {
+  try {
+    const raw = localStorage.getItem(PUBLISH_STATE_KEY);
+    if (!raw) return { open: false, tab: 'html' };
+    const parsed = JSON.parse(raw);
+    return {
+      open: !!parsed.open,
+      tab: (parsed.tab as PublishTab) || 'html',
+    };
+  } catch {
+    return { open: false, tab: 'html' };
+  }
+}
+
+function buildReadme(meeelCode: string): string {
+  const date = new Date().toISOString().split('T')[0];
+  return `# meeEL
+
+**A language through which you can create and build everything you need.**
+
+---
+
+## About this output
+
+This project was generated with **meeEL** — a simple, English-based
+language for building user interfaces. Instead of writing HTML, CSS,
+and JavaScript by hand, you write meeEL — and it becomes real code.
+
+## How to use
+
+1. Open \`index.html\` in any browser.
+2. That's it. Everything is self-contained.
+
+No build tools. No dependencies. No setup.
+
+## The meeEL source
+
+This output was generated from the following meeEL code:
+
+\`\`\`meeel
+${meeelCode}
+\`\`\`
+
+Edit this code in **meeEL Page** and it will regenerate instantly.
+
+## Files in this folder
+
+| File          | What it is                                |
+| ------------- | ----------------------------------------- |
+| \`index.html\`  | Full page — HTML + CSS together           |
+| \`style.css\`   | Just the CSS (for reference)              |
+| \`README.md\`   | This file                                 |
+
+## About meeEL
+
+- **Language:** meeEL
+- **Editor:** meeEL Page — the official code editor
+- **Philosophy:** Simple. Readable. For everyone.
+- **Made by:** mee Innovations
+
+---
+
+*Generated on ${date} · meeEL · mee Innovations*
+`;
+}
+
+function buildParts() {
+  const tokens = lex(editor.value);
+  const ast = parse(tokens);
+  const errors = resolve(ast);
+  if (errors.length > 0) return null;
+
+  const parts = generateParts(ast);
+  const readme = buildReadme(editor.value);
+  return { html: parts.fullHtml, css: parts.css, readme };
+}
+
+function updateDownloadButtons() {
+  if (currentTab === 'html') {
+    // HTML tab: hide secondary (it does the same thing as primary)
+    downloadFile.style.display = 'none';
+  } else {
+    downloadFile.style.display = 'inline-flex';
+    if (currentTab === 'css') {
+      downloadFileLabel.textContent = 'Download .css';
+    } else {
+      downloadFileLabel.textContent = 'Download .md';
+    }
+  }
+  const primaryLabel = downloadAll.querySelector('span');
+  if (primaryLabel) primaryLabel.textContent = 'Download Site (.html)';
+}
+
+function switchTab(tab: PublishTab) {
+  currentTab = tab;
+  modalTabs.forEach((t) => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  if (!cachedParts) return;
+
+  if (tab === 'html') modalCode.textContent = cachedParts.html;
+  else if (tab === 'css') modalCode.textContent = cachedParts.css;
+  else modalCode.textContent = cachedParts.readme;
+
+  updateDownloadButtons();
+  savePublishState(true, tab);
+}
+
+function openPublish() {
+  cachedParts = buildParts();
+  if (!cachedParts) return;
+  publishModal.hidden = false;
+  switchTab(currentTab);
+}
+
+function closePublish() {
+  publishModal.hidden = true;
+  savePublishState(false, currentTab);
+}
+
+publishBtn.addEventListener('click', openPublish);
+publishClose.addEventListener('click', closePublish);
+
+publishModal.addEventListener('click', (e) => {
+  if (e.target === publishModal) closePublish();
+});
+
+// ESC to close
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !publishModal.hidden) closePublish();
+});
+
+modalTabs.forEach((t) => {
+  t.addEventListener('click', () => {
+    switchTab((t.dataset.tab as PublishTab) || 'html');
+  });
+});
+
+copyBtn.addEventListener('click', async () => {
+  const text = modalCode.textContent || '';
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  copyBtn.classList.add('copied');
+  const label = copyBtn.querySelector('span');
+  if (label) label.textContent = 'Copied';
+  setTimeout(() => {
+    copyBtn.classList.remove('copied');
+    if (label) label.textContent = 'Copy';
+  }, 1500);
+});
+
+function download(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Secondary button — downloads the CURRENT tab's file only.
+ *  - HTML tab  → index.html
+ *  - CSS tab   → style.css
+ *  - README tab → README.md
+ */
+downloadFile.addEventListener('click', () => {
+  if (!cachedParts) return;
+  if (currentTab === 'html') {
+    download('index.html', cachedParts.html, 'text/html');
+  } else if (currentTab === 'css') {
+    download('style.css', cachedParts.css, 'text/css');
+  } else {
+    download('README.md', cachedParts.readme, 'text/markdown');
+  }
+});
+
+/**
+ * Primary button — always downloads the full working site (index.html).
+ * CSS is already embedded in index.html.
+ */
+downloadAll.addEventListener('click', () => {
+  if (!cachedParts) return;
+  download('index.html', cachedParts.html, 'text/html');
+});
+
+/* ============ RESTORE PUBLISH STATE ON LOAD ============ */
+
+const initialPublishState = loadPublishState();
+if (initialPublishState.tab) {
+  currentTab = initialPublishState.tab;
+  // Set active tab visually
+  modalTabs.forEach((t) => {
+    t.classList.toggle('active', t.dataset.tab === currentTab);
+  });
+}
+if (initialPublishState.open) {
+  // Wait a moment for editor to render
+  setTimeout(() => {
+    openPublish();
+  }, 100);
+}
