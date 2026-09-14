@@ -401,6 +401,34 @@ function renderCurrentPage() {
   doc.open();
   doc.write(page.html);
   doc.close();
+
+  // After doc.write, install click interception
+  // (must run after DOM is built)
+  setTimeout(interceptPreviewLinks, 0);
+}
+
+function interceptPreviewLinks() {
+  const doc = preview.contentDocument;
+  if (!doc) return;
+
+  doc.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const linkEl = target.closest('[data-meeel-target]') as HTMLElement | null;
+    if (!linkEl) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const targetFile = linkEl.getAttribute('data-meeel-target');
+    if (!targetFile) return;
+
+    const page = allPages.find((p) => p.filename === targetFile);
+    if (page) {
+      currentPageIndex = allPages.indexOf(page);
+      updatePageSelector();
+      renderCurrentPage();
+    }
+  }, true); // capture phase
 }
 
 function updatePageSelector() {

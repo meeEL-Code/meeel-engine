@@ -6,6 +6,7 @@ import {
   KEYWORD_CSS,
   isParametricKeyword,
   parseParametric,
+  pageToFilename,
   ICONS,
 } from './registry';
 
@@ -198,6 +199,11 @@ function generateBlock(
       else if (propDef.special === 'type') attrs['type'] = val;
       else if (propDef.special === 'placeholder') attrs['placeholder'] = val;
       else if (propDef.special === 'href') attrs['href'] = val;
+      else if (propDef.special === 'open') {
+        // Convert page name → filename, then apply as navigation
+        const targetFilename = pageToFilename(val);
+        attrs['data-open'] = targetFilename;
+      }
       else if (propDef.special === 'value') attrs['value'] = val;
       else css[propDef.css] = val;
     }
@@ -312,6 +318,23 @@ function generateBlock(
 
   if (id === 'toggle' || id.startsWith('toggle-')) {
     attrs['type'] = 'checkbox';
+  }
+
+  // Navigation: convert data-open to actual behavior
+  if (attrs['data-open']) {
+    const target = attrs['data-open'];
+    delete attrs['data-open'];
+
+    // Always tag the target so preview can intercept
+    attrs['data-meeel-target'] = target;
+
+    if (finalTag === 'a') {
+      attrs['href'] = target;
+    } else {
+      attrs['onclick'] = `window.location.href='${target}'`;
+      attrs['role'] = 'link';
+      if (!css['cursor']) css['cursor'] = 'pointer';
+    }
   }
 
   cssRules[`#${id}`] = css;

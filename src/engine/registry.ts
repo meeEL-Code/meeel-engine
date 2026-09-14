@@ -131,6 +131,9 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'input-type': { css: '', special: 'type' },
   'placeholder-text': { css: '', special: 'placeholder' },
   'href': { css: '', special: 'href' },
+  'open': { css: '', special: 'open' },
+  'load': { css: '', special: 'open' },
+  'call': { css: '', special: 'open' },
   'value': { css: '', special: 'value' },
 };
 
@@ -160,4 +163,17 @@ export function parseParametric(name: string): { relation: string; reference: st
   const m = name.match(/^(above|below|left-of|right-of)-(.+)$/);
   if (!m) return null;
   return { relation: m[1], reference: m[2] };
+}
+
+/** Convert a page block name to its output filename.
+ *  page       → index.html
+ *  home-page  → home.html
+ *  chat-room  → chat-room.html
+ */
+export function pageToFilename(name: string): string {
+  if (name === 'page') return 'index.html';
+  let base = name;
+  if (name.endsWith('-page')) base = name.slice(0, -5);
+  if (!base) base = name;
+  return base + '.html';
 }

@@ -77,6 +77,23 @@ function checkBlock(
             suggestion: sug ? `Did you mean '${sug}'?` : undefined,
           });
         }
+      } else if (child.name === 'open' || child.name === 'load' || child.name === 'call') {
+        // Validate that the referenced page exists (only if it's a -page target)
+        const target = child.value;
+        if (target.endsWith('-page') || target === 'page') {
+          if (!allNames.has(target)) {
+            const pageNames = Array.from(allNames).filter(
+              (n) => n.endsWith('-page') || n === 'page'
+            );
+            const sug = findClosest(target, pageNames);
+            errors.push({
+              message: `Page '${target}' not found`,
+              line: child.line,
+              token: child.name,
+              suggestion: sug ? `Did you mean '${sug}'?` : undefined,
+            });
+          }
+        }
       } else if (!PROPERTIES[child.name]) {
         const sug = findClosest(child.name, Object.keys(PROPERTIES));
         errors.push({
