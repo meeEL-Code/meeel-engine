@@ -146,10 +146,12 @@ export function parse(tokens: Token[]): BlockNode {
 
         // ---- 3) Multi-line: name-[ \n ... ] ----
         if (isKnownProperty) {
-          const parts: string[] = [];
+          const lines: string[] = [];
+          let currentLine: string[] = [];
           while (index < tokens.length) {
             const t = tokens[index];
             if (t.type === TokenType.CLOSE) {
+              if (currentLine.length > 0) lines.push(currentLine.join(' '));
               advance();
               break;
             }
@@ -161,15 +163,17 @@ export function parse(tokens: Token[]): BlockNode {
               );
             }
             if (t.type === TokenType.NEWLINE) {
+              if (currentLine.length > 0) lines.push(currentLine.join(' '));
+              currentLine = [];
               advance();
               continue;
             }
-            parts.push(advance().value);
+            currentLine.push(advance().value);
           }
           const prop: AstNode = {
             kind: 'property',
             name,
-            value: parts.join(' ').trim(),
+            value: lines.join('\n').trim(),
             line: tok.line,
           };
           stack[stack.length - 1].children.push(prop);

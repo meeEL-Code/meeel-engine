@@ -1849,7 +1849,7 @@ function generateBlock(
       else if (propDef.special === 'placeholder') attrs['placeholder'] = val;
       else if (propDef.special === 'href') attrs['href'] = val;
       else if (propDef.special === 'on-click') {
-        const actions = val.split(';').map((s) => s.trim()).filter(Boolean);
+        const actions = val.split(/[\n;]/).map((s) => s.trim()).filter(Boolean);
         if (actions.length > 0) {
           collectedHandlers.push({ elementId: id, actions });
         }
