@@ -3825,6 +3825,72 @@ function actionToJs(action: string): string {
       const sq = JSON.stringify(source);
       return `var src = document.getElementById(${sq}); var tgt = document.getElementById(${tq}); if (src && tgt) tgt.textContent = src.textContent;`;
     }
+    case 'fetch-from': {
+      // Syntax: fetch-from <url> save-to <target>
+      // target = parts[1] = URL, parts[2] = 'save-to', parts[3] = element id
+      const url = parts[1];
+      const saveToKeyword = parts[2];
+      const saveTarget = parts[3];
+      if (!url || saveToKeyword !== 'save-to' || !saveTarget) return '';
+      const stq = JSON.stringify(saveTarget);
+      return `var __target = document.getElementById(${stq}); if (__target) __target.textContent = 'Loading...'; fetch(${JSON.stringify(url)}).then(function(r){ return r.text(); }).then(function(data){ if (__target) __target.textContent = data; }).catch(function(err){ if (__target) __target.textContent = 'Error: ' + err.message; });`;
+    }
+    case 'fetch-json': {
+      // Syntax: fetch-json <url> save-to <target>
+      // Same as fetch-from but parses JSON
+      const url = parts[1];
+      const saveToKeyword = parts[2];
+      const saveTarget = parts[3];
+      if (!url || saveToKeyword !== 'save-to' || !saveTarget) return '';
+      const stq = JSON.stringify(saveTarget);
+      return `var __target = document.getElementById(${stq}); if (__target) __target.textContent = 'Loading...'; fetch(${JSON.stringify(url)}).then(function(r){ return r.json(); }).then(function(data){ if (__target) __target.textContent = JSON.stringify(data, null, 2); }).catch(function(err){ if (__target) __target.textContent = 'Error: ' + err.message; });`;
+    }
+    case 'save-data': {
+      // Syntax: save-data <key> from <target>
+      // Saves target.textContent into localStorage[key]
+      const key = parts[1];
+      const fromKeyword = parts[2];
+      const fromTarget = parts[3];
+      if (!key) return '';
+      const kq = JSON.stringify(key);
+      if (fromKeyword === 'from' && fromTarget) {
+        const ftq = JSON.stringify(fromTarget);
+        return `var __src = document.getElementById(${ftq}); if (__src) localStorage.setItem(${kq}, __src.textContent);`;
+      }
+      // save-data <key> from-value <value>
+      if (fromKeyword === 'from-value') {
+        const value = parts.slice(3).join(' ');
+        return `localStorage.setItem(${kq}, ${JSON.stringify(value)});`;
+      }
+      return '';
+    }
+    case 'load-data': {
+      // Syntax: load-data <key> into <target>
+      const key = parts[1];
+      const intoKeyword = parts[2];
+      const intoTarget = parts[3];
+      if (!key || intoKeyword !== 'into' || !intoTarget) return '';
+      const kq = JSON.stringify(key);
+      const itq = JSON.stringify(intoTarget);
+      return `var __tgt = document.getElementById(${itq}); var __val = localStorage.getItem(${kq}); if (__tgt && __val !== null) __tgt.textContent = __val;`;
+    }
+    case 'clear-data': {
+      // Syntax: clear-data <key>
+      const key = parts[1];
+      if (!key) return '';
+      return `localStorage.removeItem(${JSON.stringify(key)});`;
+    }
+    case 'set-random': {
+      // Syntax: set-random <target> <min>-<max>
+      // Example: set-random dice-text 1-6
+      const range = parts[2];
+      if (!range) return '';
+      const match = range.match(/^(-?\d+)-(\d+)$/);
+      if (!match) return '';
+      const min = parseInt(match[1], 10);
+      const max = parseInt(match[2], 10);
+      return `var el = document.getElementById(${tq}); if (el) el.textContent = String(Math.floor(Math.random() * (${max} - ${min} + 1)) + ${min});`;
+    }
     default:
       return '';
   }
