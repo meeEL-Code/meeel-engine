@@ -1357,6 +1357,39 @@ function generateBlock(
 
   const id = block.name;
 
+  // ============ SPECIAL: LOOP ============
+  const loopMatch = id.match(/^loop-(\d+)$/);
+  if (loopMatch) {
+    const times = parseInt(loopMatch[1], 10);
+    if (times > 0 && times <= 100) {
+      const outputs: string[] = [];
+      for (let i = 0; i < times; i++) {
+        for (const child of block.children) {
+          if (child.kind === 'block') {
+            const cloned = cloneBlockWithSuffix(child, String(i + 1));
+            outputs.push(generateBlock(cloned, cssRules, indent));
+          }
+        }
+      }
+      return outputs.join('\n');
+    }
+    return '';
+  }
+
+  // ============ SPECIAL: VAR (hidden variable) ============
+  const varMatch = id.match(/^var-([a-z][a-z0-9-]*)$/);
+  if (varMatch) {
+    const varName = varMatch[1];
+    let initialValue = '';
+    for (const child of block.children) {
+      if (child.kind === 'property' && child.name === 'content') {
+        initialValue = child.value;
+        break;
+      }
+    }
+    return `${indent}<span id="${varName}" style="display:none">${escapeHtml(initialValue)}</span>`;
+  }
+
   // ============ SPECIAL: SIDEBAR ============
   if (isKind(id, 'sidebar')) {
     return renderSidebar(block, cssRules, indent);
@@ -3764,7 +3797,51 @@ function actionToJs(action: string): string {
       const value = parts.slice(2).join(' ');
       return `var el = document.getElementById(${tq}); if (el) el.style.backgroundColor = ${JSON.stringify(value)};`;
     }
+    case 'add': {
+      const num = parseFloat(parts[2]) || 0;
+      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + ${num});`;
+    }
+    case 'subtract': {
+      const num = parseFloat(parts[2]) || 0;
+      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) - ${num});`;
+    }
+    case 'multiply': {
+      const num = parseFloat(parts[2]) || 0;
+      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) * ${num});`;
+    }
+    case 'set-value': {
+      const value = parts.slice(2).join(' ');
+      const num = parseFloat(value);
+      if (!isNaN(num) && isFinite(num)) {
+        return `var el = document.getElementById(${tq}); if (el) el.textContent = String(${num});`;
+      }
+      return `var el = document.getElementById(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
+    }
+    case 'show-data': {
+      // Syntax: show-data <target> <source>
+      // Copies source.textContent into target.textContent
+      const source = parts[2];
+      if (!source) return '';
+      const sq = JSON.stringify(source);
+      return `var src = document.getElementById(${sq}); var tgt = document.getElementById(${tq}); if (src && tgt) tgt.textContent = src.textContent;`;
+    }
     default:
       return '';
   }
+}
+
+/* ============ LOOP HELPER ============ */
+
+function cloneBlockWithSuffix(block: BlockNode, suffix: string): BlockNode {
+  return {
+    kind: 'block',
+    name: block.name + '-' + suffix,
+    children: block.children.map((child) => {
+      if (child.kind === 'block') {
+        return cloneBlockWithSuffix(child, suffix);
+      }
+      return { ...child };
+    }),
+    line: block.line,
+  };
 }
