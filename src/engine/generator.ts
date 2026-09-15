@@ -889,6 +889,9 @@ function isKind(id: string, kind: string): boolean {
 
 type ModeKind = 'mobile' | 'tablet' | 'desktop';
 
+// Collect on-click handlers during block generation
+let collectedHandlers: Array<{ elementId: string; actions: string[] }> = [];
+
 function getModeKind(name: string): ModeKind | null {
   if (name === 'mobile-mode' || name.startsWith('mobile-mode-')) return 'mobile';
   if (name === 'tablet-mode' || name.startsWith('tablet-mode-')) return 'tablet';
@@ -901,18 +904,21 @@ type CSSBucket = Record<string, Record<string, string>>;
 export interface GenerateParts {
   html: string;
   css: string;
-  fullHtml: string;    // for preview — CSS embedded
-  htmlFile: string;    // for publish — links to external CSS file
+  js: string;          // generated JavaScript
+  fullHtml: string;    // for preview — CSS + JS embedded
+  htmlFile: string;    // for publish — links to external CSS + JS files
 }
 
 export interface PageOutput {
   name: string;
   filename: string;      // e.g. "index.html"
   cssFilename: string;   // e.g. "style.css"
+  jsFilename: string;    // e.g. "script.js"
   label: string;
   html: string;          // embedded HTML (for preview)
   htmlFile: string;      // external-linked HTML (for publish/download)
   css: string;           // the CSS for this page
+  js: string;            // the JS for this page
 }
 
 /* ============ MAIN: generate all pages ============ */
@@ -933,24 +939,29 @@ export function generatePages(root: BlockNode): PageOutput[] {
     };
     const { filename, label } = pageFilename(b.name);
 
-    // CSS filename: single 'page' → 'style.css'; named pages → <pagename>.css
     let cssFilename: string;
+    let jsFilename: string;
     if (b.name === 'page') {
       cssFilename = 'style.css';
+      jsFilename = 'script.js';
     } else {
-      cssFilename = filename.replace(/\.html$/, '.css');
+      const base = filename.replace(/\.html$/, '');
+      cssFilename = base + '.css';
+      jsFilename = base + '.js';
     }
 
-    const parts = generateParts(singleRoot, cssFilename);
+    const parts = generateParts(singleRoot, cssFilename, jsFilename);
 
     return {
       name: b.name,
       filename,
       cssFilename,
+      jsFilename,
       label,
       html: parts.fullHtml,
       htmlFile: parts.htmlFile,
       css: parts.css,
+      js: parts.js,
     };
   });
 }
@@ -972,14 +983,20 @@ function pageFilename(name: string): { filename: string; label: string } {
 
 /* ============ generateParts — handles responsive modes ============ */
 
-export function generateParts(root: BlockNode, cssFilename = 'style.css'): GenerateParts {
+export function generateParts(
+  root: BlockNode,
+  cssFilename = 'style.css',
+  jsFilename = 'script.js'
+): GenerateParts {
+  collectedHandlers = [];
   const page = root.children.find((c) => c.kind === 'block') as BlockNode | undefined;
   if (!page) {
     return {
       html: '',
       css: BASE_CSS,
-      fullHtml: wrapHtml('', BASE_CSS),
-      htmlFile: wrapHtmlExternal('', cssFilename),
+      js: '',
+      fullHtml: wrapHtml('', BASE_CSS, ''),
+      htmlFile: wrapHtmlExternal('', cssFilename, jsFilename),
     };
   }
 
@@ -1163,7 +1180,11 @@ export function generateParts(root: BlockNode, cssFilename = 'style.css'): Gener
   const fullHtml = wrapHtml(finalHtml, css);
   const htmlFile = wrapHtmlExternal(finalHtml, cssFilename);
 
-  return { html: finalHtml, css, fullHtml, htmlFile };
+  const js = generateJavaScript(collectedHandlers);
+  const fullHtmlWithJs = wrapHtml(finalHtml, css, js);
+  const htmlFileWithJs = wrapHtmlExternal(finalHtml, cssFilename, jsFilename);
+
+  return { html: finalHtml, css, js, fullHtml: fullHtmlWithJs, htmlFile: htmlFileWithJs };
 }
 
 const modeOnlyHtml: Record<ModeKind, string[]> = { mobile: [], tablet: [], desktop: [] };
@@ -1288,7 +1309,8 @@ function buildCssText(
   return parts.join('\n\n');
 }
 
-function wrapHtml(html: string, css: string): string {
+function wrapHtml(html: string, css: string, js: string = ''): string {
+  const scriptTag = js ? `\n<script>\n${js}\n</script>` : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1301,12 +1323,12 @@ ${css}
 </style>
 </head>
 <body>
-${html}
+${html}${scriptTag}
 </body>
 </html>`;
 }
 
-function wrapHtmlExternal(html: string, cssFilename: string): string {
+function wrapHtmlExternal(html: string, cssFilename: string, jsFilename: string = 'script.js'): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1318,6 +1340,7 @@ function wrapHtmlExternal(html: string, cssFilename: string): string {
 </head>
 <body>
 ${html}
+<script src="${jsFilename}" defer></script>
 </body>
 </html>`;
 }
@@ -1530,6 +1553,12 @@ function generateBlock(
       else if (propDef.special === 'type') attrs['type'] = val;
       else if (propDef.special === 'placeholder') attrs['placeholder'] = val;
       else if (propDef.special === 'href') attrs['href'] = val;
+      else if (propDef.special === 'on-click') {
+        const actions = val.split(';').map((s) => s.trim()).filter(Boolean);
+        if (actions.length > 0) {
+          collectedHandlers.push({ elementId: id, actions });
+        }
+      }
       else if (propDef.special === 'open') {
         const targetFilename = pageToFilename(val);
         attrs['data-meeel-target'] = targetFilename;
@@ -3623,4 +3652,62 @@ function renderToggle(
 ${indent}  <input type="checkbox"${checkedAttr}>
 ${indent}  <span class="meeel-toggle-slider"></span>${labelHtml}
 ${indent}</label>`;
+}
+
+/* ============ JAVASCRIPT GENERATOR ============ */
+
+function generateJavaScript(
+  handlers: Array<{ elementId: string; actions: string[] }>
+): string {
+  if (handlers.length === 0) return '';
+
+  const lines: string[] = [];
+  lines.push('/* meeEL — generated script */');
+  lines.push('(function () {');
+  lines.push("  'use strict';");
+
+  for (const h of handlers) {
+    lines.push('');
+    lines.push(`  document.getElementById(${JSON.stringify(h.elementId)})?.addEventListener('click', function () {`);
+    for (const act of h.actions) {
+      const code = actionToJs(act);
+      if (code) lines.push('    ' + code);
+    }
+    lines.push('  });');
+  }
+
+  lines.push('');
+  lines.push('})();');
+  return lines.join('\n');
+}
+
+function actionToJs(action: string): string {
+  const trimmed = action.trim();
+  if (!trimmed) return '';
+
+  const parts = trimmed.split(/\s+/);
+  const verb = parts[0];
+  const target = parts[1];
+  if (!target) return '';
+
+  const tq = JSON.stringify(target);
+
+  switch (verb) {
+    case 'show':
+      return `var el = document.getElementById(${tq}); if (el) el.style.display = '';`;
+    case 'hide':
+      return `var el = document.getElementById(${tq}); if (el) el.style.display = 'none';`;
+    case 'toggle':
+      return `var el = document.getElementById(${tq}); if (el) { var h = el.style.display === 'none' || getComputedStyle(el).display === 'none'; el.style.display = h ? 'block' : 'none'; }`;
+    case 'increment':
+      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + 1);`;
+    case 'decrement':
+      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) - 1);`;
+    case 'set-text': {
+      const value = parts.slice(2).join(' ');
+      return `var el = document.getElementById(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
+    }
+    default:
+      return '';
+  }
 }

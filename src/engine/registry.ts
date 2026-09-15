@@ -202,6 +202,7 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'input-type': { css: '', special: 'type' },
   'placeholder-text': { css: '', special: 'placeholder' },
   'href': { css: '', special: 'href' },
+  'on-click': { css: '', special: 'on-click' },
   'open': { css: '', special: 'open' },
   'load': { css: '', special: 'open' },
   'call': { css: '', special: 'open' },

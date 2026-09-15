@@ -781,12 +781,13 @@ const downloadFileLabel = document.getElementById('download-file-label') as HTML
 
 const PUBLISH_STATE_KEY = 'meeel-publish-state-v1';
 
-type PublishTab = 'meeel' | 'html' | 'css' | 'readme';
+type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'readme';
 let currentTab: PublishTab = 'meeel';
 let cachedParts: {
   meeel: string;
   html: string;
   css: string;
+  js: string;
   readme: string;
   pages: PageOutput[];
 } | null = null;
@@ -865,9 +866,10 @@ function buildParts() {
   const currentPage = allPages[currentPageIndex];
   const readme = buildReadme(editor.value, allPages);
   return {
-    meeel: editor.value,          // source code
-    html: currentPage.htmlFile,   // external-link version
+    meeel: editor.value,
+    html: currentPage.htmlFile,
     css: currentPage.css,
+    js: currentPage.js || '/* No interactivity in this page. */',
     readme,
     pages: allPages,
   };
@@ -880,6 +882,8 @@ function updateDownloadButtons() {
     downloadFileLabel.textContent = 'Download .html';
   } else if (currentTab === 'css') {
     downloadFileLabel.textContent = 'Download .css';
+  } else if (currentTab === 'js') {
+    downloadFileLabel.textContent = 'Download .js';
   } else {
     downloadFileLabel.textContent = 'Download .md';
   }
@@ -892,6 +896,7 @@ function switchTab(tab: PublishTab) {
   if (tab === 'meeel') modalCode.textContent = cachedParts.meeel;
   else if (tab === 'html') modalCode.textContent = cachedParts.html;
   else if (tab === 'css') modalCode.textContent = cachedParts.css;
+  else if (tab === 'js') modalCode.textContent = cachedParts.js;
   else modalCode.textContent = cachedParts.readme;
   updateDownloadButtons();
   savePublishState(true, tab);
@@ -963,13 +968,13 @@ downloadFile.addEventListener('click', () => {
   const currentPage = allPages[currentPageIndex];
   if (currentTab === 'meeel') {
     const filename = currentPage.filename.replace(/\.html$/, '.meeel');
-    // Use application/octet-stream — browsers respect the exact filename
-    // (text/plain on Android Chrome appends .txt to unknown extensions)
     download(filename, cachedParts.meeel, 'application/octet-stream');
   } else if (currentTab === 'html') {
     download(currentPage.filename, currentPage.htmlFile, 'text/html');
   } else if (currentTab === 'css') {
     download(currentPage.cssFilename, currentPage.css, 'text/css');
+  } else if (currentTab === 'js') {
+    download(currentPage.jsFilename, currentPage.js || '/* No interactivity */', 'application/octet-stream');
   } else {
     download('README.md', cachedParts.readme, 'text/markdown');
   }
@@ -991,6 +996,9 @@ downloadAll.addEventListener('click', async () => {
     for (const page of cachedParts.pages) {
       zip.file(page.filename, page.htmlFile);
       zip.file(page.cssFilename, page.css);
+      if (page.js && page.js.trim().length > 0) {
+        zip.file(page.jsFilename, page.js);
+      }
     }
     // meeEL source
     const firstPage = cachedParts.pages[0];
