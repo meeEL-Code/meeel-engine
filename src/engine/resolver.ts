@@ -47,13 +47,9 @@ function checkBlock(
     if (child.kind === 'block') {
       const def = resolveBlock(child.name);
       if (!def) {
-        const sug = findClosest(child.name, allBlockNames());
-        errors.push({
-          message: `Unknown block '${child.name}'`,
-          line: child.line,
-          token: child.name,
-          suggestion: sug ? `Did you mean '${sug}'?` : undefined,
-        });
+        // Unknown block — treat as free-form <div>, no error.
+        // Still recurse to validate children (properties, etc.)
+        checkBlock(child, allNames, errors, block.name);
         continue;
       }
 

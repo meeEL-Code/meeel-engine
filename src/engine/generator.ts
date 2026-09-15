@@ -1352,10 +1352,8 @@ function generateBlock(
   cssRules: CSSBucket,
   indent: string
 ): string {
-  const def = resolveBlock(block.name);
-  if (!def) {
-    throw new Error(`Unknown block '${block.name}' at line ${block.line}`);
-  }
+  const def = resolveBlock(block.name) || { tag: 'div' };
+  // Unknown block names fall back to <div> — meeEL allows free-form naming.
 
   const id = block.name;
 
@@ -3693,12 +3691,63 @@ function actionToJs(action: string): string {
   const tq = JSON.stringify(target);
 
   switch (verb) {
+    case 'if': {
+      // Syntax: if <target> is-<value> <action> <action-target>
+      // Example: if counter is-5 show win-message
+      const condTarget = parts[1];
+      const comparison = parts[2];
+      const subAction = parts.slice(3).join(' ');
+
+      if (!condTarget || !comparison || !subAction) return '';
+
+      const ctq = JSON.stringify(condTarget);
+
+      // Parse comparison operator
+      let jsOp = '===';
+      let cmpValue = '';
+
+      if (comparison.startsWith('is-not-')) {
+        jsOp = '!==';
+        cmpValue = comparison.slice(7);
+      } else if (comparison.startsWith('is-greater-than-')) {
+        jsOp = '>';
+        cmpValue = comparison.slice(16);
+      } else if (comparison.startsWith('is-less-than-')) {
+        jsOp = '<';
+        cmpValue = comparison.slice(13);
+      } else if (comparison.startsWith('is-at-least-')) {
+        jsOp = '>=';
+        cmpValue = comparison.slice(12);
+      } else if (comparison.startsWith('is-at-most-')) {
+        jsOp = '<=';
+        cmpValue = comparison.slice(11);
+      } else if (comparison.startsWith('is-')) {
+        jsOp = '===';
+        cmpValue = comparison.slice(3);
+      } else {
+        return '';
+      }
+
+      const subJs = actionToJs(subAction);
+      if (!subJs) return '';
+
+      // Determine if value is numeric
+      const numVal = Number(cmpValue);
+      const isNumeric = !isNaN(numVal) && isFinite(numVal);
+
+      const valueExpr = isNumeric ? String(numVal) : JSON.stringify(cmpValue);
+      const parseExpr = isNumeric
+        ? `parseInt(el.textContent, 10) || 0`
+        : `(el.textContent || '').trim()`;
+
+      return `var el = document.getElementById(${ctq}); if (el) { var v = ${parseExpr}; if (v ${jsOp} ${valueExpr}) { ${subJs} } }`;
+    }
     case 'show':
-      return `var el = document.getElementById(${tq}); if (el) el.style.display = '';`;
+      return `var el = document.getElementById(${tq}); if (el) el.style.setProperty('display', 'block', 'important');`;
     case 'hide':
-      return `var el = document.getElementById(${tq}); if (el) el.style.display = 'none';`;
+      return `var el = document.getElementById(${tq}); if (el) el.style.setProperty('display', 'none', 'important');`;
     case 'toggle':
-      return `var el = document.getElementById(${tq}); if (el) { var h = el.style.display === 'none' || getComputedStyle(el).display === 'none'; el.style.display = h ? 'block' : 'none'; }`;
+      return `var el = document.getElementById(${tq}); if (el) { var cs = getComputedStyle(el).display; var h = cs === 'none'; el.style.setProperty('display', h ? 'block' : 'none', 'important'); }`;
     case 'increment':
       return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + 1);`;
     case 'decrement':
@@ -3706,6 +3755,14 @@ function actionToJs(action: string): string {
     case 'set-text': {
       const value = parts.slice(2).join(' ');
       return `var el = document.getElementById(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
+    }
+    case 'set-color': {
+      const value = parts.slice(2).join(' ');
+      return `var el = document.getElementById(${tq}); if (el) el.style.color = ${JSON.stringify(value)};`;
+    }
+    case 'set-bg': {
+      const value = parts.slice(2).join(' ');
+      return `var el = document.getElementById(${tq}); if (el) el.style.backgroundColor = ${JSON.stringify(value)};`;
     }
     default:
       return '';
