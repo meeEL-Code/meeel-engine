@@ -22,6 +22,33 @@ button { font-family: inherit; }
   background: currentColor;
   opacity: 0.3;
 }
+/* ============ Video ============ */
+.meeel-video {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  border-radius: var(--video-radius, 16px);
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--video-shadow, 0 8px 24px rgba(0,0,0,0.15));
+}
+.meeel-video video,
+.meeel-video iframe {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: none;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+.meeel-video-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
 /* ============ Color Bar (full) ============ */
 .meeel-colorbar {
   display: block;
@@ -1720,6 +1747,12 @@ function generateBlock(
     return renderRadioGroup(block, cssRules, indent);
   }
 
+  // ============ SPECIAL: VIDEO ============
+  // Only exact 'video' or names ENDING with '-video'
+  if (id === 'video' || id.endsWith('-video')) {
+    return renderVideo(block, cssRules, indent);
+  }
+
   // ============ SPECIAL: COLOR BAR ============
   if (id === 'color-bar' || id.endsWith('-color-bar') || isKind(id, 'color-bar')) {
     // Only the full color-bar, not mini
@@ -2071,6 +2104,135 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ VIDEO RENDERER ============ */
+
+function extractYouTubeId(url: string): string | null {
+  // Handles:
+  //   https://www.youtube.com/watch?v=ABC123
+  //   https://youtu.be/ABC123
+  //   https://youtube.com/embed/ABC123
+  //   https://www.youtube.com/shorts/ABC123
+  const m1 = url.match(/[?&]v=([A-Za-z0-9_-]{6,})/);
+  if (m1) return m1[1];
+  const m2 = url.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/);
+  if (m2) return m2[1];
+  const m3 = url.match(/\/embed\/([A-Za-z0-9_-]{6,})/);
+  if (m3) return m3[1];
+  const m4 = url.match(/\/shorts\/([A-Za-z0-9_-]{6,})/);
+  if (m4) return m4[1];
+  return null;
+}
+
+function renderVideo(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+
+  let srcUrl = '';
+  let youtubeUrl = '';
+  let radius = '';
+  let shadow = '';
+  let autoplay = false;
+  let loop = false;
+  let muted = false;
+  let controls = true;
+
+  let hasTop = false, hasBottom = false, hasMiddle = false;
+  let hasLeft = false, hasRight = false, hasCenter = false;
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      const kw = child.name;
+      if (kw === 'autoplay') autoplay = true;
+      else if (kw === 'loop') loop = true;
+      else if (kw === 'muted') muted = true;
+      else if (kw === 'no-controls') controls = false;
+
+      if (POSITION_KEYWORDS.has(kw)) {
+        switch (kw) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+        }
+      } else if (KEYWORD_CSS[kw]) {
+        Object.assign(wrapperCss, KEYWORD_CSS[kw]);
+      }
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'src') { srcUrl = child.value; continue; }
+      if (propDef.special === 'youtube-url') { youtubeUrl = child.value; continue; }
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'border-radius') { radius = val; continue; }
+      if (propDef.css === 'box-shadow') { shadow = val; continue; }
+      wrapperCss[propDef.css] = val;
+    }
+  }
+
+  applyPositioning(wrapperCss, { hasTop, hasBottom, hasMiddle, hasLeft, hasRight, hasCenter });
+  applyParametric(wrapperCss, block);
+
+  if (radius) wrapperCss['--video-radius'] = radius;
+  if (shadow) wrapperCss['--video-shadow'] = shadow;
+  cssRules[id] = wrapperCss;
+
+  // YouTube embed
+  if (youtubeUrl) {
+    const videoId = extractYouTubeId(youtubeUrl);
+    if (!videoId) {
+      return `${indent}<div id="${id}" class="meeel-video" style="padding: 40px; color: #fff; text-align: center;">
+${indent}  Could not read YouTube link
+${indent}</div>`;
+    }
+    const params = new URLSearchParams();
+    if (autoplay) params.set('autoplay', '1');
+    if (loop) { params.set('loop', '1'); params.set('playlist', videoId); }
+    if (muted) params.set('mute', '1');
+    const paramStr = params.toString();
+    const embedUrl = `https://www.youtube.com/embed/${videoId}${paramStr ? '?' + paramStr : ''}`;
+    return `${indent}<div id="${id}" class="meeel-video">
+${indent}  <iframe
+${indent}    src="${escapeHtml(embedUrl)}"
+${indent}    title="YouTube video"
+${indent}    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+${indent}    allowfullscreen
+${indent}    loading="lazy">
+${indent}  </iframe>
+${indent}</div>`;
+  }
+
+  // Regular video src
+  if (!srcUrl) {
+    return `${indent}<div id="${id}" class="meeel-video" style="padding: 40px; color: #888; text-align: center; background: #1a1a1a;">
+${indent}  No video source
+${indent}</div>`;
+  }
+
+  const attrs: string[] = [];
+  if (controls) attrs.push('controls');
+  if (autoplay) attrs.push('autoplay');
+  if (loop) attrs.push('loop');
+  if (muted) attrs.push('muted');
+  attrs.push('playsinline');
+  const attrStr = attrs.join(' ');
+
+  return `${indent}<div id="${id}" class="meeel-video">
+${indent}  <video ${attrStr}>
+${indent}    <source src="${escapeHtml(srcUrl)}" type="video/mp4">
+${indent}  </video>
+${indent}</div>`;
 }
 
 /* ============ COLOR BAR RENDERER ============ */
@@ -4750,6 +4912,16 @@ case 'beep': {
       const mq = JSON.stringify(mSrc);
       const sq = JSON.stringify(sSrc);
       return `var __tgt = __meeel_find(${tq2}); var __h = __meeel_find(${hq}); var __m = __meeel_find(${mq}); var __s = __meeel_find(${sq}); if (__tgt) { var __hv = __h ? (parseInt((__h.value !== undefined && __h.value !== null) ? __h.value : __h.textContent, 10) || 0) : 0; var __mv = __m ? (parseInt((__m.value !== undefined && __m.value !== null) ? __m.value : __m.textContent, 10) || 0) : 0; var __sv = __s ? (parseInt((__s.value !== undefined && __s.value !== null) ? __s.value : __s.textContent, 10) || 0) : 0; __tgt.textContent = String(__hv * 3600 + __mv * 60 + __sv); }`;
+    }
+    case 'load-video': {
+      // Syntax: load-video <target> from <source-input>
+      const videoTarget = parts[1];
+      const fromKw = parts[2];
+      const urlSource = parts[3];
+      if (!videoTarget || fromKw !== 'from' || !urlSource) return '';
+      const vtq = JSON.stringify(videoTarget);
+      const usq = JSON.stringify(urlSource);
+      return `var __tgt = __meeel_find(${vtq}); var __src = __meeel_find(${usq}); if (__tgt && __src) { var __url = (__src.value !== undefined && __src.value !== null) ? __src.value : (__src.textContent || ''); __url = __url.trim(); if (__url) { var __yt = __url.match(/[?&]v=([A-Za-z0-9_-]{6,})/) || __url.match(/youtu\\.be\\/([A-Za-z0-9_-]{6,})/) || __url.match(/\\/embed\\/([A-Za-z0-9_-]{6,})/) || __url.match(/\\/shorts\\/([A-Za-z0-9_-]{6,})/); if (__yt) { __tgt.innerHTML = '<iframe src="https://www.youtube.com/embed/' + __yt[1] + '" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>'; } else { __tgt.innerHTML = '<video controls playsinline><source src="' + __url + '" type="video/mp4"></video>'; } } }`;
     }
     default:
       return '';

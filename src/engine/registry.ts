@@ -64,6 +64,7 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
   'option': { tag: 'option' },
   'option-group': { tag: 'div' },
   'custom-select': { tag: 'div' },
+  'video': { tag: 'video' },
   'color-bar': { tag: 'div' },
   'mini-color-bar': { tag: 'div' },
   'colors': { tag: 'div' },
@@ -112,6 +113,7 @@ export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
   { suffix: '-line-chart', def: { tag: 'div' } },
   { suffix: '-donut-chart', def: { tag: 'div' } },
   { suffix: '-icon', def: { tag: 'img' } },
+  { suffix: '-video', def: { tag: 'video' } },
   { suffix: '-text', def: { tag: 'span' } },
   { suffix: '-image', def: { tag: 'img' } },
   { suffix: '-avatar', def: { tag: 'img' } },
@@ -142,6 +144,11 @@ export const SUFFIX_BLOCKS: Array<{ suffix: string; def: BlockDef }> = [
 export function resolveBlock(name: string): BlockDef | null {
   // 1) Exact match
   if (FIXED_BLOCKS[name]) return FIXED_BLOCKS[name];
+
+  // 1.1) Keep blocks: keep-* → hidden span for storing state
+  if (/^keep-[a-z][a-z0-9-]*$/.test(name)) {
+    return { tag: 'span' };
+  }
 
   // 1.5) Timer block: every-N-second / every-N-seconds / every-N-minute / every-N-hour
   if (/^every-\d+-(second|seconds|minute|minutes|hour|hours)$/.test(name)) {
@@ -213,6 +220,7 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'placeholder-text': { css: '', special: 'placeholder' },
   'href': { css: '', special: 'href' },
   'on-click': { css: '', special: 'on-click' },
+  'youtube': { css: '', special: 'youtube-url' },
   'open': { css: '', special: 'open' },
   'from-toggle': { css: '', special: 'from-toggle' },
   'check-color': { css: '', special: 'input-check-color' },
