@@ -188,11 +188,29 @@ function syncGutter() {
   gutter.scrollTop = editor.scrollTop;
 }
 
-function syncHighlight() {
-  highlightOut.innerHTML = highlight(editor.value) + '\n';
+let __lastHighlightedText: string | null = null;
+
+function syncHighlight(force = false) {
+  const currentText = editor.value;
+  if (!force && currentText === __lastHighlightedText) {
+    // Nothing changed — just sync scroll
+    const pre = highlightOut.parentElement as HTMLPreElement;
+    pre.scrollTop = editor.scrollTop;
+    pre.scrollLeft = editor.scrollLeft;
+    return;
+  }
+  __lastHighlightedText = currentText;
+
+  const t0 = performance.now();
+  highlightOut.innerHTML = highlight(currentText) + '\n';
   const pre = highlightOut.parentElement as HTMLPreElement;
   pre.scrollTop = editor.scrollTop;
   pre.scrollLeft = editor.scrollLeft;
+  const t1 = performance.now();
+  if (t1 - t0 > 50) {
+    // Only log slow highlights for debugging
+    console.debug(`Highlight took ${Math.round(t1 - t0)}ms for ${currentText.length} chars`);
+  }
 }
 
 editor.addEventListener('scroll', () => {
@@ -672,13 +690,40 @@ function renderMessage(title: string, body: string, isPanel = false) {
 
 /* ============ EVENTS ============ */
 
+// Debounce timers for performance
+let highlightDebounce: number | undefined;
+let renderDebounce: number | undefined;
+
+function scheduleHighlight() {
+  if (highlightDebounce) clearTimeout(highlightDebounce);
+  highlightDebounce = window.setTimeout(() => {
+    syncHighlight();
+    syncGutter();
+  }, 80);
+}
+
+function scheduleRender() {
+  if (renderDebounce) clearTimeout(renderDebounce);
+  renderDebounce = window.setTimeout(render, 400);
+}
+
 editor.addEventListener('input', () => {
-  syncHighlight();
-  syncGutter();
+  const len = editor.value.length;
+  if (len > 3000) {
+    // Very large file — use slower debounce to avoid freezing
+    if (highlightDebounce) clearTimeout(highlightDebounce);
+    highlightDebounce = window.setTimeout(() => {
+      syncHighlight();
+      syncGutter();
+    }, 200);
+    if (renderDebounce) clearTimeout(renderDebounce);
+    renderDebounce = window.setTimeout(render, 800);
+  } else {
+    scheduleHighlight();
+    scheduleRender();
+  }
   updateSuggestions();
   scheduleSave();
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = window.setTimeout(render, 200);
 });
 
 editor.addEventListener('click', () => {

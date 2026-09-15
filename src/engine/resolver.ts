@@ -67,6 +67,11 @@ function checkBlock(
 
       checkBlock(child, allNames, errors, block.name);
     } else if (child.kind === 'property') {
+      // Custom color names inside 'colors' block — skip property validation
+      if (block.name === 'colors') {
+        continue;
+      }
+
       if (isParametricKeyword(child.name)) {
         const parsed = parseParametric(child.name);
         if (parsed && !allNames.has(parsed.reference)) {

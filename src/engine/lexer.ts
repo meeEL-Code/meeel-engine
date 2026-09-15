@@ -54,26 +54,44 @@ export function lex(source: string): Token[] {
       continue;
     }
 
-    // Name (starts with lowercase letter)
-    if (ch >= 'a' && ch <= 'z') {
+    // Name — allow uppercase start ONLY if followed immediately by -[
+    // (e.g. Pink-[#ec4899] inside colors block)
+    // Otherwise names start with lowercase letter.
+    const isUpperStart = ch >= 'A' && ch <= 'Z';
+    const isLowerStart = ch >= 'a' && ch <= 'z';
+
+    if (isUpperStart || isLowerStart) {
       const startLine = line;
       const startCol = col;
       let name = '';
 
+      // Consume the name (allowing letters + digits + hyphens + uppercase)
       while (i < source.length) {
         const c = peek();
-        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
           name += advance();
         } else if (c === '-') {
-          // only include '-' if followed by letter or digit
           const next = peek(1);
-          if ((next >= 'a' && next <= 'z') || (next >= '0' && next <= '9')) {
+          if (
+            (next >= 'a' && next <= 'z') ||
+            (next >= 'A' && next <= 'Z') ||
+            (next >= '0' && next <= '9')
+          ) {
             name += advance();
           } else {
             break;
           }
         } else {
           break;
+        }
+      }
+
+      // If name starts with uppercase, ONLY allow it when followed by -[
+      if (isUpperStart) {
+        if (!(peek() === '-' && peek(1) === '[')) {
+          throw new Error(
+            `Unexpected character '${name[0]}' at line ${startLine}, col ${startCol}`
+          );
         }
       }
 

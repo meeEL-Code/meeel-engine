@@ -22,6 +22,257 @@ button { font-family: inherit; }
   background: currentColor;
   opacity: 0.3;
 }
+/* ============ Color Bar (full) ============ */
+.meeel-colorbar {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  background: var(--colorbar-bg, #1a1f2e);
+  border-radius: 16px;
+  padding: 24px;
+  font-family: inherit;
+  color: #ffffff;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.meeel-colorbar-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+.meeel-colorbar-hint {
+  font-size: 13px;
+  color: #8892a6;
+  margin-bottom: 20px;
+}
+.meeel-colorbar-track {
+  position: relative;
+  width: 100%;
+  height: 56px;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  background: linear-gradient(to right,
+    hsl(0,90%,60%) 0%,
+    hsl(30,90%,60%) 12.5%,
+    hsl(60,90%,60%) 25%,
+    hsl(120,90%,60%) 37.5%,
+    hsl(180,90%,60%) 50%,
+    hsl(210,90%,60%) 62.5%,
+    hsl(240,90%,60%) 75%,
+    hsl(300,90%,60%) 87.5%,
+    hsl(330,90%,60%) 100%);
+}
+.meeel-colorbar-track::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 100%;
+  background: radial-gradient(circle at 70% 50%,
+    hsl(340,90%,60%) 0%,
+    hsl(0,90%,60%) 40%,
+    transparent 75%);
+  pointer-events: none;
+}
+.meeel-colorbar-indicator {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 48px;
+  height: 48px;
+  border: 3px solid #ffffff;
+  border-radius: 12px;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  pointer-events: none;
+  transition: left 0.08s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.meeel-colorbar-check {
+  color: #ffffff;
+  display: block;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+.meeel-colorbar-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.meeel-colorbar-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: #EC4899;
+  box-shadow: 0 0 18px 2px rgba(236,72,153,0.5);
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+.meeel-colorbar-meta {
+  flex: 1;
+  min-width: 0;
+}
+.meeel-colorbar-hex {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  font-family: ui-monospace, monospace;
+}
+.meeel-colorbar-name {
+  font-size: 12px;
+  color: #8892a6;
+  margin-top: 2px;
+}
+.meeel-colorbar-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255,255,255,0.06);
+  color: #ffffff;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.meeel-colorbar-copy:hover {
+  background: rgba(255,255,255,0.12);
+}
+.meeel-colorbar-copy.copied {
+  background: rgba(22,163,74,0.25);
+  color: #86efac;
+}
+
+/* ============ Color Bar - Segmented (custom colors) ============ */
+.meeel-colorbar-segments {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+.meeel-colorbar-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.15s ease;
+}
+.meeel-colorbar-segment:hover {
+  filter: brightness(1.1);
+}
+.meeel-colorbar-segment-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #ffffff;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  color: #ffffff;
+}
+.meeel-colorbar-segment-check svg {
+  display: block;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+.meeel-mini-colorbar-segment-check {
+  width: 34px;
+  height: 34px;
+  border-width: 3px;
+  border-radius: 9px;
+}
+
+/* ============ Mini Color Bar ============ */
+.meeel-mini-colorbar {
+  display: block;
+  width: 220px;
+  font-family: inherit;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.meeel-mini-colorbar-track {
+  position: relative;
+  width: 100%;
+  height: 44px;
+  border-radius: 22px;
+  overflow: hidden;
+  cursor: pointer;
+  background: linear-gradient(to right,
+    hsl(0,90%,60%) 0%,
+    hsl(30,90%,60%) 12.5%,
+    hsl(60,90%,60%) 25%,
+    hsl(120,90%,60%) 37.5%,
+    hsl(180,90%,60%) 50%,
+    hsl(210,90%,60%) 62.5%,
+    hsl(240,90%,60%) 75%,
+    hsl(300,90%,60%) 87.5%,
+    hsl(330,90%,60%) 100%);
+}
+.meeel-mini-colorbar-indicator {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #ffffff;
+  border-radius: 12px;
+  transform: translate(-50%, -50%);
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  transition: left 0.08s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.meeel-mini-colorbar-check {
+  color: #ffffff;
+  display: block;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+.meeel-mini-colorbar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  background: #1a1f2e;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.meeel-mini-colorbar-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: #BFBFBF;
+  box-shadow: 0 0 14px 2px rgba(191,191,191,0.4);
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+.meeel-mini-colorbar-hex {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  font-family: ui-monospace, monospace;
+}
+
 /* ============ Custom Select ============ */
 .meeel-cselect {
   position: relative;
@@ -1451,6 +1702,19 @@ function generateBlock(
     return renderRadioGroup(block, cssRules, indent);
   }
 
+  // ============ SPECIAL: COLOR BAR ============
+  if (id === 'color-bar' || id.endsWith('-color-bar') || isKind(id, 'color-bar')) {
+    // Only the full color-bar, not mini
+    if (!id.includes('mini')) {
+      return renderColorBar(block, cssRules, indent, false);
+    }
+  }
+
+  // ============ SPECIAL: MINI COLOR BAR ============
+  if (id === 'mini-color-bar' || id.endsWith('-mini-color-bar') || id.includes('mini-color-bar')) {
+    return renderColorBar(block, cssRules, indent, true);
+  }
+
   // ============ SPECIAL: CUSTOM SELECT ============
   if (id === 'custom-select' || id.endsWith('-custom-select') || isKind(id, 'custom-select')) {
     return renderCustomSelect(block, cssRules, indent);
@@ -1591,8 +1855,13 @@ function generateBlock(
         }
       }
       else if (propDef.special === 'open') {
-        const targetFilename = pageToFilename(val);
-        attrs['data-meeel-target'] = targetFilename;
+        // If external URL, use directly. Otherwise treat as page name.
+        if (/^https?:\/\//i.test(val) || val.startsWith('//') || val.startsWith('mailto:')) {
+          attrs['data-meeel-target'] = val;
+        } else {
+          const targetFilename = pageToFilename(val);
+          attrs['data-meeel-target'] = targetFilename;
+        }
       }
       else if (propDef.special === 'value') attrs['value'] = val;
       else css[propDef.css] = val;
@@ -1767,6 +2036,436 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/* ============ COLOR BAR RENDERER ============ */
+
+const CSS_NAMED_COLORS: Record<string, string> = {
+  red: '#dc2626', blue: '#2563eb', green: '#16a34a', yellow: '#eab308',
+  orange: '#f97316', purple: '#9333ea', pink: '#ec4899', black: '#000000',
+  white: '#ffffff', gray: '#6b7280', grey: '#6b7280', brown: '#92400e',
+  cyan: '#06b6d4', magenta: '#d946ef', lime: '#84cc16', indigo: '#4f46e5',
+  teal: '#14b8a6', violet: '#8b5cf6', gold: '#fbbf24', navy: '#1e3a8a',
+};
+
+function hexToHue(hex: string): number {
+  const clean = hex.replace('#', '');
+  if (clean.length !== 6) return 330;
+  const r = parseInt(clean.slice(0, 2), 16) / 255;
+  const g = parseInt(clean.slice(2, 4), 16) / 255;
+  const b = parseInt(clean.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  if (d === 0) return 0;
+  let h = 0;
+  if (max === r) h = ((g - b) / d) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  h = h * 60;
+  if (h < 0) h += 360;
+  return h;
+}
+
+function hueToHex(h: number): string {
+  // Convert hue to a saturated color hex
+  const s = 0.9;
+  const l = 0.6;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; b = 0; }
+  else if (h < 120) { r = x; g = c; b = 0; }
+  else if (h < 180) { r = 0; g = c; b = x; }
+  else if (h < 240) { r = 0; g = x; b = c; }
+  else if (h < 300) { r = x; g = 0; b = c; }
+  else { r = c; g = 0; b = x; }
+  const toHex = (v: number) => {
+    const n = Math.round((v + m) * 255);
+    return n.toString(16).padStart(2, '0');
+  };
+  return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function renderColorBar(
+  block: BlockNode,
+  cssRules: CSSBucket,
+  indent: string,
+  mini: boolean
+): string {
+  const id = block.name;
+  const wrapperCss: Record<string, string> = {};
+
+  let titleText = mini ? '' : 'Color Selector';
+  let hintText = mini ? '' : 'Click a color, or use the \u2190 \u2192 arrow keys.';
+  let currentColor = mini ? '#bfbfbf' : '#ec4899';
+  let bgColor = '#1a1f2e';
+  let barRadius = '';
+  let barPadding = '';
+
+  // Custom colors from colors-[...] sub-block
+  const customColors: Array<{ name: string; value: string }> = [];
+
+  for (const child of block.children) {
+    if (child.kind === 'keyword') {
+      if (KEYWORD_CSS[child.name]) Object.assign(wrapperCss, KEYWORD_CSS[child.name]);
+    } else if (child.kind === 'property') {
+      if (isParametricKeyword(child.name)) continue;
+      const propDef = PROPERTIES[child.name];
+      if (!propDef) continue;
+
+      if (propDef.special === 'toggle-label') { titleText = child.value; continue; }
+      if (propDef.special === 'color-bar-hint') { hintText = child.value; continue; }
+      if (propDef.special === 'color-bar-value') { currentColor = child.value; continue; }
+      if (propDef.special === 'color-bar-radius') { barRadius = child.value; continue; }
+      if (propDef.special === 'color-bar-padding') { barPadding = child.value; continue; }
+
+      const val = propDef.transform ? propDef.transform(child.value) : child.value;
+      if (propDef.css === 'background-color') { bgColor = val; continue; }
+      wrapperCss[propDef.css] = val;
+    } else if (child.kind === 'block') {
+      if (child.name === 'colors') {
+        for (const c of child.children) {
+          if (c.kind === 'property') {
+            const lower = c.value.toLowerCase();
+            const resolved = CSS_NAMED_COLORS[lower] || c.value;
+            customColors.push({ name: c.name, value: resolved });
+          }
+        }
+      } else if (child.name === 'bar') {
+        for (const c of child.children) {
+          if (c.kind === 'property') {
+            const v = c.value;
+            if (c.name === 'radius' || c.name === 'border-radius') barRadius = v;
+            if (c.name === 'padding') barPadding = v;
+          }
+        }
+      }
+    }
+  }
+
+  // Resolve current color if named
+  const lower = currentColor.toLowerCase();
+  if (CSS_NAMED_COLORS[lower]) {
+    currentColor = CSS_NAMED_COLORS[lower];
+  }
+
+  applyPositioning(wrapperCss, {
+    hasTop: false, hasBottom: false, hasMiddle: false,
+    hasLeft: false, hasRight: false, hasCenter: false,
+  });
+  applyParametric(wrapperCss, block);
+  wrapperCss['--colorbar-bg'] = bgColor;
+  cssRules[id] = wrapperCss;
+
+  const useSegments = customColors.length > 0;
+
+  // Determine initial selected segment or hue
+  let initialPct = 0;
+  let selectedIdx = 0;
+  if (useSegments) {
+    let foundIdx = -1;
+    for (let k = 0; k < customColors.length; k++) {
+      if (customColors[k].value.toLowerCase() === currentColor.toLowerCase()) {
+        foundIdx = k;
+        break;
+      }
+    }
+    selectedIdx = foundIdx >= 0 ? foundIdx : 0;
+    currentColor = customColors[selectedIdx].value;
+    const segW = 100 / customColors.length;
+    initialPct = segW * selectedIdx + segW / 2;
+  } else {
+    const hue = hexToHue(currentColor);
+    initialPct = (hue / 360) * 100;
+  }
+
+  // Build custom style overrides
+  const trackStyleParts: string[] = [];
+  if (barRadius) trackStyleParts.push(`border-radius: ${barRadius}`);
+  if (barPadding) trackStyleParts.push(`padding: ${barPadding}`);
+  const trackStyle = trackStyleParts.length > 0 ? ` style="${trackStyleParts.join('; ')}"` : '';
+
+  const indicatorSize = mini ? 40 : 48;
+  const indicatorClass = mini ? 'meeel-mini-colorbar-indicator' : 'meeel-colorbar-indicator';
+  const checkClass = mini ? 'meeel-mini-colorbar-check' : 'meeel-colorbar-check';
+  const checkSvg = `<svg class="${checkClass}" width="${mini ? 14 : 18}" height="${mini ? 14 : 18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+  if (mini) {
+    let trackHtml: string;
+
+    if (useSegments) {
+      const segHtml = customColors.map((c, k) => {
+        const leftPct = (k * 100) / customColors.length;
+        const widthPct = 100 / customColors.length;
+        const isSel = k === selectedIdx;
+        const inner = isSel
+          ? `<div class="meeel-colorbar-segment-check meeel-mini-colorbar-segment-check">${checkSvg}</div>`
+          : '';
+        return `<div class="meeel-colorbar-segment" data-idx="${k}" data-color="${c.value}" style="left:${leftPct}%;width:${widthPct}%;background:${c.value}">${inner}</div>`;
+      }).join('');
+
+      trackHtml = `${indent}  <div class="meeel-mini-colorbar-track" id="${id}-track"${trackStyle}>
+${indent}    <div class="meeel-colorbar-segments">${segHtml}</div>
+${indent}  </div>`;
+    } else {
+      trackHtml = `${indent}  <div class="meeel-mini-colorbar-track" id="${id}-track"${trackStyle}>
+${indent}    <div class="meeel-mini-colorbar-indicator" id="${id}-indicator" style="left: ${initialPct.toFixed(2)}%">
+${indent}      ${checkSvg}
+${indent}    </div>
+${indent}  </div>`;
+    }
+
+    return `${indent}<div id="${id}" class="meeel-mini-colorbar">
+${trackHtml}
+${indent}  <div class="meeel-mini-colorbar-info">
+${indent}    <div class="meeel-mini-colorbar-swatch" id="${id}-swatch" style="background:${currentColor};box-shadow:0 0 14px 2px ${currentColor}66"></div>
+${indent}    <div class="meeel-mini-colorbar-hex" id="${id}-hex">${currentColor.toUpperCase()}</div>
+${indent}  </div>
+${indent}</div>
+${indent}<script>
+(function(){
+  var root = document.getElementById('${id}');
+  if (!root) return;
+  var swatch = document.getElementById('${id}-swatch');
+  var hexEl = document.getElementById('${id}-hex');
+  if (!swatch || !hexEl) return;
+
+  function setColor(hex) {
+    swatch.style.background = hex;
+    swatch.style.boxShadow = '0 0 14px 2px ' + hex + '66';
+    hexEl.textContent = hex.toUpperCase();
+    root.setAttribute('data-value', hex);
+  }
+
+  ${useSegments ? `
+  var segments = root.querySelectorAll('.meeel-colorbar-segment');
+  var allChecks = root.querySelectorAll('.meeel-colorbar-segment-check');
+  segments.forEach(function(seg){
+    seg.addEventListener('click', function(){
+      var color = seg.getAttribute('data-color');
+      segments.forEach(function(s){
+        var c = s.querySelector('.meeel-colorbar-segment-check');
+        if (c && c.parentNode) c.parentNode.removeChild(c);
+      });
+      var box = document.createElement('div');
+      box.className = 'meeel-colorbar-segment-check meeel-mini-colorbar-segment-check';
+      box.innerHTML = '${'`'}${checkSvg.replace(/"/g, '&quot;')}${'`'}';
+      seg.appendChild(box);
+      setColor(color);
+    });
+  });
+  ` : `
+  var track = document.getElementById('${id}-track');
+  var indicator = document.getElementById('${id}-indicator');
+  if (!track || !indicator) return;
+  function hueToHex(h, s, l) {
+    s = s/100; l = l/100;
+    var c = (1 - Math.abs(2*l - 1)) * s;
+    var x = c * (1 - Math.abs(((h/60) % 2) - 1));
+    var m = l - c/2;
+    var r=0,g=0,b=0;
+    if (h < 60) { r=c; g=x; b=0; }
+    else if (h < 120) { r=x; g=c; b=0; }
+    else if (h < 180) { r=0; g=c; b=x; }
+    else if (h < 240) { r=0; g=x; b=c; }
+    else if (h < 300) { r=x; g=0; b=c; }
+    else { r=c; g=0; b=x; }
+    function toHex(v){var n=Math.round((v+m)*255);return n.toString(16).padStart(2,'0');}
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+  }
+  function updateAtPct(pct) {
+    pct = Math.max(0, Math.min(100, pct));
+    var hue = (pct / 100) * 360;
+    var hex = hueToHex(hue, 90, 60);
+    indicator.style.left = pct + '%';
+    setColor(hex);
+  }
+  function handle(e) {
+    var rect = track.getBoundingClientRect();
+    var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    updateAtPct((x / rect.width) * 100);
+  }
+  var dragging = false;
+  track.addEventListener('mousedown', function(e){ dragging=true; handle(e); });
+  window.addEventListener('mousemove', function(e){ if(dragging) handle(e); });
+  window.addEventListener('mouseup', function(){ dragging=false; });
+  track.addEventListener('touchstart', function(e){ dragging=true; handle(e); e.preventDefault(); }, {passive:false});
+  track.addEventListener('touchmove', function(e){ if(dragging){ handle(e); e.preventDefault(); } }, {passive:false});
+  window.addEventListener('touchend', function(){ dragging=false; });
+  `}
+})();
+</script>`;
+  }
+
+  // Full version
+  const titleHtml = titleText
+    ? `${indent}  <div class="meeel-colorbar-title">${escapeHtml(titleText)}</div>`
+    : '';
+  const hintHtml = hintText
+    ? `${indent}  <div class="meeel-colorbar-hint">${escapeHtml(hintText)}</div>`
+    : '';
+
+  let trackHtml: string;
+  if (useSegments) {
+    const segHtml = customColors.map((c, k) => {
+      const leftPct = (k * 100) / customColors.length;
+      const widthPct = 100 / customColors.length;
+      const isSel = k === selectedIdx;
+      const inner = isSel
+        ? `<div class="meeel-colorbar-segment-check">${checkSvg}</div>`
+        : '';
+      return `<div class="meeel-colorbar-segment" data-idx="${k}" data-color="${c.value}" style="left:${leftPct}%;width:${widthPct}%;background:${c.value}">${inner}</div>`;
+    }).join('');
+
+    trackHtml = `${indent}  <div class="meeel-colorbar-track" id="${id}-track"${trackStyle}>
+${indent}    <div class="meeel-colorbar-segments">${segHtml}</div>
+${indent}  </div>`;
+  } else {
+    trackHtml = `${indent}  <div class="meeel-colorbar-track" id="${id}-track"${trackStyle}>
+${indent}    <div class="meeel-colorbar-indicator" id="${id}-indicator" style="left: ${initialPct.toFixed(2)}%">
+${indent}      ${checkSvg}
+${indent}    </div>
+${indent}  </div>`;
+  }
+
+  return `${indent}<div id="${id}" class="meeel-colorbar">
+${titleHtml}
+${hintHtml}
+${trackHtml}
+${indent}  <div class="meeel-colorbar-info">
+${indent}    <div class="meeel-colorbar-swatch" id="${id}-swatch" style="background:${currentColor};box-shadow:0 0 18px 2px ${currentColor}80"></div>
+${indent}    <div class="meeel-colorbar-meta">
+${indent}      <div class="meeel-colorbar-hex" id="${id}-hex">${currentColor.toUpperCase()}</div>
+${indent}      <div class="meeel-colorbar-name" id="${id}-name">${useSegments ? escapeHtml(customColors[selectedIdx].name) : 'Pink'}</div>
+${indent}    </div>
+${indent}    <button class="meeel-colorbar-copy" id="${id}-copy" type="button">
+${indent}      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+${indent}      <span>Copy</span>
+${indent}    </button>
+${indent}  </div>
+${indent}</div>
+${indent}<script>
+(function(){
+  var root = document.getElementById('${id}');
+  if (!root) return;
+  var swatch = document.getElementById('${id}-swatch');
+  var hexEl = document.getElementById('${id}-hex');
+  var nameEl = document.getElementById('${id}-name');
+  var copyBtn = document.getElementById('${id}-copy');
+  if (!swatch || !hexEl) return;
+
+  function setColor(hex, name) {
+    swatch.style.background = hex;
+    swatch.style.boxShadow = '0 0 18px 2px ' + hex + '80';
+    hexEl.textContent = hex.toUpperCase();
+    if (name && nameEl) nameEl.textContent = name;
+    root.setAttribute('data-value', hex);
+  }
+
+  ${useSegments ? `
+  var segments = root.querySelectorAll('.meeel-colorbar-segment');
+  var names = ${JSON.stringify(customColors.map(c => c.name))};
+  segments.forEach(function(seg){
+    seg.addEventListener('click', function(){
+      var color = seg.getAttribute('data-color');
+      var idx = parseInt(seg.getAttribute('data-idx'), 10);
+      segments.forEach(function(s){
+        var c = s.querySelector('.meeel-colorbar-segment-check');
+        if (c && c.parentNode) c.parentNode.removeChild(c);
+      });
+      var box = document.createElement('div');
+      box.className = 'meeel-colorbar-segment-check';
+      box.innerHTML = '${'`'}${checkSvg.replace(/"/g, '&quot;')}${'`'}';
+      seg.appendChild(box);
+      setColor(color, names[idx] || '');
+    });
+  });
+  ` : `
+  var track = document.getElementById('${id}-track');
+  var indicator = document.getElementById('${id}-indicator');
+  if (!track || !indicator) return;
+  function hueToHex(h, s, l) {
+    s = s/100; l = l/100;
+    var c = (1 - Math.abs(2*l - 1)) * s;
+    var x = c * (1 - Math.abs(((h/60) % 2) - 1));
+    var m = l - c/2;
+    var r=0,g=0,b=0;
+    if (h < 60) { r=c; g=x; b=0; }
+    else if (h < 120) { r=x; g=c; b=0; }
+    else if (h < 180) { r=0; g=c; b=x; }
+    else if (h < 240) { r=0; g=x; b=c; }
+    else if (h < 300) { r=x; g=0; b=c; }
+    else { r=c; g=0; b=x; }
+    function toHex(v){var n=Math.round((v+m)*255);return n.toString(16).padStart(2,'0');}
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+  }
+  function nameFor(hue) {
+    if (hue < 15 || hue >= 345) return 'Red';
+    if (hue < 45) return 'Orange';
+    if (hue < 70) return 'Yellow';
+    if (hue < 160) return 'Green';
+    if (hue < 200) return 'Cyan';
+    if (hue < 250) return 'Blue';
+    if (hue < 290) return 'Purple';
+    if (hue < 330) return 'Magenta';
+    return 'Pink';
+  }
+  function updateAtPct(pct) {
+    pct = Math.max(0, Math.min(100, pct));
+    var hue = (pct / 100) * 360;
+    var hex = hueToHex(hue, 90, 60);
+    indicator.style.left = pct + '%';
+    setColor(hex, nameFor(hue));
+  }
+  function handle(e) {
+    var rect = track.getBoundingClientRect();
+    var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    updateAtPct((x / rect.width) * 100);
+  }
+  var dragging = false;
+  track.addEventListener('mousedown', function(e){ dragging=true; handle(e); });
+  window.addEventListener('mousemove', function(e){ if(dragging) handle(e); });
+  window.addEventListener('mouseup', function(){ dragging=false; });
+  track.addEventListener('touchstart', function(e){ dragging=true; handle(e); e.preventDefault(); }, {passive:false});
+  track.addEventListener('touchmove', function(e){ if(dragging){ handle(e); e.preventDefault(); } }, {passive:false});
+  window.addEventListener('touchend', function(){ dragging=false; });
+
+  document.addEventListener('keydown', function(e){
+    if (!root.matches(':hover') && !root.contains(document.activeElement)) return;
+    var curPct = parseFloat(indicator.style.left) || 0;
+    if (e.key === 'ArrowLeft') { updateAtPct(curPct - 2); e.preventDefault(); }
+    if (e.key === 'ArrowRight') { updateAtPct(curPct + 2); e.preventDefault(); }
+  });
+  `}
+
+  // Copy button
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function(){
+      var hex = hexEl.textContent || '';
+      var done = function() {
+        copyBtn.classList.add('copied');
+        var sp = copyBtn.querySelector('span');
+        var old = sp ? sp.textContent : 'Copy';
+        if (sp) sp.textContent = 'Copied';
+        setTimeout(function(){ copyBtn.classList.remove('copied'); if (sp) sp.textContent = old; }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(hex).then(done).catch(done);
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = hex;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch(e){}
+        document.body.removeChild(ta);
+        done();
+      }
+    });
+  }
+})();
+</script>`;
 }
 
 /* ============ SIDEBAR RENDERER ============ */
