@@ -4450,6 +4450,28 @@ function generateJavaScript(
   lines.push('    if (el) return el;');
   lines.push('    return null;');
   lines.push('  }');
+  lines.push('');
+  lines.push('  // Condition checker: __meeel_check(target, op, value)');
+  lines.push('  function __meeel_check(target, op, val) {');
+  lines.push('    var el = __meeel_find(target);');
+  lines.push('    if (!el) return false;');
+  lines.push('    var text = (el.textContent || \'\').trim();');
+  lines.push('    var n = Number(val);');
+  lines.push('    var isNum = !isNaN(n) && isFinite(n);');
+  lines.push('    if (isNum) {');
+  lines.push('      var cur = parseInt(text, 10) || 0;');
+  lines.push('      if (op === \'===\') return cur === n;');
+  lines.push('      if (op === \'!==\') return cur !== n;');
+  lines.push('      if (op === \'>\') return cur > n;');
+  lines.push('      if (op === \'<\') return cur < n;');
+  lines.push('      if (op === \'>=\') return cur >= n;');
+  lines.push('      if (op === \'<=\') return cur <= n;');
+  lines.push('    } else {');
+  lines.push('      if (op === \'===\') return text === val;');
+  lines.push('      if (op === \'!==\') return text !== val;');
+  lines.push('    }');
+  lines.push('    return false;');
+  lines.push('  }');
 
   for (const h of handlers) {
     lines.push('');
@@ -4503,55 +4525,77 @@ function actionToJs(action: string): string {
 
   switch (verb) {
     case 'if': {
-      // Syntax: if <target> is-<value> <action> <action-target>
-      // Example: if counter is-5 show win-message
-      const condTarget = parts[1];
-      const comparison = parts[2];
-      const subAction = parts.slice(3).join(' ');
+      // Syntax: if <target> <cmp> [and|or <target> <cmp>]* <action...>
+      // Example: if running is-1 and remaining is-greater-than-0 decrement remaining
 
-      if (!condTarget || !comparison || !subAction) return '';
+      const conditions: Array<{ target: string; jsOp: string; value: string }> = [];
+      const logicalOps: string[] = [];
+      let idx = 1;
 
-      const ctq = JSON.stringify(condTarget);
+      while (idx < parts.length) {
+        const tgt = parts[idx];
+        const cmp = parts[idx + 1];
+        if (!tgt || !cmp) return '';
+        if (!cmp.startsWith('is-')) break;  // action begins
 
-      // Parse comparison operator
-      let jsOp = '===';
-      let cmpValue = '';
+        let jsOp = '===';
+        let cmpValue = '';
 
-      if (comparison.startsWith('is-not-')) {
-        jsOp = '!==';
-        cmpValue = comparison.slice(7);
-      } else if (comparison.startsWith('is-greater-than-')) {
-        jsOp = '>';
-        cmpValue = comparison.slice(16);
-      } else if (comparison.startsWith('is-less-than-')) {
-        jsOp = '<';
-        cmpValue = comparison.slice(13);
-      } else if (comparison.startsWith('is-at-least-')) {
-        jsOp = '>=';
-        cmpValue = comparison.slice(12);
-      } else if (comparison.startsWith('is-at-most-')) {
-        jsOp = '<=';
-        cmpValue = comparison.slice(11);
-      } else if (comparison.startsWith('is-')) {
-        jsOp = '===';
-        cmpValue = comparison.slice(3);
-      } else {
-        return '';
+        if (cmp.startsWith('is-not-')) {
+          jsOp = '!==';
+          cmpValue = cmp.slice(7);
+        } else if (cmp.startsWith('is-greater-than-')) {
+          jsOp = '>';
+          cmpValue = cmp.slice(16);
+        } else if (cmp.startsWith('is-less-than-')) {
+          jsOp = '<';
+          cmpValue = cmp.slice(13);
+        } else if (cmp.startsWith('is-at-least-')) {
+          jsOp = '>=';
+          cmpValue = cmp.slice(12);
+        } else if (cmp.startsWith('is-at-most-')) {
+          jsOp = '<=';
+          cmpValue = cmp.slice(11);
+        } else if (cmp.startsWith('is-')) {
+          jsOp = '===';
+          cmpValue = cmp.slice(3);
+        } else {
+          break;
+        }
+
+        conditions.push({ target: tgt, jsOp, value: cmpValue });
+        idx += 2;
+
+        if (idx < parts.length && (parts[idx] === 'and' || parts[idx] === 'or')) {
+          logicalOps.push(parts[idx] === 'and' ? '&&' : '||');
+          idx += 1;
+          continue;
+        }
+        break;
       }
+
+      if (conditions.length === 0) return '';
+
+      const subAction = parts.slice(idx).join(' ');
+      if (!subAction) return '';
 
       const subJs = actionToJs(subAction);
       if (!subJs) return '';
 
-      // Determine if value is numeric
-      const numVal = Number(cmpValue);
-      const isNumeric = !isNaN(numVal) && isFinite(numVal);
+      // Build condition expression
+      const condExprs = conditions.map((c) => {
+        const tq = JSON.stringify(c.target);
+        const opq = JSON.stringify(c.jsOp);
+        const vq = JSON.stringify(c.value);
+        return `__meeel_check(${tq}, ${opq}, ${vq})`;
+      });
 
-      const valueExpr = isNumeric ? String(numVal) : JSON.stringify(cmpValue);
-      const parseExpr = isNumeric
-        ? `parseInt(el.textContent, 10) || 0`
-        : `(el.textContent || '').trim()`;
+      let combined = condExprs[0];
+      for (let i = 0; i < logicalOps.length; i++) {
+        combined = `(${combined}) ${logicalOps[i]} (${condExprs[i + 1]})`;
+      }
 
-      return `var el = __meeel_find(${ctq}); if (el) { var v = ${parseExpr}; if (v ${jsOp} ${valueExpr}) { ${subJs} } }`;
+      return `if (${combined}) { ${subJs} }`;
     }
     case 'show':
       return `var el = __meeel_find(${tq}); if (el) el.style.setProperty('display', 'block', 'important');`;
