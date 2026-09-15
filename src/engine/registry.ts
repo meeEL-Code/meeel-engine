@@ -214,8 +214,6 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'href': { css: '', special: 'href' },
   'on-click': { css: '', special: 'on-click' },
   'open': { css: '', special: 'open' },
-  'load': { css: '', special: 'open' },
-  'call': { css: '', special: 'open' },
   'from-toggle': { css: '', special: 'from-toggle' },
   'check-color': { css: '', special: 'input-check-color' },
   'group-name': { css: '', special: 'radio-group-name' },

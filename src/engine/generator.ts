@@ -1646,7 +1646,7 @@ function generateBlock(
   }
 
   // ============ SPECIAL: VAR (hidden variable) ============
-  const varMatch = id.match(/^var-([a-z][a-z0-9-]*)$/);
+  const varMatch = id.match(/^keep-([a-z][a-z0-9-]*)$/);
   if (varMatch) {
     const varName = varMatch[1];
     let initialValue = '';
@@ -4432,16 +4432,21 @@ function generateJavaScript(
   lines.push('(function () {');
   lines.push("  'use strict';");
   lines.push('');
-  lines.push('  // Fuzzy element finder: handles var- prefix, suffix matches');
+  lines.push('  // Fuzzy element finder: handles keep- prefix, suffix matches');
   lines.push('  function __meeel_find(target) {');
   lines.push('    if (!target) return null;');
   lines.push('    var el = document.getElementById(target);');
   lines.push('    if (el) return el;');
-  lines.push('    if (target.indexOf("var-") === 0) {');
-  lines.push('      el = document.getElementById(target.slice(4));');
+  lines.push('    if (target.indexOf("keep-") === 0) {');
+  lines.push('      el = document.getElementById(target.slice(5));');
   lines.push('      if (el) return el;');
   lines.push('    } else {');
-  lines.push('      el = document.getElementById("var-" + target);');
+  lines.push('      el = document.getElementById("keep-" + target);');
+  lines.push('      if (el) return el;');
+  lines.push('    }');
+  lines.push('    // Legacy var- prefix support');
+  lines.push('    if (target.indexOf("var-") === 0) {');
+  lines.push('      el = document.getElementById(target.slice(4));');
   lines.push('      if (el) return el;');
   lines.push('    }');
   lines.push('    el = document.querySelector(\'[id$="-\' + target + \'"]\');');
@@ -4603,19 +4608,19 @@ function actionToJs(action: string): string {
       return `var el = __meeel_find(${tq}); if (el) el.style.setProperty('display', 'none', 'important');`;
     case 'toggle':
       return `var el = __meeel_find(${tq}); if (el) { var cs = getComputedStyle(el).display; var h = cs === 'none'; el.style.setProperty('display', h ? 'block' : 'none', 'important'); }`;
-    case 'increment':
+    case 'increase':
       return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + 1);`;
-    case 'decrement':
+    case 'decrease':
       return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) - 1);`;
-    case 'set-text': {
+    case 'write': {
       const value = parts.slice(2).join(' ');
       return `var el = __meeel_find(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
     }
-    case 'set-color': {
+    case 'paint': {
       const value = parts.slice(2).join(' ');
       return `var el = __meeel_find(${tq}); if (el) el.style.color = ${JSON.stringify(value)};`;
     }
-    case 'set-bg': {
+    case 'fill': {
       const value = parts.slice(2).join(' ');
       return `var el = __meeel_find(${tq}); if (el) el.style.backgroundColor = ${JSON.stringify(value)};`;
     }
@@ -4631,7 +4636,7 @@ function actionToJs(action: string): string {
       const num = parseFloat(parts[2]) || 0;
       return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) * ${num});`;
     }
-    case 'set-value': {
+    case 'make': {
       const value = parts.slice(2).join(' ');
       const num = parseFloat(value);
       if (!isNaN(num) && isFinite(num)) {
@@ -4639,7 +4644,7 @@ function actionToJs(action: string): string {
       }
       return `var el = __meeel_find(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
     }
-    case 'show-data': {
+    case 'copy-from': {
       // Syntax: show-data <target> <source>
       // Copies source.textContent into target.textContent
       const source = parts[2];
@@ -4647,7 +4652,7 @@ function actionToJs(action: string): string {
       const sq = JSON.stringify(source);
       return `var src = __meeel_find(${sq}); var tgt = __meeel_find(${tq}); if (src && tgt) tgt.textContent = src.textContent;`;
     }
-    case 'fetch-from': {
+    case 'bring': {
       // Syntax: fetch-from <url> save-to <target>
       // target = parts[1] = URL, parts[2] = 'save-to', parts[3] = element id
       const url = parts[1];
@@ -4657,7 +4662,7 @@ function actionToJs(action: string): string {
       const stq = JSON.stringify(saveTarget);
       return `var __target = __meeel_find(${stq}); if (__target) __target.textContent = 'Loading...'; fetch(${JSON.stringify(url)}).then(function(r){ return r.text(); }).then(function(data){ if (__target) __target.textContent = data; }).catch(function(err){ if (__target) __target.textContent = 'Error: ' + err.message; });`;
     }
-    case 'fetch-json': {
+    case 'bring-json': {
       // Syntax: fetch-json <url> save-to <target>
       // Same as fetch-from but parses JSON
       const url = parts[1];
@@ -4667,7 +4672,7 @@ function actionToJs(action: string): string {
       const stq = JSON.stringify(saveTarget);
       return `var __target = __meeel_find(${stq}); if (__target) __target.textContent = 'Loading...'; fetch(${JSON.stringify(url)}).then(function(r){ return r.json(); }).then(function(data){ if (__target) __target.textContent = JSON.stringify(data, null, 2); }).catch(function(err){ if (__target) __target.textContent = 'Error: ' + err.message; });`;
     }
-    case 'save-data': {
+    case 'remember': {
       // Syntax: save-data <key> from <target>
       // Saves target.textContent into localStorage[key]
       const key = parts[1];
@@ -4686,7 +4691,7 @@ function actionToJs(action: string): string {
       }
       return '';
     }
-    case 'load-data': {
+    case 'recall': {
       // Syntax: load-data <key> into <target>
       const key = parts[1];
       const intoKeyword = parts[2];
@@ -4696,13 +4701,13 @@ function actionToJs(action: string): string {
       const itq = JSON.stringify(intoTarget);
       return `var __tgt = __meeel_find(${itq}); var __val = localStorage.getItem(${kq}); if (__tgt && __val !== null) __tgt.textContent = __val;`;
     }
-    case 'clear-data': {
+    case 'forget': {
       // Syntax: clear-data <key>
       const key = parts[1];
       if (!key) return '';
       return `localStorage.removeItem(${JSON.stringify(key)});`;
     }
-    case 'set-random': {
+    case 'roll': {
       // Syntax: set-random <target> <min>-<max>
       // Example: set-random dice-text 1-6
       const range = parts[2];
@@ -4713,7 +4718,7 @@ function actionToJs(action: string): string {
       const max = parseInt(match[2], 10);
       return `var el = __meeel_find(${tq}); if (el) el.textContent = String(Math.floor(Math.random() * (${max} - ${min} + 1)) + ${min});`;
     }
-    case 'format-time': {
+    case 'show-as-time': {
       // Syntax: format-time <target> <source>
       // Reads numeric seconds from source, writes HH:MM:SS to target
       const sourceId = parts[2];
@@ -4732,7 +4737,7 @@ case 'beep': {
       const mq = JSON.stringify(msgParts);
       return `try { if (window.Notification && Notification.permission === 'granted') { try { new Notification(${mq}); } catch(e) { console.warn('notify failed', e); } } else if (window.Notification && Notification.permission !== 'denied') { Notification.requestPermission().then(function(p) { if (p === 'granted') { try { new Notification(${mq}); } catch(e) {} } }); } } catch(e) {}`;
     }
-        case 'compute-time': {
+        case 'total-time': {
       // Syntax: compute-time <target> from <hours-src> <minutes-src> <seconds-src>
       const cTarget = parts[1];
       const fromKw = parts[2];
