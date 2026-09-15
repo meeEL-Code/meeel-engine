@@ -54,6 +54,31 @@ export function lex(source: string): Token[] {
       continue;
     }
 
+    // Standalone value: numbers, times (00:00:00), URLs, emails, paths
+    // Triggers when starting with digit, ':', '@', '/', or negative number
+    const isNumberStart = ch >= '0' && ch <= '9';
+    const isNegativeNumber = ch === '-' && peek(1) >= '0' && peek(1) <= '9';
+    const isValueSpecial = ch === ':' || ch === '@' || ch === '/';
+
+    if (isNumberStart || isNegativeNumber || isValueSpecial) {
+      const startLine = line;
+      const startCol = col;
+      let val = '';
+      while (i < source.length) {
+        const c = peek();
+        // Stop at structural chars
+        if (c === ' ' || c === '\t' || c === '\r' || c === '\n') break;
+        if (c === '[' || c === ']') break;
+        // Stop at '-[' (start of a property/block)
+        if (c === '-' && peek(1) === '[') break;
+        val += advance();
+      }
+      if (val.length > 0) {
+        pushToken(TokenType.VALUE, val, startLine, startCol);
+        continue;
+      }
+    }
+
     // Name — allow uppercase start ONLY if followed immediately by -[
     // (e.g. Pink-[#ec4899] inside colors block)
     // Otherwise names start with lowercase letter.
@@ -86,13 +111,11 @@ export function lex(source: string): Token[] {
         }
       }
 
-      // If name starts with uppercase, ONLY allow it when followed by -[
-      if (isUpperStart) {
-        if (!(peek() === '-' && peek(1) === '[')) {
-          throw new Error(
-            `Unexpected character '${name[0]}' at line ${startLine}, col ${startCol}`
-          );
-        }
+      // If name starts with uppercase and NOT followed by -[,
+      // treat it as a VALUE token (standalone uppercase word like "Ready", "Running")
+      if (isUpperStart && !(peek() === '-' && peek(1) === '[')) {
+        pushToken(TokenType.VALUE, name, startLine, startCol);
+        continue;
       }
 
       pushToken(TokenType.NAME, name, startLine, startCol);

@@ -67,6 +67,11 @@ function checkBlock(
 
       checkBlock(child, allNames, errors, block.name);
     } else if (child.kind === 'property') {
+      // Skip timer properties — handled by generator
+      if (/^every-\d+-(millisecond|milliseconds|second|seconds|minute|minutes|hour|hours)$/.test(child.name)) {
+        continue;
+      }
+
       // Custom color names inside 'colors' block — skip property validation
       if (block.name === 'colors') {
         continue;

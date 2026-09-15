@@ -1142,6 +1142,7 @@ type ModeKind = 'mobile' | 'tablet' | 'desktop';
 
 // Collect on-click handlers during block generation
 let collectedHandlers: Array<{ elementId: string; actions: string[] }> = [];
+let collectedTimers: Array<{ period: number; actions: string[] }> = [];
 
 function getModeKind(name: string): ModeKind | null {
   if (name === 'mobile-mode' || name.startsWith('mobile-mode-')) return 'mobile';
@@ -1240,6 +1241,7 @@ export function generateParts(
   jsFilename = 'script.js'
 ): GenerateParts {
   collectedHandlers = [];
+  collectedTimers = [];
   const page = root.children.find((c) => c.kind === 'block') as BlockNode | undefined;
   if (!page) {
     return {
@@ -1431,7 +1433,7 @@ export function generateParts(
   const fullHtml = wrapHtml(finalHtml, css);
   const htmlFile = wrapHtmlExternal(finalHtml, cssFilename);
 
-  const js = generateJavaScript(collectedHandlers);
+  const js = generateJavaScript(collectedHandlers, collectedTimers);
   const fullHtmlWithJs = wrapHtml(finalHtml, css, js);
   const htmlFileWithJs = wrapHtmlExternal(finalHtml, cssFilename, jsFilename);
 
@@ -1488,6 +1490,22 @@ function collectOverrideCss(block: BlockNode): Record<string, string> {
       }
     } else if (child.kind === 'property') {
       if (isParametricKeyword(child.name)) continue;
+
+      // Timer property — collect setInterval actions, no CSS output
+      const timerMatch = child.name.match(/^every-(\d+)-(millisecond|milliseconds|second|seconds|minute|minutes|hour|hours)$/);
+      if (timerMatch) {
+        const n = parseInt(timerMatch[1], 10);
+        const unit = timerMatch[2];
+        let msPerUnit = 1000;
+        if (unit.startsWith('millisecond')) msPerUnit = 1;
+        else if (unit.startsWith('minute')) msPerUnit = 60000;
+        else if (unit.startsWith('hour')) msPerUnit = 3600000;
+        const period = n * msPerUnit;
+        const acts = child.value.split(/[\n;]/).map((s) => s.trim()).filter(Boolean);
+        if (acts.length > 0) collectedTimers.push({ period, actions: acts });
+        continue;
+      }
+
       const propDef = PROPERTIES[child.name];
       if (!propDef) continue;
       if (propDef.special) continue;
@@ -1831,6 +1849,23 @@ function generateBlock(
       }
     } else if (child.kind === 'property') {
       if (isParametricKeyword(child.name)) continue;
+
+      // Timer: every-N-second(s)/minute(s)/hour(s)
+      const timerMatch = child.name.match(/^every-(\d+)-(millisecond|milliseconds|second|seconds|minute|minutes|hour|hours)$/);
+      if (timerMatch) {
+        const n = parseInt(timerMatch[1], 10);
+        const unit = timerMatch[2];
+        let msPerUnit = 1000;
+        if (unit.startsWith('millisecond')) msPerUnit = 1;
+        else if (unit.startsWith('minute')) msPerUnit = 60000;
+        else if (unit.startsWith('hour')) msPerUnit = 3600000;
+        const period = n * msPerUnit;
+        const acts = child.value.split(/[\n;]/).map((s) => s.trim()).filter(Boolean);
+        if (acts.length > 0) {
+          collectedTimers.push({ period, actions: acts });
+        }
+        continue;
+      }
 
       const propDef = PROPERTIES[child.name];
       if (!propDef) {
@@ -4387,23 +4422,53 @@ ${indent}</label>`;
 /* ============ JAVASCRIPT GENERATOR ============ */
 
 function generateJavaScript(
-  handlers: Array<{ elementId: string; actions: string[] }>
+  handlers: Array<{ elementId: string; actions: string[] }>,
+  timers: Array<{ period: number; actions: string[] }> = []
 ): string {
-  if (handlers.length === 0) return '';
+  if (handlers.length === 0 && timers.length === 0) return '';
 
   const lines: string[] = [];
   lines.push('/* meeEL — generated script */');
   lines.push('(function () {');
   lines.push("  'use strict';");
+  lines.push('');
+  lines.push('  // Fuzzy element finder: handles var- prefix, suffix matches');
+  lines.push('  function __meeel_find(target) {');
+  lines.push('    if (!target) return null;');
+  lines.push('    var el = document.getElementById(target);');
+  lines.push('    if (el) return el;');
+  lines.push('    if (target.indexOf("var-") === 0) {');
+  lines.push('      el = document.getElementById(target.slice(4));');
+  lines.push('      if (el) return el;');
+  lines.push('    } else {');
+  lines.push('      el = document.getElementById("var-" + target);');
+  lines.push('      if (el) return el;');
+  lines.push('    }');
+  lines.push('    el = document.querySelector(\'[id$="-\' + target + \'"]\');');
+  lines.push('    if (el) return el;');
+  lines.push('    el = document.querySelector(\'[id^="\' + target + \'-"]\');');
+  lines.push('    if (el) return el;');
+  lines.push('    return null;');
+  lines.push('  }');
 
   for (const h of handlers) {
     lines.push('');
-    lines.push(`  document.getElementById(${JSON.stringify(h.elementId)})?.addEventListener('click', function () {`);
+    lines.push(`  var __root = __meeel_find(${JSON.stringify(h.elementId)}); if (__root) __root.addEventListener('click', function () {`);
     for (const act of h.actions) {
       const code = actionToJs(act);
       if (code) lines.push('    ' + code);
     }
     lines.push('  });');
+  }
+
+  for (const t of timers) {
+    lines.push('');
+    lines.push('  setInterval(function () {');
+    for (const act of t.actions) {
+      const code = actionToJs(act);
+      if (code) lines.push('    ' + code);
+    }
+    lines.push('  }, ' + t.period + ');');
   }
 
   lines.push('');
@@ -4418,6 +4483,20 @@ function actionToJs(action: string): string {
   const parts = trimmed.split(/\s+/);
   const verb = parts[0];
   const target = parts[1];
+
+  // Target-less verbs (no element target needed)
+  if (verb === 'beep') {
+    return `try { var __actx = new (window.AudioContext || window.webkitAudioContext)(); var __osc = __actx.createOscillator(); var __gain = __actx.createGain(); __osc.connect(__gain); __gain.connect(__actx.destination); __osc.frequency.value = 880; __osc.type = 'sine'; __gain.gain.setValueAtTime(0.4, __actx.currentTime); __gain.gain.exponentialRampToValueAtTime(0.001, __actx.currentTime + 0.8); __osc.start(); __osc.stop(__actx.currentTime + 0.8); } catch(e) { console.warn('beep failed', e); }`;
+  }
+  if (verb === 'vibrate') {
+    return `if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);`;
+  }
+  if (verb === 'notify') {
+    const msg = parts.slice(1).join(' ') || 'Notification';
+    const mq = JSON.stringify(msg);
+    return `try { if (window.Notification && Notification.permission === 'granted') { try { new Notification(${mq}); } catch(e) {} } else if (window.Notification && Notification.permission !== 'denied') { Notification.requestPermission().then(function(p) { if (p === 'granted') { try { new Notification(${mq}); } catch(e) {} } }); } } catch(e) {}`;
+  }
+
   if (!target) return '';
 
   const tq = JSON.stringify(target);
@@ -4472,49 +4551,49 @@ function actionToJs(action: string): string {
         ? `parseInt(el.textContent, 10) || 0`
         : `(el.textContent || '').trim()`;
 
-      return `var el = document.getElementById(${ctq}); if (el) { var v = ${parseExpr}; if (v ${jsOp} ${valueExpr}) { ${subJs} } }`;
+      return `var el = __meeel_find(${ctq}); if (el) { var v = ${parseExpr}; if (v ${jsOp} ${valueExpr}) { ${subJs} } }`;
     }
     case 'show':
-      return `var el = document.getElementById(${tq}); if (el) el.style.setProperty('display', 'block', 'important');`;
+      return `var el = __meeel_find(${tq}); if (el) el.style.setProperty('display', 'block', 'important');`;
     case 'hide':
-      return `var el = document.getElementById(${tq}); if (el) el.style.setProperty('display', 'none', 'important');`;
+      return `var el = __meeel_find(${tq}); if (el) el.style.setProperty('display', 'none', 'important');`;
     case 'toggle':
-      return `var el = document.getElementById(${tq}); if (el) { var cs = getComputedStyle(el).display; var h = cs === 'none'; el.style.setProperty('display', h ? 'block' : 'none', 'important'); }`;
+      return `var el = __meeel_find(${tq}); if (el) { var cs = getComputedStyle(el).display; var h = cs === 'none'; el.style.setProperty('display', h ? 'block' : 'none', 'important'); }`;
     case 'increment':
-      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + 1);`;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + 1);`;
     case 'decrement':
-      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) - 1);`;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) - 1);`;
     case 'set-text': {
       const value = parts.slice(2).join(' ');
-      return `var el = document.getElementById(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
     }
     case 'set-color': {
       const value = parts.slice(2).join(' ');
-      return `var el = document.getElementById(${tq}); if (el) el.style.color = ${JSON.stringify(value)};`;
+      return `var el = __meeel_find(${tq}); if (el) el.style.color = ${JSON.stringify(value)};`;
     }
     case 'set-bg': {
       const value = parts.slice(2).join(' ');
-      return `var el = document.getElementById(${tq}); if (el) el.style.backgroundColor = ${JSON.stringify(value)};`;
+      return `var el = __meeel_find(${tq}); if (el) el.style.backgroundColor = ${JSON.stringify(value)};`;
     }
     case 'add': {
       const num = parseFloat(parts[2]) || 0;
-      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + ${num});`;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + ${num});`;
     }
     case 'subtract': {
       const num = parseFloat(parts[2]) || 0;
-      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) - ${num});`;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) - ${num});`;
     }
     case 'multiply': {
       const num = parseFloat(parts[2]) || 0;
-      return `var el = document.getElementById(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) * ${num});`;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) * ${num});`;
     }
     case 'set-value': {
       const value = parts.slice(2).join(' ');
       const num = parseFloat(value);
       if (!isNaN(num) && isFinite(num)) {
-        return `var el = document.getElementById(${tq}); if (el) el.textContent = String(${num});`;
+        return `var el = __meeel_find(${tq}); if (el) el.textContent = String(${num});`;
       }
-      return `var el = document.getElementById(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
     }
     case 'show-data': {
       // Syntax: show-data <target> <source>
@@ -4522,7 +4601,7 @@ function actionToJs(action: string): string {
       const source = parts[2];
       if (!source) return '';
       const sq = JSON.stringify(source);
-      return `var src = document.getElementById(${sq}); var tgt = document.getElementById(${tq}); if (src && tgt) tgt.textContent = src.textContent;`;
+      return `var src = __meeel_find(${sq}); var tgt = __meeel_find(${tq}); if (src && tgt) tgt.textContent = src.textContent;`;
     }
     case 'fetch-from': {
       // Syntax: fetch-from <url> save-to <target>
@@ -4532,7 +4611,7 @@ function actionToJs(action: string): string {
       const saveTarget = parts[3];
       if (!url || saveToKeyword !== 'save-to' || !saveTarget) return '';
       const stq = JSON.stringify(saveTarget);
-      return `var __target = document.getElementById(${stq}); if (__target) __target.textContent = 'Loading...'; fetch(${JSON.stringify(url)}).then(function(r){ return r.text(); }).then(function(data){ if (__target) __target.textContent = data; }).catch(function(err){ if (__target) __target.textContent = 'Error: ' + err.message; });`;
+      return `var __target = __meeel_find(${stq}); if (__target) __target.textContent = 'Loading...'; fetch(${JSON.stringify(url)}).then(function(r){ return r.text(); }).then(function(data){ if (__target) __target.textContent = data; }).catch(function(err){ if (__target) __target.textContent = 'Error: ' + err.message; });`;
     }
     case 'fetch-json': {
       // Syntax: fetch-json <url> save-to <target>
@@ -4542,7 +4621,7 @@ function actionToJs(action: string): string {
       const saveTarget = parts[3];
       if (!url || saveToKeyword !== 'save-to' || !saveTarget) return '';
       const stq = JSON.stringify(saveTarget);
-      return `var __target = document.getElementById(${stq}); if (__target) __target.textContent = 'Loading...'; fetch(${JSON.stringify(url)}).then(function(r){ return r.json(); }).then(function(data){ if (__target) __target.textContent = JSON.stringify(data, null, 2); }).catch(function(err){ if (__target) __target.textContent = 'Error: ' + err.message; });`;
+      return `var __target = __meeel_find(${stq}); if (__target) __target.textContent = 'Loading...'; fetch(${JSON.stringify(url)}).then(function(r){ return r.json(); }).then(function(data){ if (__target) __target.textContent = JSON.stringify(data, null, 2); }).catch(function(err){ if (__target) __target.textContent = 'Error: ' + err.message; });`;
     }
     case 'save-data': {
       // Syntax: save-data <key> from <target>
@@ -4554,7 +4633,7 @@ function actionToJs(action: string): string {
       const kq = JSON.stringify(key);
       if (fromKeyword === 'from' && fromTarget) {
         const ftq = JSON.stringify(fromTarget);
-        return `var __src = document.getElementById(${ftq}); if (__src) localStorage.setItem(${kq}, __src.textContent);`;
+        return `var __src = __meeel_find(${ftq}); if (__src) localStorage.setItem(${kq}, __src.textContent);`;
       }
       // save-data <key> from-value <value>
       if (fromKeyword === 'from-value') {
@@ -4571,7 +4650,7 @@ function actionToJs(action: string): string {
       if (!key || intoKeyword !== 'into' || !intoTarget) return '';
       const kq = JSON.stringify(key);
       const itq = JSON.stringify(intoTarget);
-      return `var __tgt = document.getElementById(${itq}); var __val = localStorage.getItem(${kq}); if (__tgt && __val !== null) __tgt.textContent = __val;`;
+      return `var __tgt = __meeel_find(${itq}); var __val = localStorage.getItem(${kq}); if (__tgt && __val !== null) __tgt.textContent = __val;`;
     }
     case 'clear-data': {
       // Syntax: clear-data <key>
@@ -4588,9 +4667,28 @@ function actionToJs(action: string): string {
       if (!match) return '';
       const min = parseInt(match[1], 10);
       const max = parseInt(match[2], 10);
-      return `var el = document.getElementById(${tq}); if (el) el.textContent = String(Math.floor(Math.random() * (${max} - ${min} + 1)) + ${min});`;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String(Math.floor(Math.random() * (${max} - ${min} + 1)) + ${min});`;
     }
-    default:
+    case 'format-time': {
+      // Syntax: format-time <target> <source>
+      // Reads numeric seconds from source, writes HH:MM:SS to target
+      const sourceId = parts[2];
+      if (!sourceId) return '';
+      const sq = JSON.stringify(sourceId);
+      return `var __src = __meeel_find(${sq}); var __tgt = __meeel_find(${tq}); if (__src && __tgt) { var __secs = parseInt(__src.textContent, 10) || 0; var __h = Math.floor(__secs / 3600); var __m = Math.floor((__secs % 3600) / 60); var __s = __secs % 60; __tgt.textContent = String(__h).padStart(2, '0') + ':' + String(__m).padStart(2, '0') + ':' + String(__s).padStart(2, '0'); }`;
+    }
+case 'beep': {
+      return `try { var __actx = new (window.AudioContext || window.webkitAudioContext)(); var __osc = __actx.createOscillator(); var __gain = __actx.createGain(); __osc.connect(__gain); __gain.connect(__actx.destination); __osc.frequency.value = 880; __osc.type = 'sine'; __gain.gain.setValueAtTime(0.4, __actx.currentTime); __gain.gain.exponentialRampToValueAtTime(0.001, __actx.currentTime + 0.8); __osc.start(); __osc.stop(__actx.currentTime + 0.8); } catch(e) { console.warn('beep failed', e); }`;
+    }
+    case 'vibrate': {
+      return `if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);`;
+    }
+    case 'notify': {
+      const msgParts = parts.slice(2).join(' ') || 'Timer finished';
+      const mq = JSON.stringify(msgParts);
+      return `try { if (window.Notification && Notification.permission === 'granted') { try { new Notification(${mq}); } catch(e) { console.warn('notify failed', e); } } else if (window.Notification && Notification.permission !== 'denied') { Notification.requestPermission().then(function(p) { if (p === 'granted') { try { new Notification(${mq}); } catch(e) {} } }); } } catch(e) {}`;
+    }
+        default:
       return '';
   }
 }

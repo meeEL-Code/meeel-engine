@@ -66,7 +66,8 @@ export function parse(tokens: Token[]): BlockNode {
         advance(); // consume -[
         const afterDash = peek();
 
-        const isKnownProperty = name in PROPERTIES;
+        const isTimerProp = /^every-\d+-(millisecond|milliseconds|second|seconds|minute|minutes|hour|hours)$/.test(name);
+        const isKnownProperty = (name in PROPERTIES) || isTimerProp;
         const isKnownBlock = resolveBlock(name) !== null;
 
         // ---- 1) Same-line value: name-[value] ----

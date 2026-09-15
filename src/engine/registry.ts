@@ -143,6 +143,11 @@ export function resolveBlock(name: string): BlockDef | null {
   // 1) Exact match
   if (FIXED_BLOCKS[name]) return FIXED_BLOCKS[name];
 
+  // 1.5) Timer block: every-N-second / every-N-seconds / every-N-minute / every-N-hour
+  if (/^every-\d+-(second|seconds|minute|minutes|hour|hours)$/.test(name)) {
+    return { tag: 'div' };  // renders nothing itself, just a JS trigger
+  }
+
   // 2) Strip trailing -N (e.g. card-1 → card, text-2 → text)
   const base = name.replace(/-\d+$/, '');
   if (FIXED_BLOCKS[base]) return FIXED_BLOCKS[base];
