@@ -4732,7 +4732,21 @@ case 'beep': {
       const mq = JSON.stringify(msgParts);
       return `try { if (window.Notification && Notification.permission === 'granted') { try { new Notification(${mq}); } catch(e) { console.warn('notify failed', e); } } else if (window.Notification && Notification.permission !== 'denied') { Notification.requestPermission().then(function(p) { if (p === 'granted') { try { new Notification(${mq}); } catch(e) {} } }); } } catch(e) {}`;
     }
-        default:
+        case 'compute-time': {
+      // Syntax: compute-time <target> from <hours-src> <minutes-src> <seconds-src>
+      const cTarget = parts[1];
+      const fromKw = parts[2];
+      const hSrc = parts[3];
+      const mSrc = parts[4];
+      const sSrc = parts[5];
+      if (!cTarget || fromKw !== 'from' || !hSrc || !mSrc || !sSrc) return '';
+      const tq2 = JSON.stringify(cTarget);
+      const hq = JSON.stringify(hSrc);
+      const mq = JSON.stringify(mSrc);
+      const sq = JSON.stringify(sSrc);
+      return `var __tgt = __meeel_find(${tq2}); var __h = __meeel_find(${hq}); var __m = __meeel_find(${mq}); var __s = __meeel_find(${sq}); if (__tgt) { var __hv = __h ? (parseInt((__h.value !== undefined && __h.value !== null) ? __h.value : __h.textContent, 10) || 0) : 0; var __mv = __m ? (parseInt((__m.value !== undefined && __m.value !== null) ? __m.value : __m.textContent, 10) || 0) : 0; var __sv = __s ? (parseInt((__s.value !== undefined && __s.value !== null) ? __s.value : __s.textContent, 10) || 0) : 0; __tgt.textContent = String(__hv * 3600 + __mv * 60 + __sv); }`;
+    }
+    default:
       return '';
   }
 }
