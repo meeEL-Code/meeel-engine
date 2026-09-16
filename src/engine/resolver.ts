@@ -23,7 +23,31 @@ export function resolve(root: BlockNode): ResolveError[] {
   const allNames = new Set<string>();
   collectNames(root, allNames);
   checkBlock(root, allNames, errors);
+  checkNumberedNames(root, errors);
   return errors;
+}
+
+function checkNumberedNames(block: BlockNode, errors: ResolveError[]): void {
+  // Skip opens-by-tap — its children are call-id references
+  if (block.name === 'opens-by-tap') return;
+
+  for (const child of block.children) {
+    if (child.kind === 'block') {
+      // Allow page-1, page-2 — these are normal for multi-page sites
+      const isPage = /^page(-\d+)?$/.test(child.name);
+
+      if (!isPage && /-\d+$/.test(child.name)) {
+        const base = child.name.replace(/-\d+$/, '');
+        errors.push({
+          message: `The name '${child.name}' ends with a number. Numbers are easy to forget. Give it a name that says what it does — like '${base}' or 'login-button'.`,
+          line: child.line,
+          token: child.name,
+        });
+      }
+
+      checkNumberedNames(child, errors);
+    }
+  }
 }
 
 function collectNames(block: BlockNode, names: Set<string>): void {
