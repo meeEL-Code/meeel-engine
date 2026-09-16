@@ -1911,7 +1911,22 @@ function generateBlock(
         val = ICONS[val];
       }
 
-      if (propDef.special === 'content') textParts.push(val);
+      if (propDef.special === 'content-position') {
+        // Value like: 'center-of-bar', 'top-of-page', 'center', 'middle'
+        let pos = val.trim().toLowerCase();
+        const ofMatch = pos.match(/^([a-z]+)-of-[a-z][a-z0-9-]*$/);
+        if (ofMatch) pos = ofMatch[1];
+        switch (pos) {
+          case 'top': hasTop = true; break;
+          case 'bottom': hasBottom = true; break;
+          case 'left': hasLeft = true; break;
+          case 'right': hasRight = true; break;
+          case 'center': hasCenter = true; break;
+          case 'middle': hasMiddle = true; break;
+          case 'center-middle': hasCenter = true; hasMiddle = true; break;
+        }
+      }
+      else if (propDef.special === 'content') textParts.push(val);
       else if (propDef.special === 'src') attrs['src'] = val;
       else if (propDef.special === 'type') attrs['type'] = val;
       else if (propDef.special === 'placeholder') attrs['placeholder'] = val;
