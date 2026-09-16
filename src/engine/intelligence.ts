@@ -128,21 +128,44 @@ function findTimeUnit(words: string[]): string | null {
 }
 
 function extractTarget(words: string[]): string | null {
-  // Look for a word that looks like a block name (ends with block suffix)
-  for (const w of words) {
-    const lower = w.toLowerCase();
-    if ((BLOCK_SUFFIXES as readonly string[]).includes(lower)) {
-      // Found the block type
-      return w;
-    }
-    // Compound — check by suffix
-    const info = detectBlockType(w);
-    if (info) return w;
+  // Skip common noise words + position keywords
+  const skipPrefixes = new Set([
+    'in', 'at', 'on', 'the', 'of', 'to', 'a', 'an', 'some', 'any',
+    'top', 'bottom', 'left', 'right', 'center', 'middle',
+    'above', 'below', 'under', 'over', 'near', 'beside',
+    'user', 'when', 'if', 'and', 'or',
+  ]);
+
+  // Find where the actual target starts (after all skip words)
+  let start = 0;
+  while (start < words.length && skipPrefixes.has(words[start].toLowerCase())) {
+    start++;
   }
+
+  // If nothing left, no target
+  if (start >= words.length) return null;
+
+  // The rest is the target — join with dashes
+  const targetWords = words.slice(start).map((w) => w.toLowerCase());
+  const joined = targetWords.join('-');
+
+  // Make sure it ends with a block suffix — otherwise return null
+  const info = detectBlockType(joined);
+  if (info) return joined;
+
   return null;
 }
 
 function matchProperty(line: string): Intent | null {
+  // Special case: `border-[round]` or similar — user means 'make it round'
+  // The 'border' word is noise; the VALUE (round) is what they want
+  const borderStyleMatch = line.match(/^border-\[(round|rounded|circle|pill|shadow|bold|italic)\]$/);
+  if (borderStyleMatch) {
+    // Treat as style
+    const styleWord = borderStyleMatch[1];
+    return { kind: 'style', canonical: styleWord };
+  }
+
   // Look for pattern: key-[value] at start of the line
   const m = line.match(/^([a-z][a-z0-9-]*)\s*-\[(.*)\]$/);
   if (!m) return null;
