@@ -1242,6 +1242,7 @@ export function generatePages(root: BlockNode): PageOutput[] {
       htmlFile: parts.htmlFile,
       css: parts.css,
       js: parts.js,
+      python: parts.python,
     };
   });
 }
@@ -1465,7 +1466,7 @@ export function generateParts(
   const fullHtmlWithJs = wrapHtml(finalHtml, css, js);
   const htmlFileWithJs = wrapHtmlExternal(finalHtml, cssFilename, jsFilename);
 
-  return { html: finalHtml, css, js, fullHtml: fullHtmlWithJs, htmlFile: htmlFileWithJs };
+  return { html: finalHtml, css, js, python: PYTHON_SERVER, fullHtml: fullHtmlWithJs, htmlFile: htmlFileWithJs };
 }
 
 const modeOnlyHtml: Record<ModeKind, string[]> = { mobile: [], tablet: [], desktop: [] };
@@ -2174,6 +2175,76 @@ function injectOpenProp(node: BlockNode, buttonName: string, targetPage: string)
     }
   }
 }
+
+
+
+/* ============ PYTHON SERVER (4-in-1 output) ============ */
+
+const PYTHON_SERVER = `"""
+meeEL — Python Server
+=====================
+
+This file serves your site on your own computer.
+You do not need to know Python to use it.
+
+How to use
+----------
+1. Put all files (index.html, style.css, script.js, server.py) in one folder.
+2. Open a terminal in that folder.
+3. Run:  python server.py
+4. Your browser opens automatically at http://localhost:8000
+
+To stop the server, press Control and C together.
+
+Requirements
+------------
+Python 3.7 or newer. Nothing else to install.
+"""
+
+import http.server
+import socketserver
+import webbrowser
+import os
+
+
+PORT = 8000
+
+
+class MeeelHandler(http.server.SimpleHTTPRequestHandler):
+    """Serve the folder as a website. Root goes to index.html."""
+
+    def do_GET(self):
+        if self.path == "/":
+            self.path = "/index.html"
+        return super().do_GET()
+
+
+def main():
+    # Always run from the folder that contains this file.
+    here = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(here)
+
+    with socketserver.TCPServer(("", PORT), MeeelHandler) as server:
+        address = "http://localhost:" + str(PORT)
+        print()
+        print("meeEL server is running.")
+        print("Open this address in your browser: " + address)
+        print("Press Control and C together to stop.")
+        print()
+        try:
+            webbrowser.open(address)
+        except Exception:
+            pass
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print()
+            print("Server stopped. Goodbye.")
+
+
+if __name__ == "__main__":
+    main()
+`;
 
 function escapeHtml(s: string): string {
   return s

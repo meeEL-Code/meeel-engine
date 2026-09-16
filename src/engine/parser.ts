@@ -76,7 +76,7 @@ export function parse(tokens: Token[]): BlockNode {
           const close = peek();
           if (!close || close.type !== TokenType.CLOSE) {
             throw makeError(
-              `Missing closing ']' for '${name}'`,
+              `'${name}' needs a closing ']'`,
               tok.line,
               `Add ']' after ${name}-[${value.slice(0, 20)}...]`
             );
@@ -158,7 +158,7 @@ export function parse(tokens: Token[]): BlockNode {
             }
             if (t.type === TokenType.EOF) {
               throw makeError(
-                `Missing closing ']' for '${name}'`,
+                `'${name}' needs a closing ']'`,
                 tok.line,
                 `Add ']' after ${name}-[...]`
               );
@@ -212,7 +212,7 @@ export function parse(tokens: Token[]): BlockNode {
   if (stack.length > 1) {
     const unclosed = stack[stack.length - 1];
     throw makeError(
-      `Unclosed block '${unclosed.name}' — its ']' is missing`,
+      `'${unclosed.name}' is not closed — add ']' at the end`,
       unclosed.line,
       `Add ']' to close the '${unclosed.name}-[' block`
     );

@@ -67,7 +67,7 @@ function checkBlock(
       if (!isRepeatable(child.name)) {
         if (seen.has(child.name)) {
           errors.push({
-            message: `Duplicate block name '${child.name}'. Names must be unique per page.`,
+            message: `'${child.name}' is used twice — give one a different name`,
             line: child.line,
             token: child.name,
           });
@@ -92,7 +92,7 @@ function checkBlock(
         if (parsed && !allNames.has(parsed.reference)) {
           const sug = findClosest(parsed.reference, Array.from(allNames));
           errors.push({
-            message: `Reference '${parsed.reference}' not found for '${child.name}'`,
+            message: `'${parsed.reference}' is not used anywhere (in '${child.name}')`,
             line: child.line,
             token: child.name,
             suggestion: sug ? `Did you mean '${sug}'?` : undefined,
@@ -108,7 +108,7 @@ function checkBlock(
             );
             const sug = findClosest(target, pageNames);
             errors.push({
-              message: `Page '${target}' not found`,
+              message: `No page named '${target}' exists yet`,
               line: child.line,
               token: child.name,
               suggestion: sug ? `Did you mean '${sug}'?` : undefined,
@@ -118,7 +118,7 @@ function checkBlock(
       } else if (!PROPERTIES[child.name]) {
         const sug = findClosest(child.name, Object.keys(PROPERTIES));
         errors.push({
-          message: `Unknown property '${child.name}'`,
+          message: `meeEL does not recognize '${child.name}'`,
           line: child.line,
           token: child.name,
           suggestion: sug ? `Did you mean '${sug}'?` : undefined,
@@ -150,7 +150,7 @@ function checkBlock(
         if (parsed && !allNames.has(parsed.reference)) {
           const sug = findClosest(parsed.reference, Array.from(allNames));
           errors.push({
-            message: `Reference '${parsed.reference}' not found for '${child.name}'`,
+            message: `'${parsed.reference}' is not used anywhere (in '${child.name}')`,
             line: child.line,
             token: child.name,
             suggestion: sug ? `Did you mean '${sug}'?` : undefined,
@@ -159,7 +159,7 @@ function checkBlock(
       } else if (PROPERTIES[child.name]) {
         // Bare property name — missing its value
         errors.push({
-          message: `Property '${child.name}' needs a value. Use '${child.name}-[value]'`,
+          message: `'${child.name}' needs a value — write it like '${child.name}-[something]'`,
           line: child.line,
           token: child.name,
           suggestion: `Add a value: '${child.name}-[value]'`,
@@ -171,7 +171,7 @@ function checkBlock(
         ];
         const sug = findClosest(child.name, kwNames);
         errors.push({
-          message: `Unknown keyword '${child.name}'`,
+          message: `meeEL does not recognize '${child.name}'`,
           line: child.line,
           token: child.name,
           suggestion: sug ? `Did you mean '${sug}'?` : undefined,
