@@ -1520,3 +1520,240 @@ function renderFontList() {
 
 // Initialize the font list
 renderFontList();
+
+/* ============ LEARN TO WRITE — BOOK ============ */
+
+import { BOOK_CHAPTERS } from './book-content';
+
+const learnBtn = document.getElementById('learn-btn') as HTMLButtonElement | null;
+const bookModal = document.getElementById('book-modal') as HTMLElement | null;
+const bookClose = document.getElementById('book-close') as HTMLButtonElement | null;
+const bookChapters = document.getElementById('book-chapters') as HTMLElement | null;
+const bookArticle = document.getElementById('book-article') as HTMLElement | null;
+const bookContentArea = document.getElementById('book-content') as HTMLElement | null;
+
+let currentChapter = 0;
+
+function escapeBookHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Tiny markdown-to-HTML renderer.
+ * Supports: ## h2, ### h3, **bold**, *italic*, `code`,
+ * ~~~ and ``` code fences, > quote, - list, | table |
+ */
+function renderBookMarkdown(md: string): string {
+  const lines = md.split('\n');
+  const out: string[] = [];
+  let inCode = false;
+  let inTable = false;
+  let tableRows: string[] = [];
+  let inList = false;
+  let paragraph: string[] = [];
+
+  const flushParagraph = () => {
+    if (paragraph.length > 0) {
+      out.push(`<p>${inlineFmt(paragraph.join(' '))}</p>`);
+      paragraph = [];
+    }
+  };
+
+  const flushList = () => {
+    if (inList) {
+      out.push('</ul>');
+      inList = false;
+    }
+  };
+
+  const flushTable = () => {
+    if (inTable && tableRows.length > 0) {
+      const cells = tableRows.map((r) =>
+        r
+          .split('|')
+          .map((c) => c.trim())
+          .filter((_, i, arr) => i !== 0 && i !== arr.length - 1)
+      );
+      if (cells.length >= 1) {
+        const header = cells[0];
+        const body = cells.slice(1);
+        out.push('<table><thead><tr>');
+        for (const h of header) out.push(`<th>${inlineFmt(h)}</th>`);
+        out.push('</tr></thead><tbody>');
+        for (const row of body) {
+          out.push('<tr>');
+          for (const c of row) out.push(`<td>${inlineFmt(c)}</td>`);
+          out.push('</tr>');
+        }
+        out.push('</tbody></table>');
+      }
+      tableRows = [];
+      inTable = false;
+    }
+  };
+
+  const inlineFmt = (s: string): string => {
+    let r = escapeBookHtml(s);
+    r = r.replace(/`([^`]+)`/g, '<code>$1</code>');
+    r = r.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    r = r.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    return r;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const line = raw;
+
+    // Code fence
+    if (line.trim().startsWith('```') || line.trim().startsWith('~~~')) {
+      if (!inCode) {
+        flushParagraph();
+        flushList();
+        flushTable();
+        out.push('<pre><code>');
+        inCode = true;
+      } else {
+        out.push('</code></pre>');
+        inCode = false;
+      }
+      continue;
+    }
+
+    if (inCode) {
+      out.push(escapeBookHtml(line));
+      continue;
+    }
+
+    // Table row
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      // skip separator row (---|---)
+      if (/^\s*\|[\s\-:|]+\|\s*$/.test(line)) {
+        continue;
+      }
+      flushParagraph();
+      flushList();
+      inTable = true;
+      tableRows.push(line);
+      continue;
+    } else if (inTable) {
+      flushTable();
+    }
+
+    // Heading ## or ###
+    if (line.startsWith('### ')) {
+      flushParagraph();
+      flushList();
+      out.push(`<h3>${inlineFmt(line.slice(4))}</h3>`);
+      continue;
+    }
+    if (line.startsWith('## ')) {
+      flushParagraph();
+      flushList();
+      out.push(`<h2>${inlineFmt(line.slice(3))}</h2>`);
+      continue;
+    }
+
+    // Blockquote
+    if (line.startsWith('> ')) {
+      flushParagraph();
+      flushList();
+      out.push(`<blockquote>${inlineFmt(line.slice(2))}</blockquote>`);
+      continue;
+    }
+
+    // List
+    if (/^\s*[-*] /.test(line)) {
+      flushParagraph();
+      if (!inList) {
+        out.push('<ul>');
+        inList = true;
+      }
+      out.push(`<li>${inlineFmt(line.replace(/^\s*[-*] /, ''))}</li>`);
+      continue;
+    } else if (inList) {
+      flushList();
+    }
+
+    // Blank line
+    if (line.trim() === '') {
+      flushParagraph();
+      continue;
+    }
+
+    // Paragraph
+    paragraph.push(line.trim());
+  }
+
+  flushParagraph();
+  flushList();
+  flushTable();
+  if (inCode) out.push('</code></pre>');
+
+  return out.join('\n');
+}
+
+function renderBookChapters() {
+  if (!bookChapters) return;
+  bookChapters.innerHTML = BOOK_CHAPTERS.map((ch, i) => {
+    const active = i === currentChapter ? ' active' : '';
+    const num = String(i + 1).padStart(2, '0');
+    return `<button class="book-chapter${active}" data-chapter-index="${i}" type="button">
+      <span class="book-chapter-num">${num}</span>
+      <span class="book-chapter-text">${escapeBookHtml(ch.title)}</span>
+    </button>`;
+  }).join('');
+
+  bookChapters.querySelectorAll('.book-chapter').forEach((el) => {
+    el.addEventListener('click', () => {
+      const idx = parseInt((el as HTMLElement).dataset.chapterIndex || '0', 10);
+      showChapter(idx);
+    });
+  });
+}
+
+function showChapter(idx: number) {
+  if (idx < 0 || idx >= BOOK_CHAPTERS.length) return;
+  currentChapter = idx;
+  const ch = BOOK_CHAPTERS[idx];
+  if (bookArticle) {
+    bookArticle.innerHTML = renderBookMarkdown(ch.body);
+  }
+  if (bookContentArea) {
+    bookContentArea.scrollTop = 0;
+  }
+  renderBookChapters();
+}
+
+function openBook() {
+  if (!bookModal) return;
+  bookModal.hidden = false;
+  showChapter(currentChapter);
+}
+function closeBook() {
+  if (!bookModal) return;
+  bookModal.hidden = true;
+}
+
+learnBtn?.addEventListener('click', () => {
+  // Close tools drawer first
+  const td = document.getElementById('tools-drawer');
+  if (td) td.classList.remove('open');
+  const tb = document.getElementById('tools-backdrop');
+  if (tb) tb.hidden = true;
+  openBook();
+});
+bookClose?.addEventListener('click', closeBook);
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && bookModal && !bookModal.hidden) {
+    closeBook();
+  }
+});
+
+// Initialize chapters once
+renderBookChapters();
