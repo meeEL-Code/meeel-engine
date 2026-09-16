@@ -1533,6 +1533,7 @@ const bookArticle = document.getElementById('book-article') as HTMLElement | nul
 const bookContentArea = document.getElementById('book-content') as HTMLElement | null;
 
 let currentChapter = 0;
+let currentBookLang: 'english' | 'bangla' = 'english';
 
 function escapeBookHtml(s: string): string {
   return s
@@ -1699,7 +1700,8 @@ function renderBookMarkdown(md: string): string {
 
 function renderBookChapters() {
   if (!bookChapters) return;
-  bookChapters.innerHTML = BOOK_CHAPTERS.map((ch, i) => {
+  const chapters = BOOK_CHAPTERS[currentBookLang];
+  bookChapters.innerHTML = chapters.map((ch, i) => {
     const active = i === currentChapter ? ' active' : '';
     const num = String(i + 1).padStart(2, '0');
     return `<button class="book-chapter${active}" data-chapter-index="${i}" type="button">
@@ -1717,9 +1719,10 @@ function renderBookChapters() {
 }
 
 function showChapter(idx: number) {
-  if (idx < 0 || idx >= BOOK_CHAPTERS.length) return;
+  const chapters = BOOK_CHAPTERS[currentBookLang];
+  if (idx < 0 || idx >= chapters.length) return;
   currentChapter = idx;
-  const ch = BOOK_CHAPTERS[idx];
+  const ch = chapters[idx];
   if (bookArticle) {
     bookArticle.innerHTML = renderBookMarkdown(ch.body);
   }
@@ -1727,6 +1730,24 @@ function showChapter(idx: number) {
     bookContentArea.scrollTop = 0;
   }
   renderBookChapters();
+}
+
+function switchBookLang(lang: 'english' | 'bangla') {
+  currentBookLang = lang;
+  document.querySelectorAll('.book-tab').forEach((t) => {
+    t.classList.toggle('active', (t as HTMLElement).dataset.bookLang === lang);
+  });
+  // Update title/subtitle
+  const titleEl = document.getElementById('book-modal-title');
+  const subtitleEl = document.getElementById('book-modal-subtitle');
+  if (lang === 'bangla') {
+    if (titleEl) titleEl.textContent = 'meeEL লিখতে শিখুন';
+    if (subtitleEl) subtitleEl.textContent = 'ছোট গাইড, এক অধ্যায় করে';
+  } else {
+    if (titleEl) titleEl.textContent = 'Learn to write meeEL';
+    if (subtitleEl) subtitleEl.textContent = 'A small guide, chapter by chapter';
+  }
+  showChapter(currentChapter);
 }
 
 function openBook() {
@@ -1755,5 +1776,125 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Wire up language tabs
+document.querySelectorAll('.book-tab').forEach((t) => {
+  t.addEventListener('click', () => {
+    const lang = (t as HTMLElement).dataset.bookLang as 'english' | 'bangla';
+    switchBookLang(lang || 'english');
+  });
+});
+
 // Initialize chapters once
 renderBookChapters();
+
+/* ============ WHAT MEEEL CAN DO ============ */
+
+import { WHAT_MEEL_CAN_DO } from './what-can-do';
+
+const whatCanDoBtn = document.getElementById('what-can-do-btn') as HTMLButtonElement | null;
+const whatCanDoModal = document.getElementById('what-can-do-modal') as HTMLElement | null;
+const whatCanDoClose = document.getElementById('what-can-do-close') as HTMLButtonElement | null;
+const whatCanDoArticle = document.getElementById('what-can-do-article') as HTMLElement | null;
+const whatCanDoTabs = document.querySelectorAll('.what-can-do-tab') as NodeListOf<HTMLButtonElement>;
+
+let currentLang: 'english' | 'bangla' = 'english';
+
+function escapeWhatCanDo(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderWhatCanDo() {
+  if (!whatCanDoArticle) return;
+  const data = WHAT_MEEL_CAN_DO[currentLang];
+  if (!data) return;
+
+  const canItems = data.canList
+    .map((item) => `<li class="can-item">${escapeWhatCanDo(item)}</li>`)
+    .join('');
+  const cannotItems = data.cannotList
+    .map((item) => `<li class="cannot-item">${escapeWhatCanDo(item)}</li>`)
+    .join('');
+
+  const questionsHtml = data.questions
+    .map(
+      (item) => `
+      <div class="question-block">
+        <div class="question-q">${escapeWhatCanDo(item.q)}</div>
+        <div class="question-a">${escapeWhatCanDo(item.a)}</div>
+      </div>
+    `
+    )
+    .join('');
+
+  whatCanDoArticle.innerHTML = `
+    <h2>${escapeWhatCanDo(data.heading)}</h2>
+    <p>${escapeWhatCanDo(data.intro)}</p>
+
+    <h3 class="can-title">${escapeWhatCanDo(data.canTitle)}</h3>
+    <ul>${canItems}</ul>
+
+    <h3 class="cannot-title">${escapeWhatCanDo(data.cannotTitle)}</h3>
+    <ul>${cannotItems}</ul>
+
+    <h2>${escapeWhatCanDo(data.questionsTitle)}</h2>
+    ${questionsHtml}
+
+    <h2>${escapeWhatCanDo(data.closingTitle)}</h2>
+    <p>${escapeWhatCanDo(data.closingBody)}</p>
+
+    <div class="closing-box">
+      <p>${escapeWhatCanDo(data.limitation)}</p>
+    </div>
+  `;
+
+  const titleEl = document.getElementById('what-can-do-title');
+  if (titleEl) titleEl.textContent = data.heading;
+}
+
+function switchWhatCanDoLang(lang: 'english' | 'bangla') {
+  currentLang = lang;
+  whatCanDoTabs.forEach((t) => {
+    t.classList.toggle('active', t.dataset.lang === lang);
+  });
+  renderWhatCanDo();
+}
+
+function openWhatCanDo() {
+  if (!whatCanDoModal) return;
+  whatCanDoModal.hidden = false;
+  switchWhatCanDoLang(currentLang);
+}
+function closeWhatCanDo() {
+  if (!whatCanDoModal) return;
+  whatCanDoModal.hidden = true;
+}
+
+whatCanDoBtn?.addEventListener('click', () => {
+  const td = document.getElementById('tools-drawer');
+  if (td) td.classList.remove('open');
+  const tb = document.getElementById('tools-backdrop');
+  if (tb) tb.hidden = true;
+  openWhatCanDo();
+});
+
+whatCanDoClose?.addEventListener('click', closeWhatCanDo);
+
+whatCanDoTabs.forEach((t) => {
+  t.addEventListener('click', () => {
+    switchWhatCanDoLang((t.dataset.lang as 'english' | 'bangla') || 'english');
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && whatCanDoModal && !whatCanDoModal.hidden) {
+    closeWhatCanDo();
+  }
+});
+
+// Initialize content once
+renderWhatCanDo();

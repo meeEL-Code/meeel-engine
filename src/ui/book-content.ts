@@ -1,14 +1,693 @@
+// meeEL — Learn to Write (bilingual)
+
 export interface Chapter {
   id: string;
   title: string;
-  body: string;  // HTML-safe markdown-lite (rendered by app.ts)
+  body: string;
 }
 
-export const BOOK_CHAPTERS: Chapter[] = [
-  {
-    id: 'welcome',
-    title: 'Welcome',
-    body: `## meeEL কী
+export const BOOK_CHAPTERS: { english: Chapter[]; bangla: Chapter[] } = {
+  english: [
+    {
+      id: 'welcome',
+      title: 'Welcome',
+      body: `## What is meeEL
+
+meeEL is a simple language. You write in plain English. meeEL turns it into real code.
+
+You write **one** meeEL file. meeEL makes **four** files:
+
+| From meeEL | What you get |
+|---|---|
+| home.html | The page structure |
+| home.css | Colors and sizes |
+| home.js | The click actions |
+| server.py | A small server |
+
+You never need to learn HTML, CSS, JavaScript, or Python.
+
+## Only three symbols
+
+meeEL has only three symbols:
+
+- **-** joins words in a name
+- **[]** holds a value
+- **#** marks a note (meeEL will not read it)
+
+Nothing else. No semicolons. No brackets outside of values.`,
+    },
+    {
+      id: 'first-code',
+      title: 'First Code',
+      body: `## Your first meeEL code
+
+Type this in meeEL Page:
+
+\`\`\`
+page-[
+  background-color-[#f5f5f5]
+
+  greeting-text-[
+    center
+    content-[Hello meeEL]
+    font-size-[32px]
+  ]
+]
+\`\`\`
+
+**Read it as:**
+
+> A page. Light gray background. In the middle, some text — "Hello meeEL" — size 32 pixels.
+
+You will see it on the right side, immediately. That is meeEL.
+
+## Add one thing
+
+Let's add a button:
+
+\`\`\`
+page-[
+  background-color-[#f5f5f5]
+
+  greeting-text-[
+    center
+    content-[Hello meeEL]
+    font-size-[32px]
+  ]
+
+  login-button-[
+    center
+    margin-top-[20px]
+    content-[Log in]
+    background-color-[#0a84ff]
+    color-[white]
+    padding-[12px-24px]
+    border-radius-[8px]
+  ]
+]
+\`\`\`
+
+**You will see the button.** But tapping it does nothing — because we have not told it what to do.
+
+## Tell it what to do
+
+Give the button a job — change some text when tapped:
+
+\`\`\`
+page-[
+  background-color-[#f5f5f5]
+  padding-[30px]
+
+  greeting-text-[
+    center
+    content-[Hello]
+    font-size-[32px]
+  ]
+
+  login-button-[
+    center
+    margin-top-[20px]
+    content-[Say Hello]
+    background-color-[#0a84ff]
+    color-[white]
+    padding-[12px-24px]
+    border-radius-[8px]
+    on-click-[write greeting-text Hello meeEL!]
+  ]
+]
+\`\`\`
+
+**Now tap the button.** The text changes.
+
+**That is meeEL — simple, direct, in your own words.**`,
+    },
+    {
+      id: 'names',
+      title: 'Names',
+      body: `## Name things, do not number them
+
+In meeEL, a name should **say what it does** — never use numbers.
+
+## Good and bad names
+
+| Good | Bad |
+|---|---|
+| login-button | button-1 |
+| search-icon | icon-2 |
+| greeting-text | text-1 |
+| profile-avatar | avatar-3 |
+| stats-card | card-1 |
+
+## The rule
+
+- **Say the job** — \`login\`, \`search\`, \`home\`
+- **Say the type** — \`button\`, \`icon\`, \`text\`
+- **Join them** with \`-\`
+- **Never use numbers**
+
+## Why
+
+- \`button-1\` — says nothing
+- \`login-button\` — says everything
+- A year later, you will still understand
+- The code speaks for itself
+
+## What if you need two of the same kind?
+
+They do different jobs. So they get different names:
+
+\`\`\`
+left-arrow-icon-[ ... ]
+right-arrow-icon-[ ... ]
+\`\`\`
+
+Not:
+
+\`\`\`
+icon-1-[ ... ]
+icon-2-[ ... ]
+\`\`\`
+
+## Special case
+
+Pages (pages) do not use numbers — they get names:
+
+\`\`\`
+home-page-[ ... ]
+chat-page-[ ... ]
+about-page-[ ... ]
+\`\`\`
+
+**meeEL will compile numbers, but meeEL will ask you — do not use numbers.**`,
+    },
+    {
+      id: 'blocks',
+      title: 'Blocks',
+      body: `## What is a block
+
+A block is the foundation of meeEL. A block has two parts:
+
+\`\`\`
+name-[
+  what goes inside
+]
+\`\`\`
+
+- **name** — what the block is
+- **-[** — the block starts
+- **]** — the block ends
+
+## Example
+
+\`\`\`
+stats-card-[
+  background-color-[white]
+  padding-[20px]
+
+  card-title-[
+    content-[Total Views]
+  ]
+]
+\`\`\`
+
+**What is inside:**
+- \`stats-card\` — a small box
+- \`background-color-[white]\` — the box is white
+- \`padding-[20px]\` — 20 pixels of space inside
+- \`card-title\` — a heading
+
+## Kinds of blocks
+
+**Layout — where things sit**
+- \`page\`, \`row\`, \`column\`, \`card\`, \`sidebar\`
+
+**Text and pictures**
+- \`text\`, \`title\`, \`icon\`, \`image\`, \`logo\`, \`avatar\`
+
+**Clickable**
+- \`button\`, \`link\`, \`input\`, \`select\`
+
+**Choices**
+- \`toggle\`, \`slider\`, \`checkbox\`, \`radio\`
+
+**Data**
+- \`table\`, \`bar-chart\`, \`line-chart\`, \`donut-chart\`
+
+## Blocks inside blocks
+
+A block can hold another block — as deep as you like:
+
+\`\`\`
+page-[
+  stats-card-[
+    card-title-[
+      content-[Hello]
+    ]
+    card-body-[
+      content-[World]
+    ]
+  ]
+]
+\`\`\`
+
+**This is the shape of meeEL — what is inside, goes inside.**`,
+    },
+    {
+      id: 'properties',
+      title: 'Properties',
+      body: `## What is a property
+
+A property is a **quality** of a block — color, size, text.
+
+## How to write it
+
+\`\`\`
+name-[value]
+\`\`\`
+
+**Example:**
+
+\`\`\`
+background-color-[#0a84ff]
+font-size-[24px]
+content-[Hello World]
+\`\`\`
+
+## Main properties
+
+**Color:**
+- \`background-color-[...]\` — the back color
+- \`color-[...]\` — the text color
+
+**Text:**
+- \`content-[...]\` — the writing inside
+- \`font-size-[...]\` — how big
+- \`font-weight-[bold]\` — thick or thin
+
+**Size:**
+- \`width-[200px]\` — how wide
+- \`height-[100px]\` — how tall
+- \`padding-[20px]\` — space inside
+- \`margin-[20px]\` — space outside
+
+**Style:**
+- \`border-radius-[8px]\` — rounded corners
+- \`box-shadow-[...]\` — a soft shadow
+
+## Many properties at once
+
+As many as you like in one block — **each on its own line**:
+
+\`\`\`
+login-button-[
+  content-[Click me]
+  background-color-[#0a84ff]
+  color-[white]
+  padding-[12px-24px]
+  border-radius-[8px]
+]
+\`\`\`
+
+## Why each on its own line
+
+Because it is easier to read. meeEL wants you to read it easily.
+
+**If you can read your own code, you can spot your own mistakes.**`,
+    },
+    {
+      id: 'actions',
+      title: 'Actions',
+      body: `## What is an action
+
+An action is — what happens when someone taps.
+
+## How to write it
+
+\`\`\`
+on-click-[
+  one action
+  another action
+]
+\`\`\`
+
+**Each action on its own line.**
+
+## Simple actions
+
+**Show and hide:**
+\`\`\`
+on-click-[show secret-box]
+on-click-[hide menu]
+on-click-[toggle popup]
+\`\`\`
+
+**Change numbers:**
+\`\`\`
+on-click-[increase counter]
+on-click-[decrease counter]
+on-click-[add counter 5]
+on-click-[subtract counter 3]
+\`\`\`
+
+**Change text:**
+\`\`\`
+on-click-[write greeting Hello!]
+\`\`\`
+
+**Change colors:**
+\`\`\`
+on-click-[paint title red]
+on-click-[fill page black]
+\`\`\`
+
+## Many actions at once
+
+\`\`\`
+on-click-[
+  increase counter
+  write result Clicked!
+]
+\`\`\`
+
+**One tap, two actions.**
+
+## Action with a condition
+
+\`\`\`
+on-click-[if counter is-5 write result You win!]
+\`\`\`
+
+**Read as:** "If counter is 5, write 'You win!' in result."
+
+Conditions:
+- \`is-5\` — equal to 5
+- \`is-greater-than-5\` — more than 5
+- \`is-less-than-5\` — less than 5
+- \`is-at-least-5\` — 5 or more
+
+## Fun actions
+
+\`\`\`
+on-click-[beep]
+on-click-[vibrate]
+on-click-[roll dice 1-6]
+on-click-[notify Time is up]
+\`\`\`
+
+**meeEL — as simple as it is fun.**`,
+    },
+    {
+      id: 'pages',
+      title: 'Pages',
+      body: `## From one page to many
+
+**If you have one page:**
+
+\`\`\`
+page-[
+  ...
+]
+\`\`\`
+
+The file will be \`index.html\`.
+
+**If you have many pages, give them names:**
+
+\`\`\`
+home-page-[
+  ...
+]
+
+chat-page-[
+  ...
+]
+
+about-page-[
+  ...
+]
+\`\`\`
+
+The files will be:
+- \`home.html\`
+- \`chat.html\`
+- \`about.html\`
+
+## Connecting pages
+
+Give each page a \`call-id\`:
+
+\`\`\`
+home-page-[
+  call-id-[111111]
+
+  chat-button-[
+    content-[Go to Chat]
+  ]
+]
+
+chat-page-[
+  call-id-[222222]
+
+  back-button-[
+    content-[Back]
+  ]
+]
+
+opens-by-tap-[
+  chat-button-[222222]
+  back-button-[111111]
+]
+\`\`\`
+
+**Read as:**
+
+> Tapping chat-button opens page 222222 (chat-page).
+> Tapping back-button opens page 111111 (home-page).
+
+## Why call-id
+
+Because in meeEL names are free. meeEL does not know which page comes first. So we mark them with a number.
+
+**Remember:** a \`call-id\` must be **unique**. Never use the same number on two pages.`,
+    },
+    {
+      id: 'screens',
+      title: 'Phone, Tablet, Computer',
+      body: `## Beautiful on every screen
+
+meeEL wants your site to look **right everywhere** — on a phone, on a tablet, on a computer.
+
+## Screen mode
+
+\`\`\`
+page-[
+  ...what everyone sees...
+
+  mobile-mode-[
+    ...only on phones...
+  ]
+
+  tablet-mode-[
+    ...only on tablets...
+  ]
+
+  desktop-mode-[
+    ...only on computers...
+  ]
+]
+\`\`\`
+
+## Which one when
+
+- **mobile-mode** — 0 to 767 pixels wide
+- **tablet-mode** — 768 to 1023 pixels wide
+- **desktop-mode** — 1024 pixels and up
+
+## Example
+
+\`\`\`
+page-[
+  background-color-[white]
+
+  welcome-text-[
+    center
+    content-[Welcome]
+    font-size-[48px]
+  ]
+
+  mobile-mode-[
+    welcome-text-[
+      font-size-[24px]
+    ]
+  ]
+
+  desktop-mode-[
+    welcome-text-[
+      font-size-[72px]
+    ]
+  ]
+]
+\`\`\`
+
+**On a computer:** big text (72px).
+**On a phone:** small text (24px).
+**Beautiful everywhere.**
+
+## One code
+
+You write it **once**. meeEL works in **three places**.
+
+**That is the beauty of meeEL.**`,
+    },
+    {
+      id: 'dark',
+      title: 'Dark Mode',
+      body: `## Dark Mode
+
+Dark mode means — moving from a white background to a black background.
+
+## How
+
+**Add one toggle.** Then say what changes when the toggle is on.
+
+\`\`\`
+page-[
+  background-color-[white]
+  padding-[30px]
+
+  welcome-text-[
+    center
+    content-[Welcome]
+    font-size-[32px]
+    color-[black]
+  ]
+
+  dark-toggle-[
+    center
+    margin-top-[30px]
+    label-text-[Dark mode]
+    on-color-[#0a84ff]
+    off-color-[#cccccc]
+  ]
+
+  dark-mode-[
+    from-toggle-[dark-toggle]
+
+    page-[
+      background-color-[#0f0f0f]
+    ]
+
+    welcome-text-[
+      color-[white]
+    ]
+  ]
+]
+\`\`\`
+
+**Read as:**
+
+> When dark-toggle is on — the page becomes black, welcome-text becomes white.
+
+## Test
+
+1. Look on the right — white page, black text
+2. Tap the toggle
+3. **Everything changes** — black page, white text
+4. Tap again — white
+
+**One toggle, the whole theme.**
+
+## Many at once
+
+\`\`\`
+dark-mode-[
+  from-toggle-[dark-toggle]
+
+  page-[ background-color-[#0f0f0f] ]
+  welcome-text-[ color-[white] ]
+  stats-card-[ background-color-[#1a1a1a] ]
+  footer-text-[ color-[#888888] ]
+]
+\`\`\`
+
+**You can change as much as you like.** meeEL remembers it all.`,
+    },
+    {
+      id: 'comments',
+      title: 'Notes',
+      body: `## Notes in your code
+
+Writing a note in meeEL is simple — with the \`#\` symbol:
+
+\`\`\`
+# This is a note
+page-[
+  # You can write a note inside too
+  greeting-text-[
+    content-[Hello]
+  ]
+]
+\`\`\`
+
+meeEL will **not read** these lines — only you will.
+
+## Why notes
+
+- Remind yourself a month later
+- Help a friend understand
+- Show others what you were thinking
+
+## Example
+
+\`\`\`
+# Home page — first page visitors see
+home-page-[
+  call-id-[111111]
+
+  # The main welcome message
+  welcome-text-[
+    center
+    content-[Welcome to my app]
+  ]
+
+  # Button that goes to the chat page
+  chat-button-[
+    content-[Open Chat]
+  ]
+]
+
+# Chat page — where people talk
+chat-page-[
+  call-id-[222222]
+  ...
+]
+\`\`\`
+
+## Good notes
+
+**Write:** "what it does"
+**Do not write:** "how it does it"
+
+\`\`\`
+✅ # Save the score when the player wins
+❌ # counter = counter + 1
+\`\`\`
+
+**The first tells why. The second only tells what.**
+
+## Last word
+
+Good code is good on its own. Notes make it **even better**.
+
+**Write today. Read tomorrow. Understand it.**`,
+    },
+  ],
+
+  bangla: [
+    {
+      id: 'welcome',
+      title: 'স্বাগতম',
+      body: `## meeEL কী
 
 meeEL একটা সহজ ভাষা। আপনি ইংরেজিতে লেখেন — meeEL সেটা আসল কোডে বদলে দেয়।
 
@@ -32,11 +711,11 @@ meeEL-এ মাত্র তিনটা চিহ্ন:
 - **#** নোট (meeEL পড়বে না)
 
 আর কোনো চিহ্ন নেই। কোনো semicolon নেই, কোনো bracket-এর বাইরে কিছু নেই।`,
-  },
-  {
-    id: 'first-code',
-    title: 'প্রথম কোড',
-    body: `## প্রথমmeeEL কোড
+    },
+    {
+      id: 'first-code',
+      title: 'প্রথম কোড',
+      body: `## প্রথমmeeEL কোড
 
 এই কোডটাmeeEL Page-এ লিখুন:
 
@@ -117,11 +796,11 @@ page-[
 **এখন বাটনে চাপ দিন।** লেখাটা বদলে যাবে।
 
 **এটাইmeeEL — সহজ, সরল, নিজের ভাষায়।**`,
-  },
-  {
-    id: 'names',
-    title: 'নাম দেওয়া',
-    body: `## নাম দিয়ে ডাকো
+    },
+    {
+      id: 'names',
+      title: 'নাম দেওয়া',
+      body: `## নাম দিয়ে ডাকো
 
 meeEL-এ নাম সবসময় **বলবে কী করে** — সংখ্যা দেবেন না।
 
@@ -176,11 +855,11 @@ about-page-[ ... ]
 \`\`\`
 
 **সংখ্যাmeeEL কম্পাইল করে, কিন্তুmeeEL আপনাকে অনুরোধ করবে — সংখ্যা দেবেন না।**`,
-  },
-  {
-    id: 'blocks',
-    title: 'ব্লক',
-    body: `## ব্লক কী
+    },
+    {
+      id: 'blocks',
+      title: 'ব্লক',
+      body: `## ব্লক কী
 
 একটা ব্লক হলmeeEL-এর ভিত্তি। ব্লকের দুইটা অংশ:
 
@@ -197,21 +876,21 @@ about-page-[ ... ]
 ## উদাহরণ
 
 \`\`\`
-card-1-[
+stats-card-[
   background-color-[white]
   padding-[20px]
 
-  title-1-[
+  card-title-[
     content-[Total Views]
   ]
 ]
 \`\`\`
 
 **এখানে যা যা আছে:**
-- \`card-1\` — একটা বাক্স
+- \`stats-card\` — একটা বাক্স
 - \`background-color-[white]\` — বাক্সের রঙ সাদা
 - \`padding-[20px]\` — বাক্সের ভিতরে ২০ পিক্সেল ফাঁক
-- \`title-1\` — একটা শিরোনাম
+- \`card-title\` — একটা শিরোনাম
 
 ## ব্লকের ধরন
 
@@ -236,11 +915,11 @@ card-1-[
 
 \`\`\`
 page-[
-  card-1-[
-    title-1-[
+  stats-card-[
+    card-title-[
       content-[Hello]
     ]
-    text-1-[
+    card-body-[
       content-[World]
     ]
   ]
@@ -248,11 +927,11 @@ page-[
 \`\`\`
 
 **এটা হলmeeEL-এর গঠন — যা ভিতরে, তার ভিতরে।**`,
-  },
-  {
-    id: 'properties',
-    title: 'প্রপার্টি',
-    body: `## প্রপার্টি কী
+    },
+    {
+      id: 'properties',
+      title: 'প্রপার্টি',
+      body: `## প্রপার্টি কী
 
 প্রপার্টি হল ব্লকের **গুণ** — রঙ, আকার, লেখা।
 
@@ -296,7 +975,7 @@ content-[Hello World]
 এক ব্লকে যত খুশি — **প্রতিটা আলাদা লাইনে**:
 
 \`\`\`
-button-1-[
+login-button-[
   content-[Click me]
   background-color-[#0a84ff]
   color-[white]
@@ -310,11 +989,11 @@ button-1-[
 কারণ পড়তে সহজ।meeEL চায় আপনি সহজে পড়তে পারুন।
 
 **নিজের লেখা নিজে পড়তে পারলে — ভুলও নিজে ধরতে পারবেন।**`,
-  },
-  {
-    id: 'actions',
-    title: 'কাজ',
-    body: `## কাজ কী
+    },
+    {
+      id: 'actions',
+      title: 'কাজ',
+      body: `## কাজ কী
 
 কাজ হল — ক্লিক করলে কী হবে।
 
@@ -392,11 +1071,11 @@ on-click-[notify Time is up]
 \`\`\`
 
 **meeEL — যত সহজ, তত মজা।**`,
-  },
-  {
-    id: 'pages',
-    title: 'পাতা',
-    body: `## এক পাতা থেকে অনেক পাতা
+    },
+    {
+      id: 'pages',
+      title: 'পাতা',
+      body: `## এক পাতা থেকে অনেক পাতা
 
 **এক পাতা হলে:**
 
@@ -466,11 +1145,11 @@ opens-by-tap-[
 কারণmeeEL-এ নাম স্বাধীন।meeEL জানে না আগে কোনটা আসবে। তাই নম্বর দিয়ে চিহ্নিত করি।
 
 **মনে রাখুন:** \`call-id\` **unique** হতে হবে। দুই পাতায় একই নম্বর দেবেন না।`,
-  },
-  {
-    id: 'screens',
-    title: 'ফোন-ট্যাব-কম্পিউটার',
-    body: `## সব স্ক্রিনে সুন্দর
+    },
+    {
+      id: 'screens',
+      title: 'ফোন-ট্যাব-কম্পিউটার',
+      body: `## সব স্ক্রিনে সুন্দর
 
 meeEL চায় — সাইট যেন **সব জায়গায় সুন্দর দেখায়** — ফোনে, ট্যাবে, কম্পিউটারে।
 
@@ -535,11 +1214,11 @@ page-[
 আপনি **একবার** লেখেন।meeEL **তিন জায়গায়** কাজ করে।
 
 **এটাইmeeEL-এর সৌন্দর্য।**`,
-  },
-  {
-    id: 'dark',
-    title: 'Dark Mode',
-    body: `## Dark Mode
+    },
+    {
+      id: 'dark',
+      title: 'Dark Mode',
+      body: `## Dark Mode
 
 Dark mode মানে — সাদা background থেকে কালো background-এ যাওয়া।
 
@@ -608,11 +1287,11 @@ dark-mode-[
 \`\`\`
 
 **যত খুশি বদলাতে পারেন।**meeEL সব মনে রাখবে।`,
-  },
-  {
-    id: 'comments',
-    title: 'নোট',
-    body: `## কোডে নোট রাখা
+    },
+    {
+      id: 'comments',
+      title: 'নোট',
+      body: `## কোডে নোট রাখা
 
 meeEL-এ নোট লেখার নিয়ম সহজ — \`#\` চিহ্ন দিয়ে:
 
@@ -677,5 +1356,6 @@ chat-page-[
 কোড নিজেই ভালো। নোট তাকে **আরও ভালো** করে।
 
 **আজ লিখুন। কাল পড়ুন। বুঝবেন।**`,
-  },
-];
+    },
+  ],
+};
