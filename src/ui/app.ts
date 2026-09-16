@@ -555,12 +555,12 @@ function renderBlank() {
 /* ============ ERROR PANEL ============ */
 
 function classifyError(msg: string): { label: string; cls: string } {
-  if (msg.startsWith('Unknown block')) return { label: 'Block', cls: 'type-block' };
-  if (msg.startsWith('Unknown property')) return { label: 'Property', cls: 'type-prop' };
-  if (msg.startsWith('Unknown keyword')) return { label: 'Keyword', cls: 'type-keyword' };
-  if (msg.startsWith('Reference')) return { label: 'Reference', cls: 'type-ref' };
-  if (msg.startsWith('Duplicate')) return { label: 'Duplicate', cls: 'type-dup' };
-  return { label: 'Error', cls: 'type-generic' };
+  if (msg.startsWith('Unknown block')) return { label: 'Part', cls: 'type-block' };
+  if (msg.startsWith('Unknown property')) return { label: 'Setting', cls: 'type-prop' };
+  if (msg.startsWith('Unknown keyword')) return { label: 'Word', cls: 'type-keyword' };
+  if (msg.startsWith('Reference')) return { label: 'Link', cls: 'type-ref' };
+  if (msg.startsWith('Duplicate')) return { label: 'Twice', cls: 'type-dup' };
+  return { label: 'Problem', cls: 'type-generic' };
 }
 
 function extractWrong(msg: string): string | null {
@@ -827,13 +827,14 @@ const downloadFileLabel = document.getElementById('download-file-label') as HTML
 
 const PUBLISH_STATE_KEY = 'meeel-publish-state-v1';
 
-type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'readme';
+type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'python' | 'readme';
 let currentTab: PublishTab = 'meeel';
 let cachedParts: {
   meeel: string;
   html: string;
   css: string;
   js: string;
+  python: string;
   readme: string;
   pages: PageOutput[];
 } | null = null;
@@ -916,6 +917,7 @@ function buildParts() {
     html: currentPage.htmlFile,
     css: currentPage.css,
     js: currentPage.js || '/* No interactivity in this page. */',
+    python: currentPage.python,
     readme,
     pages: allPages,
   };
@@ -930,6 +932,8 @@ function updateDownloadButtons() {
     downloadFileLabel.textContent = 'Download .css';
   } else if (currentTab === 'js') {
     downloadFileLabel.textContent = 'Download .js';
+  } else if (currentTab === 'python') {
+    downloadFileLabel.textContent = 'Download .py';
   } else {
     downloadFileLabel.textContent = 'Download .md';
   }
@@ -943,6 +947,7 @@ function switchTab(tab: PublishTab) {
   else if (tab === 'html') modalCode.textContent = cachedParts.html;
   else if (tab === 'css') modalCode.textContent = cachedParts.css;
   else if (tab === 'js') modalCode.textContent = cachedParts.js;
+  else if (tab === 'python') modalCode.textContent = cachedParts.python;
   else modalCode.textContent = cachedParts.readme;
   updateDownloadButtons();
   savePublishState(true, tab);
@@ -1021,6 +1026,8 @@ downloadFile.addEventListener('click', () => {
     download(currentPage.cssFilename, currentPage.css, 'text/css');
   } else if (currentTab === 'js') {
     download(currentPage.jsFilename, currentPage.js || '/* No interactivity */', 'application/octet-stream');
+  } else if (currentTab === 'python') {
+    download('server.py', currentPage.python || '', 'application/octet-stream');
   } else {
     download('README.md', cachedParts.readme, 'text/markdown');
   }
@@ -1052,6 +1059,10 @@ downloadAll.addEventListener('click', async () => {
       ? firstPage.filename.replace(/\.html$/, '.meeel')
       : 'source.meeel';
     zip.file(meeelFilename, cachedParts.meeel);
+    // Python server
+    if (firstPage && firstPage.python) {
+      zip.file('server.py', firstPage.python);
+    }
     zip.file('README.md', cachedParts.readme);
 
     const blob = await zip.generateAsync({
@@ -1063,7 +1074,7 @@ downloadAll.addEventListener('click', async () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'meeel-site.zip';
+    a.download = 'meeEL-Codes.zip';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1329,3 +1340,236 @@ window.addEventListener('appinstalled', () => {
 syncHighlight();
 syncGutter();
 render();
+
+/* ============ TOOLS DRAWER + COLOR PICKER ============ */
+
+const toolsBtn = document.getElementById('tools-btn') as HTMLButtonElement | null;
+const toolsDrawer = document.getElementById('tools-drawer') as HTMLElement | null;
+const toolsClose = document.getElementById('tools-close') as HTMLButtonElement | null;
+const toolsBackdrop = document.getElementById('tools-backdrop') as HTMLElement | null;
+const colorBar = document.getElementById('color-bar') as HTMLElement | null;
+const colorMarker = document.getElementById('color-marker') as HTMLElement | null;
+const colorPreview = document.getElementById('color-preview') as HTMLElement | null;
+const colorHex = document.getElementById('color-hex') as HTMLElement | null;
+const colorName = document.getElementById('color-name') as HTMLElement | null;
+const colorCopy = document.getElementById('color-copy') as HTMLButtonElement | null;
+
+function openDrawer() {
+  if (!toolsDrawer || !toolsBackdrop) return;
+  toolsDrawer.classList.add('open');
+  toolsBackdrop.hidden = false;
+}
+function closeDrawer() {
+  if (!toolsDrawer || !toolsBackdrop) return;
+  toolsDrawer.classList.remove('open');
+  toolsBackdrop.hidden = true;
+}
+
+toolsBtn?.addEventListener('click', openDrawer);
+toolsClose?.addEventListener('click', closeDrawer);
+toolsBackdrop?.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && toolsDrawer?.classList.contains('open')) closeDrawer();
+});
+
+/* ---- Hue → RGB (100% saturation, 100% lightness) ---- */
+function hueToHex(hue: number): string {
+  // hue 0-360, full saturation
+  const h = hue / 60;
+  const c = 1;                    // chroma (sat=1, val=1)
+  const x = c * (1 - Math.abs((h % 2) - 1));
+  let r = 0, g = 0, b = 0;
+  if (h >= 0 && h < 1) { r = c; g = x; b = 0; }
+  else if (h < 2) { r = x; g = c; b = 0; }
+  else if (h < 3) { r = 0; g = c; b = x; }
+  else if (h < 4) { r = 0; g = x; b = c; }
+  else if (h < 5) { r = x; g = 0; b = c; }
+  else { r = c; g = 0; b = x; }
+  const toHex = (n: number) =>
+    Math.round(n * 255).toString(16).padStart(2, '0').toUpperCase();
+  return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+/* ---- Simple color names ---- */
+function nameForHue(hue: number): string {
+  const names: Array<[number, string]> = [
+    [0, 'Red'],
+    [30, 'Orange'],
+    [60, 'Yellow'],
+    [90, 'Lime'],
+    [120, 'Green'],
+    [150, 'Spring Green'],
+    [180, 'Cyan'],
+    [210, 'Sky Blue'],
+    [240, 'Blue'],
+    [270, 'Violet'],
+    [300, 'Magenta'],
+    [330, 'Pink'],
+    [360, 'Red'],
+  ];
+  let best = names[0];
+  let bestDist = Infinity;
+  for (const [h, n] of names) {
+    const d = Math.abs(h - hue);
+    if (d < bestDist) { bestDist = d; best = [h, n]; }
+  }
+  return best[1];
+}
+
+let currentHex = '#3DF5B0';
+let currentHue = 150;
+
+function updateColorFromHue(hue: number) {
+  currentHue = Math.max(0, Math.min(360, hue));
+  currentHex = hueToHex(currentHue);
+  const pct = (currentHue / 360) * 100;
+  if (colorMarker) {
+    colorMarker.style.left = pct + '%';
+    colorMarker.style.background = currentHex;
+  }
+  if (colorPreview) colorPreview.style.background = currentHex;
+  if (colorHex) colorHex.textContent = currentHex;
+  if (colorName) colorName.textContent = nameForHue(currentHue);
+}
+
+function handleColorBarPointer(clientX: number) {
+  if (!colorBar) return;
+  const rect = colorBar.getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+  const ratio = rect.width > 0 ? x / rect.width : 0;
+  updateColorFromHue(ratio * 360);
+}
+
+// Pointer events (works for mouse + touch)
+colorBar?.addEventListener('pointerdown', (e) => {
+  handleColorBarPointer(e.clientX);
+  (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+});
+colorBar?.addEventListener('pointermove', (e) => {
+  if (e.buttons > 0 || (e as PointerEvent).pressure > 0) {
+    handleColorBarPointer(e.clientX);
+  }
+});
+
+// Keyboard
+colorBar?.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    updateColorFromHue(currentHue - 5);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    updateColorFromHue(currentHue + 5);
+  }
+});
+
+// Copy button
+colorCopy?.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(currentHex);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = currentHex;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  colorCopy.classList.add('copied');
+  const lbl = colorCopy.querySelector('span');
+  if (lbl) lbl.textContent = 'Copied';
+  setTimeout(() => {
+    colorCopy.classList.remove('copied');
+    if (lbl) lbl.textContent = 'Copy';
+  }, 1500);
+});
+
+// Initialize
+updateColorFromHue(150);
+
+/* ============ FONT PICKER ============ */
+
+interface FontOption {
+  name: string;       // display + copy name
+  stack: string;      // CSS font-family value
+  tag: 'safe' | 'web' | 'style';
+  tagLabel: string;
+}
+
+const FONT_OPTIONS: FontOption[] = [
+  // Web-safe basics
+  { name: 'Sans-serif',   stack: 'sans-serif',              tag: 'safe',  tagLabel: 'Safe' },
+  { name: 'Arial',        stack: 'Arial, sans-serif',        tag: 'safe',  tagLabel: 'Safe' },
+  { name: 'Helvetica',    stack: 'Helvetica, sans-serif',    tag: 'safe',  tagLabel: 'Safe' },
+  { name: 'Verdana',      stack: 'Verdana, sans-serif',      tag: 'safe',  tagLabel: 'Safe' },
+  { name: 'Tahoma',       stack: 'Tahoma, sans-serif',       tag: 'safe',  tagLabel: 'Safe' },
+  { name: 'Trebuchet MS', stack: '"Trebuchet MS", sans-serif', tag: 'safe', tagLabel: 'Safe' },
+
+  // Serif
+  { name: 'Georgia',          stack: 'Georgia, serif',            tag: 'safe', tagLabel: 'Safe' },
+  { name: 'Times New Roman',  stack: '"Times New Roman", serif',  tag: 'safe', tagLabel: 'Safe' },
+  { name: 'Palatino',         stack: 'Palatino, serif',           tag: 'safe', tagLabel: 'Safe' },
+  { name: 'Garamond',         stack: 'Garamond, serif',           tag: 'safe', tagLabel: 'Safe' },
+
+  // Monospace
+  { name: 'Courier New',  stack: '"Courier New", monospace', tag: 'safe',  tagLabel: 'Safe' },
+  { name: 'Monospace',    stack: 'monospace',                tag: 'safe',  tagLabel: 'Safe' },
+
+  // Decorative
+  { name: 'Impact',           stack: 'Impact, sans-serif',            tag: 'style', tagLabel: 'Style' },
+  { name: 'Brush Script MT',  stack: '"Brush Script MT", cursive',    tag: 'style', tagLabel: 'Style' },
+  { name: 'Comic Sans MS',    stack: '"Comic Sans MS", cursive',      tag: 'style', tagLabel: 'Style' },
+
+  // Google Fonts
+  { name: 'Inter',            stack: 'Inter, sans-serif',             tag: 'web', tagLabel: 'Web' },
+  { name: 'Roboto',           stack: 'Roboto, sans-serif',            tag: 'web', tagLabel: 'Web' },
+  { name: 'Open Sans',        stack: '"Open Sans", sans-serif',       tag: 'web', tagLabel: 'Web' },
+  { name: 'Lato',             stack: 'Lato, sans-serif',              tag: 'web', tagLabel: 'Web' },
+  { name: 'Montserrat',       stack: 'Montserrat, sans-serif',        tag: 'web', tagLabel: 'Web' },
+  { name: 'Poppins',          stack: 'Poppins, sans-serif',           tag: 'web', tagLabel: 'Web' },
+  { name: 'Playfair Display', stack: '"Playfair Display", serif',     tag: 'web', tagLabel: 'Web' },
+];
+
+let selectedFont: string | null = null;
+
+function renderFontList() {
+  const list = document.getElementById('font-list');
+  if (!list) return;
+
+  list.innerHTML = FONT_OPTIONS.map((font, i) => {
+    const selected = font.name === selectedFont ? ' selected' : '';
+    return `<button class="font-item${selected}" data-font-index="${i}" type="button">
+      <span class="font-item-name" style="font-family: ${font.stack};">${font.name}</span>
+      <span class="font-item-tag ${font.tag}">${font.tagLabel}</span>
+      <svg class="font-item-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </button>`;
+  }).join('');
+
+  // Attach click handlers
+  list.querySelectorAll('.font-item').forEach((el) => {
+    el.addEventListener('click', async () => {
+      const idx = parseInt((el as HTMLElement).dataset.fontIndex || '0', 10);
+      const font = FONT_OPTIONS[idx];
+      if (!font) return;
+
+      selectedFont = font.name;
+
+      // Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(font.name);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = font.name;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+
+      // Re-render with new selection
+      renderFontList();
+    });
+  });
+}
+
+// Initialize the font list
+renderFontList();

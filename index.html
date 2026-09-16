@@ -34,6 +34,11 @@
         </svg>
         <span>Install</span>
       </button>
+      <button id="tools-btn" class="btn-tools" title="Tools" aria-label="Tools">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+      </button>
       <button id="import-btn" class="btn-import" title="Import .meeel file" aria-label="Import">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -54,7 +59,7 @@
 
   <main class="layout">
     <section class="pane editor-pane">
-      <div class="pane-header">Code</div>
+      <div class="pane-header">Write</div>
       <div class="editor-container">
         <div class="gutter" id="gutter"></div>
         <div class="editor-wrap">
@@ -66,7 +71,7 @@
     </section>
     <section class="pane preview-pane">
       <div class="pane-header">
-        <span>Preview</span>
+        <span>See it</span>
         <div class="preview-controls">
           <select id="page-selector" class="page-selector" hidden></select>
           <button id="preview-fullscreen" class="btn-icon" title="Full screen" aria-label="Full screen">
@@ -91,7 +96,7 @@
           <div class="modal-brand">
             <span>meeEL<span class="modal-brand-accent">.</span></span>
           </div>
-          <div class="modal-subtitle">Download &amp; Publish</div>
+          <div class="modal-subtitle">Download and Publish</div>
         </div>
         <button class="modal-close" id="publish-close" aria-label="Close">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -106,6 +111,7 @@
         <button class="modal-tab" data-tab="html">HTML</button>
         <button class="modal-tab" data-tab="css">CSS</button>
         <button class="modal-tab" data-tab="js">JS</button>
+        <button class="modal-tab" data-tab="python">PYTHON</button>
         <button class="modal-tab" data-tab="readme">README</button>
       </div>
 
@@ -143,6 +149,51 @@
       </div>
     </div>
   </div>
+
+  <!-- Tools Drawer -->
+  <div id="tools-drawer" class="tools-drawer">
+    <div class="tools-header">
+      <span class="tools-title">Tools</span>
+      <button id="tools-close" class="tools-close" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="tools-section">
+      <div class="tools-label">Color picker</div>
+      <div class="tools-hint">Tap any color to copy its code.</div>
+
+      <div id="color-bar" class="color-bar" tabindex="0" role="slider" aria-label="Color picker">
+        <div id="color-marker" class="color-marker"></div>
+      </div>
+
+      <div class="color-info">
+        <div id="color-preview" class="color-preview"></div>
+        <div class="color-text">
+          <div id="color-hex" class="color-hex">#3DF5B0</div>
+          <div id="color-name" class="color-name">Green</div>
+        </div>
+        <button id="color-copy" class="color-copy" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          <span>Copy</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="tools-section">
+      <div class="tools-label">Font picker</div>
+      <div class="tools-hint">Tap a font name to copy it.</div>
+      <div id="font-list" class="font-list"></div>
+    </div>
+  </div>
+
+  <div id="tools-backdrop" class="tools-backdrop" hidden></div>
 
   <script type="module" src="/src/ui/app.ts"></script>
 </body>
