@@ -1203,9 +1203,10 @@ export interface PageOutput {
 /* ============ MAIN: generate all pages ============ */
 
 export function generatePages(root: BlockNode): PageOutput[] {
+  preprocessOpenings(root);
   const topBlocks: BlockNode[] = [];
   for (const child of root.children) {
-    if (child.kind === 'block') topBlocks.push(child);
+    if (child.kind === 'block' && child.name !== 'opens-by-tap') topBlocks.push(child);
   }
   if (topBlocks.length === 0) return [];
 
@@ -1947,6 +1948,7 @@ function generateBlock(
         }
       }
       else if (propDef.special === 'value') attrs['value'] = val;
+      else if (propDef.special === 'call-id') { /* preprocessing only */ }
       else css[propDef.css] = val;
     }
   }
@@ -2110,6 +2112,67 @@ ${indent}</${finalTag}>`;
   return `${indent}<${finalTag} id="${id}"${attrPart}>
 ${innerParts.join('\n')}
 ${indent}</${finalTag}>`;
+}
+
+function preprocessOpenings(root: BlockNode): void {
+  const callIdToPageName = new Map<string, string>();
+
+  // Scan all top-level pages for call-id
+  for (const child of root.children) {
+    if (child.kind === 'block' && child.name !== 'opens-by-tap') {
+      for (const sub of child.children) {
+        if (sub.kind === 'property' && sub.name === 'call-id') {
+          callIdToPageName.set(sub.value, child.name);
+        }
+      }
+    }
+  }
+
+  // Find opens-by-tap and inject open-[page] into matching buttons
+  for (const child of root.children) {
+    if (child.kind === 'block' && child.name === 'opens-by-tap') {
+      for (const entry of child.children) {
+        let buttonName = '';
+        let callId = '';
+
+        if (entry.kind === 'block' && entry.children.length > 0) {
+          buttonName = entry.name;
+          const first = entry.children[0];
+          if (first.kind === 'keyword') callId = first.name;
+          else if (first.kind === 'property') callId = first.value;
+        } else if (entry.kind === 'property') {
+          buttonName = entry.name;
+          callId = entry.value;
+        }
+
+        if (!buttonName || !callId) continue;
+        const targetPageName = callIdToPageName.get(callId);
+        if (!targetPageName) continue;
+        injectOpenProp(root, buttonName, targetPageName);
+      }
+    }
+  }
+}
+
+function injectOpenProp(node: BlockNode, buttonName: string, targetPage: string): void {
+  for (const child of node.children) {
+    if (child.kind === 'block') {
+      if (child.name === buttonName) {
+        const hasOpen = child.children.some(
+          (c) => c.kind === 'property' && c.name === 'open'
+        );
+        if (!hasOpen) {
+          child.children.push({
+            kind: 'property',
+            name: 'open',
+            value: targetPage,
+            line: child.line,
+          });
+        }
+      }
+      injectOpenProp(child, buttonName, targetPage);
+    }
+  }
 }
 
 function escapeHtml(s: string): string {

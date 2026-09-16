@@ -1,4 +1,5 @@
 import { lex } from '../engine/lexer';
+import { canonicalize } from '../engine/canonical';
 import { parse } from '../engine/parser';
 import { resolve, ResolveError } from '../engine/resolver';
 import { generatePages, PageOutput } from '../engine/generator';
@@ -383,7 +384,7 @@ suggestionBar.addEventListener('touchstart', (e) => {
 
 function render() {
   errorMap = new Map();
-  const source = editor.value;
+  const source = canonicalize(editor.value);
 
   try {
     const tokens = lex(source);

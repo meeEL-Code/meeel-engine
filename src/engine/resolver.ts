@@ -41,6 +41,12 @@ function checkBlock(
   errors: ResolveError[],
   parentName = ''
 ): void {
+  // opens-by-tap children are call-id references, not regular blocks
+  // Skip the entire subtree — preprocessing handles them
+  if (block.name === 'opens-by-tap') {
+    return;
+  }
+
   const seen = new Set<string>();
 
   for (const child of block.children) {
@@ -49,7 +55,11 @@ function checkBlock(
       if (!def) {
         // Unknown block — treat as free-form <div>, no error.
         // Still recurse to validate children (properties, etc.)
-        checkBlock(child, allNames, errors, block.name);
+        // Skip full validation of opens-by-tap children (they are references)
+      if (block.name === 'opens-by-tap') {
+        continue;
+      }
+      checkBlock(child, allNames, errors, block.name);
         continue;
       }
 
@@ -123,6 +133,11 @@ function checkBlock(
       // Special: 'row' and 'column' bare keywords → flex-direction override
       // (used inside mode blocks like mobile-mode to change layout direction)
       if (child.name === 'row' || child.name === 'column') {
+        continue;
+      }
+
+      // Inside 'opens-by-tap' block: numeric ids are valid (not keywords)
+      if (block.name === 'opens-by-tap') {
         continue;
       }
 
