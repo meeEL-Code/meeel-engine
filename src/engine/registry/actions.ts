@@ -2,50 +2,49 @@ import type { ActionDef } from "../../grammar/types";
 
 export const ACTIONS: Record<string, ActionDef> = {
 
-  // ── Show / Hide (3) ───────────────────────────────
-  "show":   { arity: 1,      targetMode: "id",   description: "Show hidden thing" },
-  "hide":   { arity: 1,      targetMode: "id",   description: "Hide thing" },
-  "toggle": { arity: 1,      targetMode: "id",   description: "Flip show/hide" },
+  "show":   { arity: 1, targetMode: "id", description: "Show hidden thing" },
+  "hide":   { arity: 1, targetMode: "id", description: "Hide thing" },
+  "toggle": { arity: 1, targetMode: "id", description: "Flip show/hide" },
 
-  // ── Numbers (5) ───────────────────────────────────
   "increase": { arity: 1, targetMode: "id", description: "Add 1" },
   "decrease": { arity: 1, targetMode: "id", description: "Subtract 1" },
   "add":      { arity: 2, targetMode: "id", description: "Add N" },
   "subtract": { arity: 2, targetMode: "id", description: "Subtract N" },
   "multiply": { arity: 2, targetMode: "id", description: "Multiply by N" },
 
-  // ── Text & Color (4) ──────────────────────────────
   "write": { arity: 2, targetMode: "id", description: "Change text" },
   "make":  { arity: 2, targetMode: "id", description: "Set specific value" },
   "paint": { arity: 2, targetMode: "id", description: "Change text color" },
   "fill":  { arity: 2, targetMode: "id", description: "Change background" },
 
-  // ── Data (6) ──────────────────────────────────────
-  "copy-from":  { arity: 2, targetMode: "id",   description: "Copy value b -> a" },
-  "bring":      { arity: 3, targetMode: "none", keywords: ["save-to"],            description: "Fetch text from URL" },
-  "bring-json": { arity: 3, targetMode: "none", keywords: ["save-to"],            description: "Fetch JSON from URL" },
-  "remember":   { arity: 3, targetMode: "none", keywords: ["from", "from-value"], description: "Save to localStorage" },
-  "recall":     { arity: 3, targetMode: "none", keywords: ["into"],               description: "Load from localStorage" },
-  "forget":     { arity: 1, targetMode: "none",                                   description: "Remove from localStorage" },
+  "copy-from":  { arity: 2, targetMode: "id", description: "Copy value b to a" },
+  "bring":      { arity: 3, targetMode: "none", keywords: ["save-to"], description: "GET text from URL" },
+  "bring-json": { arity: 3, targetMode: "none", keywords: ["save-to"], description: "GET JSON from URL" },
 
-  // ── Random & Time (3) ─────────────────────────────
-  "roll":         { arity: 2, targetMode: "id",   description: "Random number (target, range)" },
-  "show-as-time": { arity: 2, targetMode: "id",   description: "Seconds -> HH:MM:SS" },
+  // ── Backend (5 new) ────────────────────────────────
+  "post-json":   { arity: 3, targetMode: "none", keywords: ["save-to"], description: "POST JSON to backend" },
+  "put-json":    { arity: 3, targetMode: "none", keywords: ["save-to"], description: "PUT JSON to backend" },
+  "delete-json": { arity: 3, targetMode: "none", keywords: ["save-to"], description: "DELETE from backend" },
+  "with-body":   { arity: "rest", targetMode: "none", description: "Attach body fields to last request" },
+  "with-token":  { arity: 1, targetMode: "none", description: "Attach auth token from backend config" },
+
+  "remember":   { arity: 3, targetMode: "none", keywords: ["from", "from-value"], description: "Save to localStorage" },
+  "recall":     { arity: 3, targetMode: "none", keywords: ["into"], description: "Load from localStorage" },
+  "forget":     { arity: 1, targetMode: "none", description: "Remove from localStorage" },
+
+  "roll":         { arity: 2, targetMode: "id", description: "Random number" },
+  "show-as-time": { arity: 2, targetMode: "id", description: "Seconds to HH:MM:SS" },
   "total-time":   { arity: 5, targetMode: "none", keywords: ["from"], description: "Add time parts" },
 
-  // ── Device (3) ────────────────────────────────────
-  "beep":    { arity: 0,      targetMode: "none", description: "Make sound" },
-  "vibrate": { arity: 0,      targetMode: "none", description: "Vibrate phone" },
+  "beep":    { arity: 0, targetMode: "none", description: "Make sound" },
+  "vibrate": { arity: 0, targetMode: "none", description: "Vibrate phone" },
   "notify":  { arity: "rest", targetMode: "none", description: "Notification" },
 
-  // ── Video (1) ─────────────────────────────────────
   "load-video": { arity: 3, targetMode: "none", keywords: ["from"], description: "Load YouTube/video" },
 
-  // ── Condition (1) ─────────────────────────────────
   "if": { arity: "rest", targetMode: "none", description: "Conditional action" },
 };
 
-// ──── SYNONYMS ───────────────────────────────────────
 export const SYNONYMS: Record<string, string> = {
   "increment": "increase",
   "add-one":   "increase",
@@ -87,6 +86,18 @@ export const SYNONYMS: Record<string, string> = {
   "grab":       "bring",
   "fetch-json": "bring-json",
   "load-json":  "bring-json",
+
+  // Backend synonyms
+  "send-json":     "post-json",
+  "save-to-cloud": "post-json",
+  "send-to-cloud": "post-json",
+  "create-json":   "post-json",
+  "update-json":   "put-json",
+  "edit-cloud":    "put-json",
+  "remove-json":   "delete-json",
+  "delete-cloud":  "delete-json",
+  "auth-token":    "with-token",
+  "bearer-token":  "with-token",
 
   "save":      "remember",
   "store":     "remember",

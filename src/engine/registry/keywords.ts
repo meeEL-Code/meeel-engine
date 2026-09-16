@@ -95,3 +95,11 @@ export function pageToFilename(name: string): string {
   if (!base) base = name;
   return base + ".html";
 }
+
+// ──── Backend type keywords ─────────────────────────
+export const BACKEND_KEYWORDS = new Set<string>([
+  "rest",
+  "firebase",
+  "supabase",
+  "custom",
+]);

@@ -1169,6 +1169,7 @@ type ModeKind = 'mobile' | 'tablet' | 'desktop';
 
 // Collect on-click handlers during block generation
 let collectedHandlers: Array<{ elementId: string; actions: string[] }> = [];
+let backendConfig: { type: string; url: string; apiKey: string; projectId: string } | null = null;
 let collectedTimers: Array<{ period: number; actions: string[] }> = [];
 
 function getModeKind(name: string): ModeKind | null {
@@ -1271,6 +1272,7 @@ export function generateParts(
 ): GenerateParts {
   collectedHandlers = [];
   collectedTimers = [];
+  backendConfig = null;
   const page = root.children.find((c) => c.kind === 'block') as BlockNode | undefined;
   if (!page) {
     return {
@@ -1650,6 +1652,10 @@ function generateBlock(
   cssRules: CSSBucket,
   indent: string
 ): string {
+  if (block.name === 'backend') {
+    parseBackendConfig(block);
+    return '';
+  }
   const def = resolveBlock(block.name) || { tag: 'div' };
   // Unknown block names fall back to <div> — meeEL allows free-form naming.
 
@@ -4792,20 +4798,16 @@ function generateJavaScript(
   for (const h of handlers) {
     lines.push('');
     lines.push(`  var __root = __meeel_find(${JSON.stringify(h.elementId)}); if (__root) __root.addEventListener('click', function () {`);
-    for (const act of h.actions) {
-      const code = actionToJs(act);
-      if (code) lines.push('    ' + code);
-    }
+    const _h = actionsToJsGroup(h.actions);
+    if (_h) lines.push('    ' + _h);
     lines.push('  });');
   }
 
   for (const t of timers) {
     lines.push('');
     lines.push('  setInterval(function () {');
-    for (const act of t.actions) {
-      const code = actionToJs(act);
-      if (code) lines.push('    ' + code);
-    }
+    const _t = actionsToJsGroup(t.actions);
+    if (_t) lines.push('    ' + _t);
     lines.push('  }, ' + t.period + ');');
   }
 
@@ -5091,4 +5093,103 @@ function cloneBlockWithSuffix(block: BlockNode, suffix: string): BlockNode {
     }),
     line: block.line,
   };
+}
+
+
+function parseBackendConfig(block: BlockNode): void {
+  const cfg = { type: 'rest', url: '', apiKey: '', projectId: '' };
+  for (const child of block.children) {
+    if ((child as any).kind !== 'property') continue;
+    const n = (child as any).name;
+    const v = String((child as any).value ?? '').trim();
+    if (n === 'type') cfg.type = v;
+    else if (n === 'url') cfg.url = v;
+    else if (n === 'api-key') cfg.apiKey = v;
+    else if (n === 'project-id') cfg.projectId = v;
+  }
+  backendConfig = cfg;
+}
+
+function backendFieldLookup(field: string): string {
+  const q = JSON.stringify(field);
+  return `(function(){var f=${q};var e=document.getElementById(f)||document.getElementById('input-'+f)||document.querySelector('[data-field="'+f+'"]')||__meeel_find(f);return e?(e.value!==undefined&&e.value!==null?e.value:e.textContent):'';})()`;
+}
+
+function backendRequestJs(
+  verb: string,
+  parts: string[],
+  bodyFields: string[] | null,
+  tokenVar: string | null
+): string {
+  const urlArg = parts[1];
+  const saveTo = parts[2];
+  const target = parts[3];
+  if (!urlArg || saveTo !== 'save-to' || !target) return '';
+
+  let url = urlArg;
+  if (!/^https?:/i.test(url) && backendConfig && backendConfig.url) {
+    const base = backendConfig.url.replace(/\/$/, '');
+    url = base + (url.startsWith('/') ? url : '/' + url);
+  }
+
+  const method = verb === 'post-json' ? 'POST' : verb === 'put-json' ? 'PUT' : 'DELETE';
+  const tq = JSON.stringify(target);
+
+  const headers: string[] = ['"Content-Type":"application/json"'];
+  const apiKey = (backendConfig && backendConfig.apiKey) || '';
+  const projectId = (backendConfig && backendConfig.projectId) || '';
+  const bType = (backendConfig && backendConfig.type) || 'rest';
+  if (apiKey) {
+    if (bType === 'supabase') {
+      headers.push(`"apikey":${JSON.stringify(apiKey)}`);
+      headers.push(`"Authorization":"Bearer "+${JSON.stringify(apiKey)}`);
+    } else {
+      headers.push(`"Authorization":"Bearer "+${JSON.stringify(apiKey)}`);
+    }
+  }
+  if (projectId) headers.push(`"X-Project-Id":${JSON.stringify(projectId)}`);
+
+  let bodyExpr = 'undefined';
+  if (bodyFields && bodyFields.length > 0 && method !== 'DELETE') {
+    const pairs = bodyFields.map((f) => `${JSON.stringify(f)}:${backendFieldLookup(f)}`).join(',');
+    bodyExpr = `JSON.stringify({${pairs}})`;
+  }
+
+  const opts = `{method:${JSON.stringify(method)},headers:{${headers.join(',')}},body:${bodyExpr}}`;
+
+  return `(function(){var t=__meeel_find(${tq});if(t)t.textContent='Sending...';fetch(${JSON.stringify(url)},${opts}).then(function(r){return r.text().then(function(x){try{return JSON.parse(x);}catch(e){return x;}});}).then(function(d){if(t)t.textContent=(typeof d==='string'?d:JSON.stringify(d));}).catch(function(e){if(t)t.textContent='Error: '+e.message;});})()`;
+}
+
+function actionsToJsGroup(actions: string[]): string {
+  const out: string[] = [];
+  let i = 0;
+  while (i < actions.length) {
+    const act = actions[i].trim();
+    if (!act) { i++; continue; }
+    const parts = act.split(/\s+/);
+    const verb = parts[0];
+
+    if (verb === 'post-json' || verb === 'put-json' || verb === 'delete-json') {
+      let bodyFields: string[] | null = null;
+      let tokenVar: string | null = null;
+      let j = i + 1;
+      while (j < actions.length) {
+        const np = actions[j].trim().split(/\s+/);
+        if (np[0] === 'with-body') { bodyFields = np.slice(1); j++; continue; }
+        if (np[0] === 'with-token') { tokenVar = np[1] || null; j++; continue; }
+        break;
+      }
+      const js = backendRequestJs(verb, parts, bodyFields, tokenVar);
+      if (js) out.push(js);
+      i = j;
+      continue;
+    }
+
+    if (verb === 'with-body' || verb === 'with-token') { i++; continue; }
+
+    const code = actionToJs(act);
+    if (code) out.push(code);
+    i++;
+  }
+  return out.join(';');
 }
