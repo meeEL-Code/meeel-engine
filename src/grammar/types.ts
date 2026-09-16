@@ -29,7 +29,7 @@ export interface BlockDef {
 // ──── Property definition ──────────────────────────
 export interface PropertyDef {
   valueMode: ValueMode;
-  cssName?: string;
+  css?: string;
   jsHandler?: string;
   allowedOn?: string[] | "*";
   description: string;

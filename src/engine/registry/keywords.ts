@@ -60,3 +60,38 @@ export const CONDITION_WORDS = [
 export const CONDITION_WORDS_SORTED = [...CONDITION_WORDS].sort(
   (a, b) => b.length - a.length,
 );
+
+// ──── Parametric position keywords ─────────────────
+export function isParametricKeyword(name: string): boolean {
+  return /^(above|below|left-of|right-of)-.+$/.test(name);
+}
+
+export function parseParametric(
+  name: string,
+): { relation: string; reference: string } | null {
+  const m = name.match(/^(above|below|left-of|right-of)-(.+)$/);
+  if (!m) return null;
+  return { relation: m[1], reference: m[2] };
+}
+
+// ──── Block "kind" check (id matches a base kind) ──
+// Used by generator: isKind("home-page", "page") → true
+export function isKind(id: string, kind: string): boolean {
+  if (id === kind) return true;
+  if (id.startsWith(kind + "-")) return true;
+  if (id.endsWith("-" + kind)) return true;
+  if (id.includes("-") && id.split("-").includes(kind)) return true;
+  return false;
+}
+
+// ──── Page name → output filename ──────────────────
+// page       → index.html
+// home-page  → home.html
+// chat-room  → chat-room.html
+export function pageToFilename(name: string): string {
+  if (name === "page") return "index.html";
+  let base = name;
+  if (name.endsWith("-page")) base = name.slice(0, -5);
+  if (!base) base = name;
+  return base + ".html";
+}

@@ -1,5 +1,4 @@
-// ──── meeEL Registry — single entry point ──────────
-
+// ──── Re-exports ───────────────────────────────────
 export { PROPERTIES } from "./properties";
 export { ACTIONS, SYNONYMS, resolveAction } from "./actions";
 export { FIXED_BLOCKS } from "./blocks";
@@ -10,15 +9,13 @@ export {
   SCREEN_MODE_KEYWORDS,
   CONDITION_WORDS,
   CONDITION_WORDS_SORTED,
+  isParametricKeyword,
+  parseParametric,
+  isKind,
+  pageToFilename,
 } from "./keywords";
 export { REPEATABLE_NAMES, isRepeatable } from "./repeatable";
 export { ICONS, svgToDataUrl, resolveUrl } from "./icons";
-export {
-  PARAMETRIC_PREFIXES,
-  isParametricKeyword,
-  parseParametric,
-} from "./parametric";
-export { pageToFilename } from "./pages";
 
 export type {
   ValueMode,
@@ -36,20 +33,37 @@ import { FIXED_BLOCKS } from "./blocks";
 import { SUFFIX_BLOCKS, PREFIX_BLOCKS, PATTERN_BLOCKS } from "./suffixes";
 import type { BlockDef } from "../../grammar/types";
 
-export function resolveBlock(name: string): {
+/**
+ * Simple resolver — returns just the BlockDef, or null.
+ * This is the primary API used by parser, generator, and editor.
+ */
+export function resolveBlock(name: string): BlockDef | null {
+  return resolveBlockEx(name)?.def ?? null;
+}
+
+/**
+ * Detailed resolver — returns the BlockDef plus metadata
+ * about how the name was matched. Used by the compiler's
+ * diagnostic layer and by tests.
+ */
+export function resolveBlockEx(name: string): {
   def: BlockDef;
   matchedAs: string;
   source: "fixed" | "pattern" | "suffix" | "prefix" | "numeric-stripped";
 } | null {
 
+  // 1. Exact fixed
   if (FIXED_BLOCKS[name]) {
     return { def: FIXED_BLOCKS[name], matchedAs: name, source: "fixed" };
   }
 
+  // 2. Pattern
   for (const p of PATTERN_BLOCKS) {
     if (p.regex.test(name)) {
       const target = FIXED_BLOCKS[p.blockName];
-      if (target) return { def: target, matchedAs: p.blockName, source: "pattern" };
+      if (target) {
+        return { def: target, matchedAs: p.blockName, source: "pattern" };
+      }
       return {
         def: {
           tag: "div",
@@ -63,16 +77,26 @@ export function resolveBlock(name: string): {
     }
   }
 
+  // 3. Strip trailing -N (except page-N — pattern already caught those)
   const stripped = name.replace(/-\d+$/, "");
+  let lookupName = name;
   if (stripped !== name) {
     if (FIXED_BLOCKS[stripped]) {
-      return { def: FIXED_BLOCKS[stripped], matchedAs: stripped, source: "numeric-stripped" };
+      return {
+        def: FIXED_BLOCKS[stripped],
+        matchedAs: stripped,
+        source: "numeric-stripped",
+      };
     }
-    name = stripped;
+    lookupName = stripped;
   }
 
+  // 4. Suffix (longest first — order in SUFFIX_BLOCKS is critical)
   for (const rule of SUFFIX_BLOCKS) {
-    if (name.endsWith(rule.suffix) && name.length > rule.suffix.length) {
+    if (
+      lookupName.endsWith(rule.suffix) &&
+      lookupName.length > rule.suffix.length
+    ) {
       const target = FIXED_BLOCKS[rule.blockName];
       if (target) {
         return { def: target, matchedAs: rule.blockName, source: "suffix" };
@@ -80,8 +104,9 @@ export function resolveBlock(name: string): {
     }
   }
 
+  // 5. Prefix
   for (const pre of PREFIX_BLOCKS) {
-    if (name.startsWith(pre) && name.length > pre.length) {
+    if (lookupName.startsWith(pre) && lookupName.length > pre.length) {
       const blockName = pre.slice(0, -1);
       const target = FIXED_BLOCKS[blockName];
       if (target) {
