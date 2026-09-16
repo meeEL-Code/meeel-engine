@@ -1209,6 +1209,131 @@ ${meeelCode}
 
 ---
 
+### Showing a Video
+
+The \`video\` block plays any video file:
+
+\`\`\`meeel
+video-1-[
+  center
+  url-[my-video.mp4]
+  width-[640px]
+  height-[360px]
+]
+\`\`\`
+
+To embed a YouTube video, use the \`youtube\` property:
+
+\`\`\`meeel
+video-1-[
+  center
+  youtube-[https://youtube.com/watch?v=ABC123]
+  width-[640px]
+  height-[360px]
+]
+\`\`\`
+
+meeEL understands YouTube links in any of these forms:
+
+- \`https://www.youtube.com/watch?v=ABC123\`
+- \`https://youtu.be/ABC123\`
+- \`https://youtube.com/shorts/ABC123\`
+
+You can also type a YouTube link into any \`input\` box, and use
+\`set-video\` action to load it. For example:
+
+\`\`\`meeel
+input-url-[
+  center
+  placeholder-text-[Paste a YouTube link here]
+]
+
+load-button-[
+  center
+  content-[Load]
+  on-click-[set-video video-1 from input-url]
+]
+
+video-1-[
+  center
+  margin-top-[20px]
+  width-[640px]
+  height-[360px]
+]
+\`\`\`
+
+When someone taps the Load button, the video appears.
+
+---
+
+### Color Bar
+
+The \`color-bar\` block lets people pick a color from a gradient:
+
+\`\`\`meeel
+color-bar-1-[
+  center
+  hint-text-[Pick a color]
+  default-color-[#0a84ff]
+  bar-radius-[12px]
+  bar-padding-[20px]
+]
+\`\`\`
+
+| Setting | What it does |
+| ------- | ------------ |
+| \`hint-text-[...]\` | Small text above the bar |
+| \`default-color-[#...]\` | The color it starts with |
+| \`bar-radius-[12px]\` | Rounded corners of the bar |
+| \`bar-padding-[20px]\` | Space around the bar |
+
+The bar shows a full rainbow. Tap anywhere to pick that color.
+
+---
+
+### Content Position
+
+The \`content-position\` property controls where the writing sits
+inside its box:
+
+\`\`\`meeel
+card-1-[
+  width-[300px]
+  height-[200px]
+  content-position-[center]
+  text-1-[ content-[Hello] ]
+]
+\`\`\`
+
+| Value | Where the writing goes |
+| ----- | ---------------------- |
+| \`top\` | At the top |
+| \`bottom\` | At the bottom |
+| \`center\` | In the middle |
+| \`left\` | On the left |
+| \`right\` | On the right |
+| \`top-left\` | Top left corner |
+| \`top-right\` | Top right corner |
+| \`bottom-left\` | Bottom left corner |
+| \`bottom-right\` | Bottom right corner |
+
+---
+
+### Behind the Scenes
+
+meeEL uses plain HTML, CSS, JavaScript, and Python under the hood.
+You never need to touch any of them, but if you are curious:
+
+- \`home.html\` — plain HTML
+- \`home.css\` — plain CSS
+- \`home.js\` — plain JavaScript
+- \`server.py\` — plain Python
+
+Every file is readable. Nothing is hidden. If you want to edit them
+by hand later, you can. They will still work.
+
+---
+
 ## About meeEL
 
 - **Language:** meeEL
