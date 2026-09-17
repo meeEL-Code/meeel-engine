@@ -75,6 +75,9 @@ export const FIXED_BLOCKS: Record<string, BlockDef> = {
 
   "color-bar": b("div", "special", "Gradient color picker"),
 
+  // ── Connections — private values that go to .env (not HTML) ──
+  "connections": b("div", "system", "Private connections — saved to .env", { needsId: false }),
+
   // ── Backend (1 new) ────────────────────────────────
   "backend": b("div", "system", "Backend connection config (Firebase, Supabase, REST)", { needsId: true }),
 };

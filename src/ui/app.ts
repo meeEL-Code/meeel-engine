@@ -1,3 +1,53 @@
+import { ENV_CONTENT, ENV_EXAMPLE_CONTENT } from './publish-extras';
+import { extractOpenings, injectOpeningRules } from './openings';
+import { expandLoops } from './loops';
+
+/* ── Connections: values from connections-[...] blocks go to .env ── */
+let currentConnections: Record<string, string> = {};
+
+function collectConnectionsFromSource(): Record<string, string> {
+  const result: Record<string, string> = {};
+  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
+  const src = ed ? ed.value : '';
+  if (!src) return result;
+
+  // Find every "connections-[" and read to its matching "]"
+  let searchFrom = 0;
+  while (true) {
+    const idx = src.indexOf('connections-[', searchFrom);
+    if (idx === -1) break;
+    const start = idx + 'connections-['.length;
+    let depth = 1;
+    let i = start;
+    while (i < src.length && depth > 0) {
+      if (src[i] === '[') depth++;
+      else if (src[i] === ']') depth--;
+      i++;
+    }
+    const inner = src.slice(start, i - 1);
+    searchFrom = i;
+
+    // Inside: pick every name-[value] pair
+    const re = /([a-z][a-z0-9-]*)-\[([^\]]*)\]/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(inner)) !== null) {
+      const envName = m[1].toUpperCase().replace(/-/g, '_');
+      result[envName] = m[2];
+    }
+  }
+  return result;
+}
+
+function buildEnvContent(): string {
+  const keys = Object.keys(currentConnections);
+  if (keys.length === 0) return ENV_CONTENT;
+  let out = ENV_CONTENT;
+  out += '\n# ─── Values from connections-[...] block ───\n';
+  for (const k of keys) {
+    out += k + '=' + currentConnections[k] + '\n';
+  }
+  return out;
+}
 import { buildReadme } from './readme-template';
 import { lex } from '../engine/lexer';
 import { canonicalize } from '../engine/canonical';
@@ -381,16 +431,251 @@ suggestionBar.addEventListener('touchstart', (e) => {
   acceptSuggestion(idx);
 }, { passive: false });
 
+/* ============ SOURCE SANITIZER ============ */
+/* Strip invisible characters that come from copy-pasting chats:
+   BOM, zero-width spaces, line separators, NBSP, CRLF. */
+function sanitizeSource(s: string): { cleaned: string; stripped: number } {
+  const before = s.length;
+  const cleaned = s
+    .replace(/\uFEFF/g, '')
+    .replace(/[\u200B-\u200D\u2060]/g, '')
+    .replace(/\u2028/g, '\n')
+    .replace(/\u2029/g, '\n')
+    .replace(/\u00A0/g, ' ')
+    .replace(/[\uFF3B\u3010]/g, '[')
+    .replace(/[\uFF3D\u3011]/g, ']')
+    .replace(/\r\n?/g, '\n');
+  return { cleaned, stripped: before - cleaned.length };
+}
+
+/* ============ DATA BINDINGS ============ */
+/* content-from-[X] — target shows X's value live, no button needed. */
+function extractDataBindings(source: string): {
+  cleaned: string;
+  bindings: Array<{ target: string; source: string; prefix: string; suffix: string }>;
+} {
+  const lines = source.split('\n');
+  const out: string[] = [];
+  const stack: Array<{ name: string; src: string; prefix: string; suffix: string }> = [];
+  const bindings: Array<{ target: string; source: string; prefix: string; suffix: string }> = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    const open = line.match(/^(\s*)([a-z][a-z0-9-]*)-\[\s*$/);
+    if (open) {
+      stack.push({ name: open[2], src: '', prefix: '', suffix: '' });
+      out.push(line);
+      continue;
+    }
+
+    if (trimmed === ']') {
+      const top = stack.pop();
+      if (top && top.src) {
+        bindings.push({ target: top.name, source: top.src, prefix: top.prefix, suffix: top.suffix });
+      }
+      out.push(line);
+      continue;
+    }
+
+    if (stack.length > 0) {
+      const top = stack[stack.length - 1];
+
+      const cf = trimmed.match(/^content-from-\[([^\]]+)\]$/);
+      if (cf) {
+        top.src = cf[1].trim();
+        out.push(line.replace(/content-from-\[[^\]]+\]/, 'content-[]'));
+        continue;
+      }
+
+      const wp = trimmed.match(/^with-prefix-\[([^\]]*)\]$/);
+      if (wp) { top.prefix = wp[1]; continue; }
+
+      const ws = trimmed.match(/^with-suffix-\[([^\]]*)\]$/);
+      if (ws) { top.suffix = ws[1]; continue; }
+    }
+
+    out.push(line);
+  }
+
+  for (const top of stack) {
+    if (top.src) {
+      bindings.push({ target: top.name, source: top.src, prefix: top.prefix, suffix: top.suffix });
+    }
+  }
+
+  return { cleaned: out.join('\n'), bindings };
+}function buildBindingsScript(
+  bindings: Array<{ target: string; source: string; prefix: string; suffix: string }>
+): string {
+  if (bindings.length === 0) return '';
+  const calls = bindings
+    .filter((b) => b.source)
+    .map((b) => `  __bind(${JSON.stringify(b.target)}, ${JSON.stringify(b.source)}, ${JSON.stringify(b.prefix)}, ${JSON.stringify(b.suffix)});`)
+    .join('\n');
+  return `/* meeEL — live data bindings */
+(function () {
+  function __find(t) {
+    if (!t) return null;
+    var el = document.getElementById(t);
+    if (el) return el;
+    el = document.querySelector('[id$="-' + t + '"]');
+    if (el) return el;
+    el = document.querySelector('[id^="' + t + '-"]');
+    if (el) return el;
+    return null;
+  }
+  function __bind(targetId, sourceId, prefix, suffix) {
+    var target = __find(targetId);
+    var source = __find(sourceId);
+    if (!target || !source) return;
+    function update() {
+      var v = (source.value !== undefined && source.value !== null)
+        ? source.value
+        : (source.textContent || '');
+      target.textContent = (prefix || '') + v + (suffix || '');
+    }
+    update();
+    source.addEventListener('input', update);
+    source.addEventListener('change', update);
+  }
+${calls}
+})();
+`;
+}
+
+/* ============ FRIENDLY SOURCE EXPANSION ============ */
+/* Turns friendly phrases into canonical forms:
+     in-the-center-of-page  ->  center
+     at-the-top-of-card     ->  top
+     right-side             ->  right
+     below-logo-image       ->  below-logo-image-[8px]
+*/
+function expandFriendlySource(src: string): string {
+  let out = src;
+
+  // Lowercase all keyword-style tokens (bold, center, round, etc.)
+  // Only if the line isn't a comment, and it's a bare word.
+  out = out.replace(/^(\s*)([A-Za-z][A-Za-z-]*)(\s*(?:#.*)?)$/gm, (_m, ind, word, tail) => {
+    return ind + word.toLowerCase() + tail;
+  });
+
+  const posMap: Array<[RegExp, string]> = [
+    [/\bin-the-center-of-[a-z0-9-]+/g, 'center'],
+    [/\bin-the-center\b/g, 'center'],
+    [/\bin-the-middle-of-[a-z0-9-]+/g, 'middle'],
+    [/\bin-the-middle\b/g, 'middle'],
+    [/\bin-the-top-of-[a-z0-9-]+/g, 'top'],
+    [/\bin-the-top\b/g, 'top'],
+    [/\bin-the-bottom-of-[a-z0-9-]+/g, 'bottom'],
+    [/\bin-the-bottom\b/g, 'bottom'],
+    [/\bin-the-left-of-[a-z0-9-]+/g, 'left'],
+    [/\bin-the-left\b/g, 'left'],
+    [/\bin-the-right-of-[a-z0-9-]+/g, 'right'],
+    [/\bin-the-right\b/g, 'right'],
+    [/\bat-the-top\b/g, 'top'],
+    [/\bat-the-bottom\b/g, 'bottom'],
+    [/\bat-the-left\b/g, 'left'],
+    [/\bat-the-right\b/g, 'right'],
+    [/\bat-the-center\b/g, 'center'],
+    [/\bat-the-middle\b/g, 'middle'],
+    [/\bright-side\b/g, 'right'],
+    [/\bleft-side\b/g, 'left'],
+    [/\btop-side\b/g, 'top'],
+    [/\bbottom-side\b/g, 'bottom'],
+    [/\bcenter-side\b/g, 'center'],
+    [/\bmiddle-side\b/g, 'middle'],
+  ];
+  for (const [re, rep] of posMap) out = out.replace(re, rep);
+
+  // Bare parametric: below-X / above-X / left-of-X / right-of-X -> add [8px]
+  out = out.replace(
+    /^(\s*)((?:above|below|left-of|right-of)-[a-z0-9][a-z0-9-]*)(\s*(?:#.*)?)$/gm,
+    '$1$2-[8px]$3'
+  );
+
+  // Style keyword + value -> real CSS property + value
+  // Round-[50px] -> border-radius-[50px], Bold-[600] -> font-weight-[600], etc.
+  const stylePropMap: Array<[RegExp, string]> = [
+    [/\bround-\[([^\]]*)\]/gi,     'border-radius-[$1]'],
+    [/\bcircle-\[([^\]]*)\]/gi,    'border-radius-[$1]'],
+    [/\bpill-\[([^\]]*)\]/gi,      'border-radius-[$1]'],
+    [/\bbold-\[([^\]]*)\]/gi,      'font-weight-[$1]'],
+    [/\bitalic-\[([^\]]*)\]/gi,    'font-style-[$1]'],
+    [/\bunderline-\[([^\]]*)\]/gi, 'text-decoration-[$1]'],
+  ];
+  for (const [re, rep] of stylePropMap) out = out.replace(re, rep);
+
+  return out;
+}
+
+/* ============ BRACKET BALANCE CHECK ============ */
+/* Detects unclosed blocks. Returns error object or null. */
+function checkBracketBalance(src: string): { line: number; message: string } | null {
+  const lines = src.split('\n');
+  let depth = 0;
+  let firstOpen: { line: number; name: string } | null = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Skip full-line comments (but keep #when rules)
+    if (/^\s*#/.test(line) && !/#when/.test(line)) continue;
+
+    const m = line.match(/^\s*([a-z][a-z0-9-]*)-\[/);
+    const blockName = m ? m[1] : '';
+
+    for (const ch of line) {
+      if (ch === '[') {
+        if (depth === 0) {
+          firstOpen = { line: i + 1, name: blockName };
+        }
+        depth++;
+      } else if (ch === ']') {
+        depth--;
+        if (depth < 0) {
+          return {
+            line: i + 1,
+            message: `Extra ] on line ${i + 1} — no matching [ above.`,
+          };
+        }
+        if (depth === 0) firstOpen = null;
+      }
+    }
+  }
+
+  if (depth > 0 && firstOpen) {
+    const label = firstOpen.name ? '`' + firstOpen.name + '-[`' : 'A block';
+    const plural = depth > 1 ? 's' : '';
+    return {
+      line: firstOpen.line,
+      message: label + ' opened on line ' + firstOpen.line + ' is never closed — you are missing ' + depth + ' closing ]' + plural,
+    };
+  }
+  return null;
+}
+
 /* ============ RENDER ============ */
 
 function render() {
   errorMap = new Map();
-  const source = canonicalize(editor.value);
+  const __san = sanitizeSource(editor.value);
+  if (__san.stripped > 0) {
+    const pos = editor.selectionStart;
+    editor.value = __san.cleaned;
+    editor.selectionStart = editor.selectionEnd = Math.min(pos, __san.cleaned.length);
+  }
+
+  const { cleaned, rules: openRules } = extractOpenings(__san.cleaned);
+  const { cleaned: boundCleaned, bindings: dataBindings } = extractDataBindings(cleaned);
+  const looped = expandLoops(boundCleaned);
+  const source = canonicalize(expandFriendlySource(looped));
+
 
   try {
     const tokens = lex(source);
     const ast = parse(tokens);
 
+    currentConnections = collectConnectionsFromSource();
     const errors = resolve(ast);
     if (errors.length > 0) {
       for (const e of errors) {
@@ -405,7 +690,21 @@ function render() {
     syncGutter();
     syncHighlight();
 
+    injectOpeningRules(ast, openRules);
     allPages = generatePages(ast);
+
+    // Inject live data bindings into each page (preview + standalone js)
+    if (dataBindings.length > 0) {
+      const bindScript = buildBindingsScript(dataBindings);
+      for (const pg of allPages) {
+        // Preview (inline)
+        if (pg.html && pg.html.indexOf('</body>') !== -1) {
+          pg.html = pg.html.replace('</body>', '<script>' + bindScript + '</script>\n</body>');
+        }
+        // Standalone file
+        pg.js = (pg.js || '') + '\n\n' + bindScript;
+      }
+    }
 
     if (allPages.length === 0) {
       renderBlank();
@@ -828,7 +1127,7 @@ const downloadFileLabel = document.getElementById('download-file-label') as HTML
 
 const PUBLISH_STATE_KEY = 'meeel-publish-state-v1';
 
-type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'python' | 'readme';
+type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'python' | 'readme' | 'env';
 let currentTab: PublishTab = 'meeel';
 let cachedParts: {
   meeel: string;
@@ -837,6 +1136,8 @@ let cachedParts: {
   js: string;
   python: string;
   readme: string;
+  env: string;
+  envExample: string;
   pages: PageOutput[];
 } | null = null;
 
@@ -861,6 +1162,8 @@ function buildParts() {
   const readme = buildReadme(editor.value, allPages);
   return {
     meeel: editor.value,
+    env: buildEnvContent(),
+    envExample: ENV_EXAMPLE_CONTENT,
     html: currentPage.htmlFile,
     css: currentPage.css,
     js: currentPage.js || '/* No interactivity in this page. */',
@@ -881,6 +1184,8 @@ function updateDownloadButtons() {
     downloadFileLabel.textContent = 'Download .js';
   } else if (currentTab === 'python') {
     downloadFileLabel.textContent = 'Download .py';
+  } else if (currentTab === 'env') {
+    downloadFileLabel.textContent = 'Download .env';
   } else {
     downloadFileLabel.textContent = 'Download .md';
   }
@@ -895,16 +1200,33 @@ function switchTab(tab: PublishTab) {
   else if (tab === 'css') modalCode.textContent = cachedParts.css;
   else if (tab === 'js') modalCode.textContent = cachedParts.js;
   else if (tab === 'python') modalCode.textContent = cachedParts.python;
+  else if (tab === 'env') modalCode.textContent = cachedParts.env;
   else modalCode.textContent = cachedParts.readme;
+  const warnEl = document.querySelector('.publish-warning') as HTMLElement | null;
+  if (warnEl) warnEl.style.display = tab === 'env' ? '' : 'none';
   updateDownloadButtons();
   savePublishState(true, tab);
 }
 
 function openPublish() {
-  cachedParts = buildParts();
-  if (!cachedParts) return;
+  const __parts = buildParts();
+  if (__parts) {
+    cachedParts = __parts;
+  } else {
+    cachedParts = {
+      meeel: editor.value,
+      html: '/* Fix the errors above first. */',
+      css: '',
+      js: '',
+      python: '',
+      readme: '',
+      env: ENV_CONTENT,
+      envExample: ENV_EXAMPLE_CONTENT,
+      pages: [],
+    } as any;
+  }
   publishModal.hidden = false;
-  switchTab(currentTab);
+  switchTab(__parts ? currentTab : 'meeel');
 }
 
 function closePublish() {
@@ -963,6 +1285,7 @@ function download(filename: string, content: string, mime: string) {
 
 downloadFile.addEventListener('click', () => {
   if (!cachedParts) return;
+  if (!cachedParts.pages || !cachedParts.pages.length) { alert('Fix the errors above first.'); return; }
   const currentPage = allPages[currentPageIndex];
   if (currentTab === 'meeel') {
     const filename = currentPage.filename.replace(/\.html$/, '.meeel');
@@ -975,6 +1298,8 @@ downloadFile.addEventListener('click', () => {
     download(currentPage.jsFilename, currentPage.js || '/* No interactivity */', 'application/octet-stream');
   } else if (currentTab === 'python') {
     download('server.py', currentPage.python || '', 'application/octet-stream');
+  } else if (currentTab === 'env') {
+    download('.env', cachedParts.env, 'text/plain');
   } else {
     download('README.md', cachedParts.readme, 'text/markdown');
   }
@@ -982,6 +1307,7 @@ downloadFile.addEventListener('click', () => {
 
 downloadAll.addEventListener('click', async () => {
   if (!cachedParts) return;
+  if (!cachedParts.pages || !cachedParts.pages.length) { alert('Fix the errors above first.'); return; }
 
   const label = downloadAll.querySelector('span');
   const originalText = label ? label.textContent : '';
@@ -1011,6 +1337,8 @@ downloadAll.addEventListener('click', async () => {
       zip.file('server.py', firstPage.python);
     }
     zip.file('README.md', cachedParts.readme);
+    zip.file('.env', ENV_CONTENT);
+    zip.file('.env.example', ENV_EXAMPLE_CONTENT);
 
     const blob = await zip.generateAsync({
       type: 'blob',
@@ -1898,3 +2226,289 @@ document.addEventListener('keydown', (e) => {
 
 // Initialize content once
 renderWhatCanDo();
+
+/* ============ STEP 2 — Tools refresh + Publish warning ============ */
+(function setupStep2() {
+  // ---- Refresh button inside Tools drawer ----
+  const toolsDrawer = document.getElementById('tools-drawer');
+  const toolsClose = document.getElementById('tools-close');
+  if (toolsDrawer && toolsClose && !document.getElementById('tools-refresh')) {
+    const btn = document.createElement('button');
+    btn.id = 'tools-refresh';
+    btn.type = 'button';
+    btn.title = 'Refresh';
+    btn.setAttribute('aria-label', 'Refresh');
+    btn.innerHTML =
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+      'stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/>' +
+      '<polyline points="21 3 21 9 15 9"/></svg>';
+    btn.addEventListener('click', () => {
+      try { localStorage.removeItem('meeel-publish-state-v1'); } catch {}
+      location.reload();
+    });
+    toolsClose.parentNode?.insertBefore(btn, toolsClose);
+  }
+
+  // ---- Warning inside Publish modal ----
+  const modalTabs = document.querySelector('.modal-tabs') as HTMLElement | null;
+  if (modalTabs && !document.querySelector('.publish-warning')) {
+    const warn = document.createElement('div');
+    warn.className = 'publish-warning';
+    warn.textContent =
+      '🛡️ meeEL protects your API from exposure — it separates API details from the code and moves them to an .env file.';
+    warn.style.display = 'none';
+    modalTabs.parentNode?.insertBefore(warn, modalTabs);
+  }
+
+  // ---- Inject styles (no index.html / style.css edits needed) ----
+  if (!document.getElementById('step2-styles')) {
+    const s = document.createElement('style');
+    s.id = 'step2-styles';
+    s.textContent = `
+#tools-refresh {
+  background: transparent;
+  border: none;
+  color: #b4b4bc;
+  padding: 6px;
+  margin-right: 6px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+#tools-refresh:hover {
+  background: rgba(255,255,255,0.08);
+  color: #f0f0f3;
+}
+.publish-warning {
+  margin: 8px 20px 0;
+  padding: 10px 14px;
+  background: rgba(240, 168, 104, 0.10);
+  border-left: 3px solid #f0a868;
+  border-radius: 6px;
+  color: #f0a868;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+`;
+    document.head.appendChild(s);
+  }
+})();
+
+/* ============ PASTE FIX ============ */
+(function setupPasteFix() {
+  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
+  if (!ed) return;
+
+  ed.addEventListener('paste', (e: ClipboardEvent) => {
+    const __raw = e.clipboardData?.getData('text/plain');
+    if (typeof __raw !== 'string' || !__raw) return;
+    e.preventDefault();
+    const text = sanitizeSource(__raw).cleaned;
+    const start = ed.selectionStart;
+    const end = ed.selectionEnd;
+    const before = ed.value.slice(0, start);
+    const after = ed.value.slice(end);
+    ed.value = before + text + after;
+    const pos = start + text.length;
+    ed.selectionStart = ed.selectionEnd = pos;
+    ed.dispatchEvent(new Event('input', { bubbles: true }));
+  }, true);
+})();
+
+/* ============ AUTO-CLOSE BRACKETS ============ */
+/* The permanent fix: user types `page-[` + Enter → editor adds `]` automatically.
+   User never needs to count brackets. */
+(function setupAutoClose() {
+  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
+  if (!ed) return;
+
+  ed.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key !== 'Enter') return;
+    if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+
+    const start = ed.selectionStart;
+    if (start !== ed.selectionEnd) return;
+    const value = ed.value;
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    const lineText = value.slice(lineStart, start);
+
+    // Case 1: line ends with `-[` → open a block, auto-insert `]`
+    if (/-\[\s*$/.test(lineText)) {
+      e.preventDefault();
+      const indentMatch = lineText.match(/^(\s*)/);
+      const indent = indentMatch ? indentMatch[1] : '';
+      const inner = indent + '  ';
+      const insertion = '\n' + inner + '\n' + indent + ']';
+      ed.value = value.slice(0, start) + insertion + value.slice(start);
+      const newPos = start + 1 + inner.length;
+      ed.selectionStart = ed.selectionEnd = newPos;
+      ed.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
+
+    // Case 2: cursor right before an auto-inserted `]` → make room
+    const nextCh = value.charAt(start);
+    if (nextCh === ']') {
+      e.preventDefault();
+      const indentMatch = lineText.match(/^(\s*)/);
+      const indent = indentMatch ? indentMatch[1] : '';
+      const inner = indent + '  ';
+      ed.value = value.slice(0, start) + '\n' + inner + value.slice(start);
+      const newPos = start + 1 + inner.length;
+      ed.selectionStart = ed.selectionEnd = newPos;
+      ed.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
+  });
+
+  // Auto-indent on plain Enter (fallback for existing structure)
+  ed.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key !== 'Enter') return;
+    if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.defaultPrevented) return; // already handled above
+
+    const start = ed.selectionStart;
+    if (start !== ed.selectionEnd) return;
+    const value = ed.value;
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    const lineText = value.slice(lineStart, start);
+    const indentMatch = lineText.match(/^(\s*)/);
+    const indent = indentMatch ? indentMatch[1] : '';
+    if (!indent) return;
+
+    e.preventDefault();
+    ed.value = value.slice(0, start) + '\n' + indent + value.slice(start);
+    const newPos = start + 1 + indent.length;
+    ed.selectionStart = ed.selectionEnd = newPos;
+    ed.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+})();
+
+/* ============ AUTO-BALANCE ON PASTE ============ */
+/* When user pastes code with more [ than ], auto-append missing ]s.
+   This is the permanent fix for bracket frustration. */
+(function setupAutoBalance() {
+  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
+  if (!ed) return;
+
+  function balance(text: string): string {
+    const opens = (text.match(/\[/g) || []).length;
+    const closes = (text.match(/\]/g) || []).length;
+    if (opens <= closes) return text;
+
+    const missing = opens - closes;
+    // Figure out indentation for the closing brackets
+    // Look at the last non-empty line to guess indent
+    const lines = text.split('\n');
+    let lastIndent = '';
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].trim()) {
+        const m = lines[i].match(/^(\s*)/);
+        lastIndent = m ? m[1] : '';
+        break;
+      }
+    }
+    let result = text;
+    for (let i = 0; i < missing; i++) {
+      const indent = '  '.repeat(Math.max(0, missing - 1 - i));
+      result += '\n' + indent + ']';
+    }
+    return result;
+  }
+
+  // Auto-balance on paste
+  ed.addEventListener('paste', (e: ClipboardEvent) => {
+    const raw = e.clipboardData?.getData('text/plain');
+    if (typeof raw !== 'string' || !raw) return;
+    const opens = (raw.match(/\[/g) || []).length;
+    const closes = (raw.match(/\]/g) || []).length;
+    if (opens === closes) return; // balanced — let default paste work
+    e.preventDefault();
+    const start = ed.selectionStart;
+    const end = ed.selectionEnd;
+    const before = ed.value.slice(0, start);
+    const after = ed.value.slice(end);
+    const fixed = balance(raw);
+    ed.value = before + fixed + after;
+    const pos = start + fixed.length;
+    ed.selectionStart = ed.selectionEnd = pos;
+    ed.dispatchEvent(new Event('input', { bubbles: true }));
+  }, true);
+
+  // Auto-balance on blur (when user leaves the editor)
+  ed.addEventListener('blur', () => {
+    const opens = (ed.value.match(/\[/g) || []).length;
+    const closes = (ed.value.match(/\]/g) || []).length;
+    if (opens > closes) {
+      ed.value = balance(ed.value);
+      ed.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+})();
+
+/* ============ AUTO-BALANCE ON PASTE ============ */
+/* When user pastes code with more [ than ], auto-append missing ]s.
+   This is the permanent fix for bracket frustration. */
+(function setupAutoBalance() {
+  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
+  if (!ed) return;
+
+  function balance(text: string): string {
+    const opens = (text.match(/\[/g) || []).length;
+    const closes = (text.match(/\]/g) || []).length;
+    if (opens <= closes) return text;
+
+    const missing = opens - closes;
+    // Figure out indentation for the closing brackets
+    // Look at the last non-empty line to guess indent
+    const lines = text.split('\n');
+    let lastIndent = '';
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].trim()) {
+        const m = lines[i].match(/^(\s*)/);
+        lastIndent = m ? m[1] : '';
+        break;
+      }
+    }
+    let result = text;
+    for (let i = 0; i < missing; i++) {
+      const indent = '  '.repeat(Math.max(0, missing - 1 - i));
+      result += '\n' + indent + ']';
+    }
+    return result;
+  }
+
+  // Auto-balance on paste
+  ed.addEventListener('paste', (e: ClipboardEvent) => {
+    const raw = e.clipboardData?.getData('text/plain');
+    if (typeof raw !== 'string' || !raw) return;
+    const opens = (raw.match(/\[/g) || []).length;
+    const closes = (raw.match(/\]/g) || []).length;
+    if (opens === closes) return; // balanced — let default paste work
+    e.preventDefault();
+    const start = ed.selectionStart;
+    const end = ed.selectionEnd;
+    const before = ed.value.slice(0, start);
+    const after = ed.value.slice(end);
+    const fixed = balance(raw);
+    ed.value = before + fixed + after;
+    const pos = start + fixed.length;
+    ed.selectionStart = ed.selectionEnd = pos;
+    ed.dispatchEvent(new Event('input', { bubbles: true }));
+  }, true);
+
+  // Auto-balance on blur (when user leaves the editor)
+  ed.addEventListener('blur', () => {
+    const opens = (ed.value.match(/\[/g) || []).length;
+    const closes = (ed.value.match(/\]/g) || []).length;
+    if (opens > closes) {
+      ed.value = balance(ed.value);
+      ed.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+})();

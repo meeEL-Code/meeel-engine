@@ -4,3 +4,7 @@ dist/
 .DS_Store
 .env
 output.html
+
+# Backup files from editing sessions
+*.bak
+*.bak.*

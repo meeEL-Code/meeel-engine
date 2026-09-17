@@ -43,6 +43,7 @@ export const ACTIONS: Record<string, ActionDef> = {
   "load-video": { arity: 3, targetMode: "none", keywords: ["from"], description: "Load YouTube/video" },
 
   "if": { arity: "rest", targetMode: "none", description: "Conditional action" },
+  "press": { arity: 2, targetMode: "id", description: "Press a calculator key" },
 };
 
 export const SYNONYMS: Record<string, string> = {

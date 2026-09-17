@@ -10,6 +10,21 @@ export const REPEATABLE_NAMES = new Set<string>([
   "radio",
   "link",
   "button",
+  "card",
+  "box",
+  "row",
+  "column",
+  "wrapper",
+  "container",
+  "section",
+  "group",
+  "info",
+  "field",
+  "image",
+  "icon",
+  "text",
+  "title",
+  "badge",
 ]);
 
 export function isRepeatable(blockName: string): boolean {

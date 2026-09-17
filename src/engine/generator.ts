@@ -1939,7 +1939,13 @@ function generateBlock(
       else if (propDef.special === 'type') attrs['type'] = val;
       else if (propDef.special === 'placeholder') attrs['placeholder'] = val;
       else if (propDef.special === 'href') attrs['href'] = val;
-      else if (propDef.special === 'on-click') {
+      else if (propDef.special === 'on-input') {
+        // collect on-input handler
+        const actions = String(child.value).split('\n').filter(Boolean);
+        if (actions.length) collectedHandlers.push({ elementId: id, actions, event: 'input' });
+        continue;
+      }
+      if (propDef.special === 'on-click') {
         const actions = val.split(/[\n;]/).map((s) => s.trim()).filter(Boolean);
         if (actions.length > 0) {
           collectedHandlers.push({ elementId: id, actions });
@@ -4739,7 +4745,7 @@ ${indent}</label>`;
 /* ============ JAVASCRIPT GENERATOR ============ */
 
 function generateJavaScript(
-  handlers: Array<{ elementId: string; actions: string[] }>,
+  handlers: Array<{ elementId: string; actions: string[]; event?: 'click' | 'input' }>,
   timers: Array<{ period: number; actions: string[] }> = []
 ): string {
   if (handlers.length === 0 && timers.length === 0) return '';
@@ -4748,6 +4754,65 @@ function generateJavaScript(
   lines.push('/* meeEL — generated script */');
   lines.push('(function () {');
   lines.push("  'use strict';");
+  lines.push('');
+
+  // Calculator state machine — press(target, key)
+  lines.push('  function __meeel_calc_press(targetId, key) {');
+  lines.push('    var d = __meeel_find(targetId);');
+  lines.push('    if (!d) return;');
+  lines.push('    var s = d.__calcState;');
+  lines.push('    if (!s) { s = { cur: \'0\', stored: null, op: null, fresh: true }; d.__calcState = s; }');
+  lines.push('    function compute(a, b, o) {');
+  lines.push('      if (o === \'+\') return a + b;');
+  lines.push('      if (o === \'-\') return a - b;');
+  lines.push('      if (o === \'*\') return a * b;');
+  lines.push('      if (o === \'/\') return b === 0 ? 0 : a / b;');
+  lines.push('      return b;');
+  lines.push('    }');
+  lines.push('    function norm(k) {');
+  lines.push('      if (k === \'x\' || k === \'X\' || k === \'\u00D7\') return \'*\';');
+  lines.push('      if (k === \'\u00F7\') return \'/\';');
+  lines.push('      return k;');
+  lines.push('    }');
+  lines.push('    function fmt(n) {');
+  lines.push('      if (!isFinite(n)) return \'Error\';');
+  lines.push('      var out = String(n);');
+  lines.push('      if (out.length > 14) out = n.toPrecision(10).replace(/\\.?0+$/,\'\');');
+  lines.push('      return out;');
+  lines.push('    }');
+  lines.push('    var isDigit = key >= \'0\' && key <= \'9\' && key.length === 1;');
+  lines.push('    var isOp = (key === \'+\' || key === \'-\' || key === \'*\' || key === \'/\' || key === \'x\' || key === \'X\' || key === \'\u00D7\' || key === \'\u00F7\');');
+  lines.push('    var isEq = (key === \'=\' || key === \'Enter\');');
+  lines.push('    if (isDigit) {');
+  lines.push('      if (s.fresh) { s.cur = key; s.fresh = false; }');
+  lines.push('      else { s.cur = s.cur === \'0\' ? key : s.cur + key; }');
+  lines.push('    } else if (key === \'.\') {');
+  lines.push('      if (s.fresh) { s.cur = \'0.\'; s.fresh = false; }');
+  lines.push('      else if (s.cur.indexOf(\'.\') === -1) s.cur += \'.\';');
+  lines.push('    } else if (key === \'C\' || key === \'AC\' || key === \'c\') {');
+  lines.push('      s.cur = \'0\'; s.stored = null; s.op = null; s.fresh = true;');
+  lines.push('    } else if (isOp) {');
+  lines.push('      if (s.op !== null && !s.fresh) {');
+  lines.push('        s.cur = fmt(compute(parseFloat(s.stored), parseFloat(s.cur), s.op));');
+  lines.push('      }');
+  lines.push('      s.stored = s.cur;');
+  lines.push('      s.op = norm(key);');
+  lines.push('      s.fresh = true;');
+  lines.push('    } else if (isEq) {');
+  lines.push('      if (s.op !== null && s.stored !== null) {');
+  lines.push('        s.cur = fmt(compute(parseFloat(s.stored), parseFloat(s.cur), s.op));');
+  lines.push('        s.stored = null; s.op = null; s.fresh = true;');
+  lines.push('      }');
+  lines.push('    } else if (key === \'+/-\' || key === \'neg\') {');
+  lines.push('      s.cur = s.cur.charAt(0) === \'-\' ? s.cur.slice(1) : \'-\' + s.cur;');
+  lines.push('    } else if (key === \'%\') {');
+  lines.push('      s.cur = fmt(parseFloat(s.cur) / 100);');
+  lines.push('    } else if (key === \'back\' || key === \'B\') {');
+  lines.push('      s.cur = s.cur.length > 1 ? s.cur.slice(0, -1) : \'0\';');
+  lines.push('    }');
+  lines.push('    if (d.value !== undefined && d.value !== null && \'value\' in d) d.value = s.cur;');
+  lines.push('    else d.textContent = s.cur;');
+  lines.push('  }');
   lines.push('');
   lines.push('  // Fuzzy element finder: handles keep- prefix, suffix matches');
   lines.push('  function __meeel_find(target) {');
@@ -4777,9 +4842,21 @@ function generateJavaScript(
   lines.push('  function __meeel_check(target, op, val) {');
   lines.push('    var el = __meeel_find(target);');
   lines.push('    if (!el) return false;');
-  lines.push('    var text = (el.textContent || \'\').trim();');
+  lines.push("    var text = (el.value !== undefined && el.value !== null && el.value !== ''");
+  lines.push("      ? String(el.value)");
+  lines.push("      : (el.textContent || '')).trim();");
+  lines.push('    if (val === \'__EMPTY__\') {');
+  lines.push('      if (op === \'===\') return text === \'\';');
+  lines.push('      if (op === \'!==\') return text !== \'\';');
+  lines.push('      return false;');
+  lines.push('    }');
+  lines.push('    if (val === \'__NOT_EMPTY__\') {');
+  lines.push('      if (op === \'===\') return text !== \'\';');
+  lines.push('      if (op === \'!==\') return text === \'\';');
+  lines.push('      return false;');
+  lines.push('    }');
   lines.push('    var n = Number(val);');
-  lines.push('    var isNum = !isNaN(n) && isFinite(n);');
+  lines.push('    var isNum = !isNaN(n) && isFinite(n) && val !== \'\';');
   lines.push('    if (isNum) {');
   lines.push('      var cur = parseInt(text, 10) || 0;');
   lines.push('      if (op === \'===\') return cur === n;');
@@ -4797,7 +4874,7 @@ function generateJavaScript(
 
   for (const h of handlers) {
     lines.push('');
-    lines.push(`  var __root = __meeel_find(${JSON.stringify(h.elementId)}); if (__root) __root.addEventListener('click', function () {`);
+    lines.push(`  var __root = __meeel_find(${JSON.stringify(h.elementId)}); if (__root) __root.addEventListener(${JSON.stringify(h.event || 'click')}, function () {`);
     const _h = actionsToJsGroup(h.actions);
     if (_h) lines.push('    ' + _h);
     lines.push('  });');
@@ -4859,7 +4936,19 @@ function actionToJs(action: string): string {
         let jsOp = '===';
         let cmpValue = '';
 
-        if (cmp.startsWith('is-not-')) {
+        if (cmp === 'is-empty') {
+          jsOp = '===';
+          cmpValue = '__EMPTY__';
+        } else if (cmp === 'is-not-empty') {
+          jsOp = '!==';
+          cmpValue = '__EMPTY__';
+        } else if (cmp === 'is-wrong') {
+          jsOp = '===';
+          cmpValue = '__WRONG__';
+        } else if (cmp === 'is-correct') {
+          jsOp = '===';
+          cmpValue = '__CORRECT__';
+        } else if (cmp.startsWith('is-not-')) {
           jsOp = '!==';
           cmpValue = cmp.slice(7);
         } else if (cmp.startsWith('is-greater-than-')) {
@@ -4956,6 +5045,11 @@ function actionToJs(action: string): string {
         return `var el = __meeel_find(${tq}); if (el) el.textContent = String(${num});`;
       }
       return `var el = __meeel_find(${tq}); if (el) el.textContent = ${JSON.stringify(value)};`;
+    }
+    case 'press': {
+      const key = parts.slice(2).join(' ');
+      if (!key) return '';
+      return `__meeel_calc_press(${JSON.stringify(target)}, ${JSON.stringify(key)});`;
     }
     case 'copy-from': {
       // Syntax: show-data <target> <source>

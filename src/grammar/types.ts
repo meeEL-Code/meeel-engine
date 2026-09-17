@@ -31,8 +31,10 @@ export interface PropertyDef {
   valueMode: ValueMode;
   css?: string;
   jsHandler?: string;
+  special?: string;
   allowedOn?: string[] | "*";
   description: string;
+  transform?: (value: string) => string;
 }
 
 // ──── Action definition ────────────────────────────

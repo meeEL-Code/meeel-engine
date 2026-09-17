@@ -8,7 +8,9 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   "italic":    { "font-style": "italic" },
   "underline": { "text-decoration": "underline" },
 
-  "round":     { "border-radius": "50%" },
+  "round":     { "border-radius": "8px" },
+  "circle":    { "border-radius": "50%" },
+  "pill":      { "border-radius": "9999px" },
   "shadow":    { "box-shadow": "0 2px 8px rgba(0,0,0,0.15)" },
   "no-border": { "border": "none" },
 

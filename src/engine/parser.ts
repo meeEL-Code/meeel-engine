@@ -146,7 +146,7 @@ export function parse(tokens: Token[]): BlockNode {
         }
 
         // ---- 3) Multi-line: name-[ \n ... ] ----
-        if (isKnownProperty) {
+        if (isKnownProperty && !isKnownBlock) {
           const lines: string[] = [];
           let currentLine: string[] = [];
           while (index < tokens.length) {
