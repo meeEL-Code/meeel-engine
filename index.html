@@ -23,6 +23,29 @@
   <link rel="stylesheet" href="/src/ui/style.css" />
 </head>
 <body>
+
+  <!-- Unsaved work banner -->
+  <div class="unsaved-banner" id="unsaved-banner" hidden>
+    <div class="unsaved-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/>
+        <polyline points="7 3 7 8 15 8"/>
+      </svg>
+    </div>
+    <div class="unsaved-text">
+      <div class="unsaved-title">Your code isn't downloaded yet</div>
+      <div class="unsaved-desc">Don't lose your work — save it as a ZIP.</div>
+    </div>
+    <button class="unsaved-btn" id="unsaved-download-btn" type="button">Download now</button>
+    <button class="unsaved-close" id="unsaved-close" type="button" aria-label="Dismiss">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
   <header class="topbar">
     <div class="logo">
       <svg class="logo-icon" viewBox="0 0 64 64" width="22" height="22" aria-hidden="true">
@@ -235,7 +258,7 @@
           </svg></div>
         <div class="tools-card-text">
           <div class="tools-card-title">Actions</div>
-          <div class="tools-card-desc">112 actions — click, show, hide</div>
+          <div class="tools-card-desc">177 actions — click, show, hide</div>
         </div>
       </button>
 
@@ -276,6 +299,19 @@
         <div class="tools-card-text">
           <div class="tools-card-title">About meeEL</div>
           <div class="tools-card-desc">What it is, why we built it</div>
+        </div>
+      </button>
+
+      <button class="tools-card" data-tool="settings" type="button">
+        <div class="tools-card-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </div>
+        <div class="tools-card-text">
+          <div class="tools-card-title">Settings</div>
+          <div class="tools-card-desc">Notifications, daily reminder, preferences</div>
         </div>
       </button>
 
@@ -1026,6 +1062,87 @@
 
       <div class="welcome-footer">
         <button class="welcome-skip" id="welcome-skip" type="button">Skip — I know what I'm doing</button>
+      </div>
+    </div>
+  </div>
+
+
+        </button>
+
+<!-- Settings Page -->
+  <div class="lib-page" id="settings-page" hidden>
+    <div class="lib-page-header">
+      <button class="lib-page-back" id="settings-back" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <span class="lib-page-title">Settings</span>
+      <button class="lib-page-close" id="settings-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="lib-page-body">
+      <div class="settings-group">
+
+        <div class="settings-section">
+          <div class="settings-section-title">Notifications</div>
+
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Daily reminder</div>
+              <div class="settings-row-desc">One notification a day to keep building</div>
+            </div>
+            <div class="settings-toggle">
+              <input type="checkbox" id="toggle-daily" />
+              <span class="settings-toggle-slider"></span>
+            </div>
+          </label>
+
+          <div class="settings-row settings-row-static">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Permission status</div>
+              <div class="settings-row-desc" id="notif-permission-status">Checking…</div>
+            </div>
+            <button class="settings-btn" id="notif-permission-btn" type="button">Ask</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Your data</div>
+
+          <div class="settings-row settings-row-static">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Storage used</div>
+              <div class="settings-row-desc" id="storage-size">Calculating…</div>
+            </div>
+            <button class="settings-btn settings-btn-danger" id="clear-storage-btn" type="button">Clear all</button>
+          </div>
+
+          <label class="settings-row">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Show welcome again</div>
+              <div class="settings-row-desc">See the first-time templates again</div>
+            </div>
+            <button class="settings-btn" id="replay-welcome-btn" type="button">Open</button>
+          </label>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">About</div>
+
+          <div class="settings-row settings-row-static">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Version</div>
+              <div class="settings-row-desc">meeEL Page v0.1 — mee Innovations</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

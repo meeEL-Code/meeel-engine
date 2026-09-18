@@ -4529,6 +4529,62 @@ function actionToJs(action: string): string {
     return `try { if (window.Notification && Notification.permission === 'granted') { try { new Notification(${mq}); } catch(e) {} } else if (window.Notification && Notification.permission !== 'denied') { Notification.requestPermission().then(function(p) { if (p === 'granted') { try { new Notification(${mq}); } catch(e) {} } }); } } catch(e) {}`;
   }
 
+  // ── Target-less actions (no element needed) ──
+  if (verb === 'scroll-top') {
+    return `window.scrollTo({top: 0, behavior: 'smooth'});`;
+  }
+  if (verb === 'scroll-bottom') {
+    return `window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});`;
+  }
+  if (verb === 'go-back') {
+    return `window.history.back();`;
+  }
+  if (verb === 'go-forward') {
+    return `window.history.forward();`;
+  }
+  if (verb === 'reload-page') {
+    return `window.location.reload();`;
+  }
+  if (verb === 'fullscreen-enter') {
+    return `if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function(){});`;
+  }
+  if (verb === 'fullscreen-exit') {
+    return `if (document.exitFullscreen) document.exitFullscreen().catch(function(){});`;
+  }
+  if (verb === 'print') {
+    return `window.print();`;
+  }
+  if (verb === 'clear-clipboard') {
+    return `navigator.clipboard.writeText('').catch(function(){});`;
+  }
+  if (verb === 'show-toast') {
+    const msg = parts.slice(1).join(' ') || '';
+    const mq = JSON.stringify(msg);
+    return `(function(){var __t=document.getElementById('__meeel_toast');if(!__t){__t=document.createElement('div');__t.id='__meeel_toast';__t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:10px;font-family:inherit;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.25);z-index:99999;transition:opacity 0.3s';document.body.appendChild(__t);}__t.textContent=${mq};__t.style.opacity='1';clearTimeout(__t._t);__t._t=setTimeout(function(){__t.style.opacity='0';},2500);})()`;
+  }
+  if (verb === 'open-url') {
+    const url = parts[1] || '';
+    if (!url) return '';
+    return `window.location.href = ${JSON.stringify(url)};`;
+  }
+
+  if (verb === 'clear-all') {
+    return `localStorage.clear();`;
+  }
+  if (verb === 'blur-all') {
+    return `if (document.activeElement && document.activeElement.blur) document.activeElement.blur();`;
+  }
+  if (verb === 'open-new-tab') {
+    const url = parts[1] || '';
+    if (!url) return '';
+    return `window.open(${JSON.stringify(url)}, '_blank');`;
+  }
+  if (verb === 'screen-lock') {
+    return `if (window.__meeel_wake) { try { window.__meeel_wake.release(); window.__meeel_wake = null; } catch(e){} }`;
+  }
+  if (verb === 'stopwatch-start') {
+    return `if (window.__meeel_sw) { clearInterval(window.__meeel_sw); } var __start = Date.now(); window.__meeel_sw = setInterval(function(){ var __el = document.querySelector('[data-stopwatch]'); if (__el) __el.textContent = String(Math.floor((Date.now() - __start) / 1000)); }, 250);`;
+  }
   if (!target) return '';
 
   const tq = JSON.stringify(target);
@@ -4756,6 +4812,574 @@ case 'beep': {
       const sq = JSON.stringify(sSrc);
       return `var __tgt = __meeel_find(${tq2}); var __h = __meeel_find(${hq}); var __m = __meeel_find(${mq}); var __s = __meeel_find(${sq}); if (__tgt) { var __hv = __h ? (parseInt((__h.value !== undefined && __h.value !== null) ? __h.value : __h.textContent, 10) || 0) : 0; var __mv = __m ? (parseInt((__m.value !== undefined && __m.value !== null) ? __m.value : __m.textContent, 10) || 0) : 0; var __sv = __s ? (parseInt((__s.value !== undefined && __s.value !== null) ? __s.value : __s.textContent, 10) || 0) : 0; __tgt.textContent = String(__hv * 3600 + __mv * 60 + __sv); }`;
     }
+    case 'scroll-to': {
+      return `var el = __meeel_find(${tq}); if (el) el.scrollIntoView({behavior: 'smooth'});`;
+    }
+    case 'focus': {
+      return `var el = __meeel_find(${tq}); if (el && el.focus) el.focus();`;
+    }
+    case 'blur': {
+      return `var el = __meeel_find(${tq}); if (el && el.blur) el.blur();`;
+    }
+    case 'copy-text': {
+      return `var el = __meeel_find(${tq}); if (el) { var t = el.value !== undefined ? el.value : el.textContent; navigator.clipboard.writeText(t).catch(function(){}); }`;
+    }
+    case 'paste-text': {
+      return `var el = __meeel_find(${tq}); if (el) { navigator.clipboard.readText().then(function(t) { if (el.value !== undefined) el.value = t; else el.textContent = t; }).catch(function(){}); }`;
+    }
+    case 'hide-toast': {
+      return `var __t = document.getElementById('__meeel_toast'); if (__t) __t.style.opacity = '0';`;
+    }
+    case 'open-popup': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.setProperty('display', 'block', 'important');`;
+    }
+    case 'close-popup': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.setProperty('display', 'none', 'important');`;
+    }
+    case 'share': {
+      return `var el = __meeel_find(${tq}); if (el && navigator.share) { var t = el.value !== undefined ? el.value : el.textContent; navigator.share({text: t}).catch(function(){}); }`;
+    }
+    case 'uppercase': {
+      return `var el = __meeel_find(${tq}); if (el) { if (el.value !== undefined) el.value = el.value.toUpperCase(); else el.textContent = el.textContent.toUpperCase(); }`;
+    }
+    case 'lowercase': {
+      return `var el = __meeel_find(${tq}); if (el) { if (el.value !== undefined) el.value = el.value.toLowerCase(); else el.textContent = el.textContent.toLowerCase(); }`;
+    }
+    case 'capitalize': {
+      return `var el = __meeel_find(${tq}); if (el) { var t = el.value !== undefined ? el.value : el.textContent; t = t.replace(/\\b\\w/g, function(c){ return c.toUpperCase(); }); if (el.value !== undefined) el.value = t; else el.textContent = t; }`;
+    }
+    case 'trim': {
+      return `var el = __meeel_find(${tq}); if (el) { if (el.value !== undefined) el.value = el.value.trim(); else el.textContent = el.textContent.trim(); }`;
+    }
+    case 'append': {
+      const text = parts.slice(2).join(' ');
+      const tq2 = JSON.stringify(text);
+      return `var el = __meeel_find(${tq}); if (el) { if (el.value !== undefined) el.value += ${tq2}; else el.textContent += ${tq2}; }`;
+    }
+    case 'prepend': {
+      const text = parts.slice(2).join(' ');
+      const tq2 = JSON.stringify(text);
+      return `var el = __meeel_find(${tq}); if (el) { if (el.value !== undefined) el.value = ${tq2} + el.value; else el.textContent = ${tq2} + el.textContent; }`;
+    }
+    case 'replace': {
+      const oldT = parts[2] || '';
+      const newT = parts[3] || '';
+      if (!oldT) return '';
+      return `var el = __meeel_find(${tq}); if (el) { var src = el.value !== undefined ? el.value : el.textContent; var out = src.split(${JSON.stringify(oldT)}).join(${JSON.stringify(newT)}); if (el.value !== undefined) el.value = out; else el.textContent = out; }`;
+    }
+    case 'reverse-text': {
+      return `var el = __meeel_find(${tq}); if (el) { var s = el.value !== undefined ? el.value : el.textContent; var r = s.split('').reverse().join(''); if (el.value !== undefined) el.value = r; else el.textContent = r; }`;
+    }
+    case 'count-letters': {
+      return `var el = __meeel_find(${tq}); if (el) { var s = el.value !== undefined ? el.value : el.textContent; el.textContent = String(s.length); }`;
+    }
+    case 'count-words': {
+      return `var el = __meeel_find(${tq}); if (el) { var s = el.value !== undefined ? el.value : el.textContent; var w = s.trim().split(/\\s+/).filter(function(x){return x;}).length; el.textContent = String(w); }`;
+    }
+    case 'min': {
+      const v = parseFloat(parts[2]) || 0;
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(Math.min(cur, ${v})); }`;
+    }
+    case 'max': {
+      const v = parseFloat(parts[2]) || 0;
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(Math.max(cur, ${v})); }`;
+    }
+    case 'round': {
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(Math.round(cur)); }`;
+    }
+    case 'floor': {
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(Math.floor(cur)); }`;
+    }
+    case 'ceil': {
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(Math.ceil(cur)); }`;
+    }
+    case 'absolute': {
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(Math.abs(cur)); }`;
+    }
+    case 'divide': {
+      const v = parseFloat(parts[2]) || 1;
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(cur / ${v}); }`;
+    }
+    case 'power': {
+      const v = parseFloat(parts[2]) || 2;
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(Math.pow(cur, ${v})); }`;
+    }
+    case 'square-root': {
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(Math.sqrt(cur)); }`;
+    }
+    case 'format-number': {
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = cur.toLocaleString(); }`;
+    }
+    case 'today': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = new Date().toLocaleDateString();`;
+    }
+    case 'now': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = new Date().toLocaleTimeString();`;
+    }
+    case 'coin-flip': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = Math.random() < 0.5 ? 'Heads' : 'Tails';`;
+    }
+    case 'delay': {
+      const sec = parseFloat(parts[1]) || 1;
+      const rest = parts.slice(2).join(' ');
+      const sub = rest ? actionToJs(rest) : '';
+      if (!sub) return '';
+      return `setTimeout(function(){ ${sub} }, ${sec * 1000});`;
+    }
+    case 'percent-of': {
+      const pct = parseFloat(parts[2]) || 0;
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(cur * ${pct} / 100); }`;
+    }
+    case 'clamp': {
+      const cmin = parseFloat(parts[2]) || 0;
+      const cmax = parseFloat(parts[3]) || 100;
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(Math.max(${cmin}, Math.min(${cmax}, cur))); }`;
+    }
+    case 'negate': {
+      return `var el = __meeel_find(${tq}); if (el) { var cur = parseFloat(el.textContent) || 0; el.textContent = String(-cur); }`;
+    }
+    case 'fade-in': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.transition = 'opacity 0.5s'; el.style.opacity = '0'; requestAnimationFrame(function(){ el.style.opacity = '1'; }); }`;
+    }
+    case 'fade-out': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.transition = 'opacity 0.5s'; el.style.opacity = '0'; }`;
+    }
+    case 'highlight': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.transition = 'box-shadow 0.4s'; el.style.boxShadow = '0 0 0 4px #ffe066'; setTimeout(function(){ el.style.boxShadow = ''; }, 1200); }`;
+    }
+
+    case 'pulse': {
+      return `var el = __meeel_find(${tq}); if (el) { var __i = 0; var __t = setInterval(function(){ el.style.transform = (__i++ % 2) ? 'scale(1)' : 'scale(1.08)'; if (__i >= 4) { clearInterval(__t); el.style.transform = ''; } }, 250); }`;
+    }
+    case 'shake': {
+      return `var el = __meeel_find(${tq}); if (el) { var __i = 0; var __t = setInterval(function(){ el.style.transform = 'translateX(' + ((__i++ % 2) ? '6px' : '-6px') + ')'; if (__i >= 6) { clearInterval(__t); el.style.transform = ''; } }, 70); }`;
+    }
+    case 'clone-to': {
+      const dest = parts[2];
+      if (!dest) return '';
+      const dq = JSON.stringify(dest);
+      return `var src = __meeel_find(${tq}); var dst = __meeel_find(${dq}); if (src && dst) { var __c = src.cloneNode(true); __c.removeAttribute('id'); dst.appendChild(__c); }`;
+    }
+    case 'move-to': {
+      const dest = parts[2];
+      if (!dest) return '';
+      const dq = JSON.stringify(dest);
+      return `var src = __meeel_find(${tq}); var dst = __meeel_find(${dq}); if (src && dst) { dst.appendChild(src); }`;
+    }
+    case 'has-key': {
+      const key = parts[1];
+      const intoKw = parts[2];
+      const intoTarget = parts[3];
+      if (!key || intoKw !== 'into' || !intoTarget) return '';
+      const kq = JSON.stringify(key);
+      const itq = JSON.stringify(intoTarget);
+      return `var __tgt = __meeel_find(${itq}); if (__tgt) __tgt.textContent = (localStorage.getItem(${kq}) !== null) ? 'yes' : 'no';`;
+    }
+    case 'list-keys': {
+      const intoKw = parts[1];
+      const intoTarget = parts[2];
+      if (intoKw !== 'into' || !intoTarget) return '';
+      const itq = JSON.stringify(intoTarget);
+      return `var __tgt = __meeel_find(${itq}); if (__tgt) { var __k = []; for (var __i = 0; __i < localStorage.length; __i++) __k.push(localStorage.key(__i)); __tgt.textContent = __k.join(', '); }`;
+    }
+
+    case 'split': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.whiteSpace = 'pre-line'; el.textContent = el.textContent.split(',').map(function(x){return x.trim();}).filter(function(x){return x;}).join('\\n'); }`;
+    }
+    case 'join': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = el.textContent.split(/\\n+/).map(function(x){return x.trim();}).filter(function(x){return x;}).join(', ');`;
+    }
+    case 'count-items': {
+      return `var el = __meeel_find(${tq}); if (el) { var __n = el.textContent.split(/[,\\n]/).map(function(x){return x.trim();}).filter(function(x){return x;}).length; el.textContent = String(__n); }`;
+    }
+    case 'random-pick': {
+      return `var el = __meeel_find(${tq}); if (el) { var __a = el.textContent.split(/[,\\n]/).map(function(x){return x.trim();}).filter(function(x){return x;}); if (__a.length) el.textContent = __a[Math.floor(Math.random() * __a.length)]; }`;
+    }
+    case 'shuffle': {
+      return `var el = __meeel_find(${tq}); if (el) { var __a = el.textContent.split(/[,\\n]/).map(function(x){return x.trim();}).filter(function(x){return x;}); for (var __i = __a.length - 1; __i > 0; __i--) { var __j = Math.floor(Math.random() * (__i + 1)); var __t = __a[__i]; __a[__i] = __a[__j]; __a[__j] = __t; } el.textContent = __a.join(', '); }`;
+    }
+    case 'speak': {
+      return `var el = __meeel_find(${tq}); if (el) { try { var __t = (el.value !== undefined ? el.value : el.textContent) || ''; if (__t) { var __u = new SpeechSynthesisUtterance(__t); __u.lang = 'en-US'; speechSynthesis.cancel(); speechSynthesis.speak(__u); } } catch(e) { console.warn('speak failed', e); } }`;
+    }
+
+    case 'camera-open': {
+      return `var el = __meeel_find(${tq}); if (el) { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { navigator.mediaDevices.getUserMedia({video: true}).then(function(s){ if (el.tagName === 'VIDEO') { el.srcObject = s; el.play(); } else { var v = document.createElement('video'); v.autoplay = true; v.playsInline = true; v.srcObject = s; v.style.maxWidth = '100%'; el.appendChild(v); } }).catch(function(e){ el.textContent = 'Camera: ' + e.message; }); } else { el.textContent = 'Camera not supported'; } }`;
+    }
+    case 'mic-start': {
+      return `var el = __meeel_find(${tq}); if (el) { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { navigator.mediaDevices.getUserMedia({audio: true}).then(function(){ el.textContent = 'Mic: listening'; }).catch(function(e){ el.textContent = 'Mic: ' + e.message; }); } else { el.textContent = 'Mic not supported'; } }`;
+    }
+    case 'location-get': {
+      return `var el = __meeel_find(${tq}); if (el) { if (navigator.geolocation) { el.textContent = 'Locating...'; navigator.geolocation.getCurrentPosition(function(p){ el.textContent = p.coords.latitude.toFixed(4) + ', ' + p.coords.longitude.toFixed(4); }, function(e){ el.textContent = 'Location: ' + e.message; }); } else { el.textContent = 'Location not supported'; } }`;
+    }
+    case 'ping-url': {
+      const url = parts[1];
+      const intoKw = parts[2];
+      const intoTarget = parts[3];
+      if (!url || intoKw !== 'into' || !intoTarget) return '';
+      const uq = JSON.stringify(url);
+      const itq = JSON.stringify(intoTarget);
+      return `var __tgt = __meeel_find(${itq}); if (__tgt) { __tgt.textContent = 'Pinging...'; fetch(${uq}, {method: 'HEAD', mode: 'no-cors'}).then(function(){ __tgt.textContent = 'Up'; }).catch(function(){ __tgt.textContent = 'Down'; }); }`;
+    }
+    case 'time-alert': {
+      const sec = parseFloat(parts[1]) || 5;
+      const msg = parts.slice(2).join(' ') || 'Time is up';
+      const mq = JSON.stringify(msg);
+      return `setTimeout(function(){ try { if (window.Notification && Notification.permission === 'granted') { new Notification(${mq}); } } catch(e) {} var __t=document.getElementById('__meeel_toast'); if(!__t){__t=document.createElement('div');__t.id='__meeel_toast';__t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:10px;z-index:99999';document.body.appendChild(__t);} __t.textContent=${mq}; __t.style.opacity='1'; clearTimeout(__t._t); __t._t=setTimeout(function(){__t.style.opacity='0';},2500); }, ${sec * 1000});`;
+    }
+
+    case 'screen-wake': {
+      return `if ('wakeLock' in navigator) { navigator.wakeLock.request('screen').then(function(s){ window.__meeel_wake = s; s.addEventListener('release', function(){}); }).catch(function(e){ console.warn('wake failed', e); }); } else { console.warn('Wake Lock not supported'); }`;
+    }
+    case 'brightness-up': {
+      const amt = parseFloat(parts[2]) || 1.5;
+      return `var el = __meeel_find(${tq}); if (el) el.style.filter = 'brightness(' + ${amt} + ')';`;
+    }
+
+    case 'random-between': {
+      const mn = parseInt(parts[2], 10) || 0;
+      const mx = parseInt(parts[3], 10) || 100;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String(Math.floor(Math.random() * (${mx} - ${mn} + 1)) + ${mn});`;
+    }
+    case 'pad-start': {
+      const len = parseInt(parts[2], 10) || 1;
+      const ch = parts[3] || '0';
+      const cq = JSON.stringify(ch);
+      return `var el = __meeel_find(${tq}); if (el) { var __s = el.value !== undefined ? el.value : el.textContent; var __out = __s.padStart(${len}, ${cq}); if (el.value !== undefined) el.value = __out; else el.textContent = __out; }`;
+    }
+    case 'pad-end': {
+      const len = parseInt(parts[2], 10) || 1;
+      const ch = parts[3] || '-';
+      const cq = JSON.stringify(ch);
+      return `var el = __meeel_find(${tq}); if (el) { var __s = el.value !== undefined ? el.value : el.textContent; var __out = __s.padEnd(${len}, ${cq}); if (el.value !== undefined) el.value = __out; else el.textContent = __out; }`;
+    }
+    case 'repeat-text': {
+      const n = parseInt(parts[2], 10) || 1;
+      return `var el = __meeel_find(${tq}); if (el) { var __s = el.value !== undefined ? el.value : el.textContent; var __out = __s.repeat(${n}); if (el.value !== undefined) el.value = __out; else el.textContent = __out; }`;
+    }
+    case 'truncate': {
+      const n = parseInt(parts[2], 10) || 0;
+      return `var el = __meeel_find(${tq}); if (el) { var __s = el.value !== undefined ? el.value : el.textContent; var __out = __s.slice(0, ${n}); if (el.value !== undefined) el.value = __out; else el.textContent = __out; }`;
+    }
+    case 'remove-spaces': {
+      return `var el = __meeel_find(${tq}); if (el) { var __s = el.value !== undefined ? el.value : el.textContent; var __out = __s.split(' ').join(''); if (el.value !== undefined) el.value = __out; else el.textContent = __out; }`;
+    }
+
+    case 'contains': {
+      const word = parts[2] || '';
+      if (!word) return '';
+      const wq = JSON.stringify(word);
+      return `var el = __meeel_find(${tq}); if (el) { var __s = el.value !== undefined ? el.value : el.textContent; el.textContent = __s.indexOf(${wq}) !== -1 ? 'yes' : 'no'; }`;
+    }
+    case 'starts-with': {
+      const word = parts[2] || '';
+      if (!word) return '';
+      const wq = JSON.stringify(word);
+      return `var el = __meeel_find(${tq}); if (el) { var __s = (el.value !== undefined ? el.value : el.textContent).trim(); el.textContent = __s.indexOf(${wq}) === 0 ? 'yes' : 'no'; }`;
+    }
+    case 'ends-with': {
+      const word = parts[2] || '';
+      if (!word) return '';
+      const wq = JSON.stringify(word);
+      return `var el = __meeel_find(${tq}); if (el) { var __s = (el.value !== undefined ? el.value : el.textContent).trim(); el.textContent = __s.slice(-(${word.length})) === ${wq} ? 'yes' : 'no'; }`;
+    }
+    case 'title-case': {
+      return `var el = __meeel_find(${tq}); if (el) { var __s = el.value !== undefined ? el.value : el.textContent; var __t = __s.replace(/\\w\\S*/g, function(w){ return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }); if (el.value !== undefined) el.value = __t; else el.textContent = __t; }`;
+    }
+    case 'mod': {
+      const d = parseFloat(parts[2]) || 1;
+      return `var el = __meeel_find(${tq}); if (el) { var __v = parseFloat(el.textContent) || 0; el.textContent = String(__v % ${d}); }`;
+    }
+    case 'average': {
+      const other = parts[2];
+      if (!other) return '';
+      const oq = JSON.stringify(other);
+      return `var el = __meeel_find(${tq}); var __o = __meeel_find(${oq}); if (el && __o) { var __a = parseFloat(el.textContent) || 0; var __b = parseFloat(__o.textContent) || 0; el.textContent = String((__a + __b) / 2); }`;
+    }
+    case 'sign': {
+      return `var el = __meeel_find(${tq}); if (el) { var __v = parseFloat(el.textContent) || 0; el.textContent = __v > 0 ? 'positive' : (__v < 0 ? 'negative' : 'zero'); }`;
+    }
+    case 'is-even': {
+      return `var el = __meeel_find(${tq}); if (el) { var __v = parseInt(el.textContent, 10) || 0; el.textContent = (__v % 2 === 0) ? 'even' : 'odd'; }`;
+    }
+
+    case 'bold-on': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.fontWeight = 'bold';`;
+    }
+    case 'bold-off': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.fontWeight = 'normal';`;
+    }
+    case 'italic-on': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.fontStyle = 'italic';`;
+    }
+    case 'italic-off': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.fontStyle = 'normal';`;
+    }
+    case 'underline-on': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.textDecoration = 'underline';`;
+    }
+    case 'underline-off': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.textDecoration = 'none';`;
+    }
+    case 'align-center': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.textAlign = 'center';`;
+    }
+    case 'align-right': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.textAlign = 'right';`;
+    }
+
+    case 'rotate': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.transition = 'transform 0.6s'; el.style.transform = 'rotate(360deg)'; setTimeout(function(){ el.style.transition = ''; el.style.transform = ''; }, 700); }`;
+    }
+    case 'bounce': {
+      return `var el = __meeel_find(${tq}); if (el) { var __i = 0; var __t = setInterval(function(){ el.style.transform = 'translateY(' + ((__i++ % 2) ? '0px' : '-20px') + ')'; if (__i >= 6) { clearInterval(__t); el.style.transform = ''; } }, 120); }`;
+    }
+    case 'blink': {
+      return `var el = __meeel_find(${tq}); if (el) { var __i = 0; var __t = setInterval(function(){ el.style.opacity = (__i++ % 2) ? '1' : '0'; if (__i >= 6) { clearInterval(__t); el.style.opacity = '1'; } }, 200); }`;
+    }
+    case 'flip-horizontal': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.transition = 'transform 0.6s'; el.style.transform = 'scaleX(-1)'; setTimeout(function(){ el.style.transition = ''; el.style.transform = ''; }, 700); }`;
+    }
+    case 'flip-vertical': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.transition = 'transform 0.6s'; el.style.transform = 'scaleY(-1)'; setTimeout(function(){ el.style.transition = ''; el.style.transform = ''; }, 700); }`;
+    }
+    case 'grow': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.transition = 'transform 0.4s'; el.style.transform = 'scale(1.5)'; }`;
+    }
+    case 'shrink': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.transition = 'transform 0.4s'; el.style.transform = 'scale(0.6)'; }`;
+    }
+    case 'swing': {
+      return `var el = __meeel_find(${tq}); if (el) { el.style.transition = 'transform 0.2s'; el.style.transform = 'rotate(-15deg)'; setTimeout(function(){ el.style.transform = 'rotate(15deg)'; }, 200); setTimeout(function(){ el.style.transform = 'rotate(-10deg)'; }, 400); setTimeout(function(){ el.style.transform = 'rotate(0deg)'; el.style.transition = ''; }, 600); }`;
+    }
+
+    case 'year': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String(new Date().getFullYear());`;
+    }
+    case 'month': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = new Date().toLocaleString('en-US', {month: 'long'});`;
+    }
+    case 'day': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String(new Date().getDate());`;
+    }
+    case 'hour': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String(new Date().getHours()).padStart(2, '0');`;
+    }
+    case 'minute': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String(new Date().getMinutes()).padStart(2, '0');`;
+    }
+    case 'weekday': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = new Date().toLocaleString('en-US', {weekday: 'long'});`;
+    }
+    case 'timestamp': {
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String(Date.now());`;
+    }
+    case 'format-date': {
+      return `var el = __meeel_find(${tq}); if (el) { var __d = new Date(); var __m = String(__d.getMonth() + 1).padStart(2, '0'); var __dd = String(__d.getDate()).padStart(2, '0'); el.textContent = __d.getFullYear() + '-' + __m + '-' + __dd; }`;
+    }
+
+    case 'disable': {
+      return `var el = __meeel_find(${tq}); if (el) el.disabled = true;`;
+    }
+    case 'enable': {
+      return `var el = __meeel_find(${tq}); if (el) el.disabled = false;`;
+    }
+    case 'readonly-on': {
+      return `var el = __meeel_find(${tq}); if (el) { el.readOnly = true; el.style.opacity = '0.6'; }`;
+    }
+    case 'readonly-off': {
+      return `var el = __meeel_find(${tq}); if (el) { el.readOnly = false; el.style.opacity = ''; }`;
+    }
+    case 'check': {
+      return `var el = __meeel_find(${tq}); if (el) { el.checked = true; if (el.type === 'radio') { var __n = el.name; if (__n) { var __all = document.querySelectorAll('input[type=radio][name=\\'' + __n + '\\']'); for (var __i = 0; __i < __all.length; __i++) __all[__i].checked = (__all[__i] === el); } } } }`;
+    }
+    case 'uncheck': {
+      return `var el = __meeel_find(${tq}); if (el) el.checked = false;`;
+    }
+    case 'clear-value': {
+      return `var el = __meeel_find(${tq}); if (el) { if (el.value !== undefined) el.value = ''; else el.textContent = ''; }`;
+    }
+    case 'select-text': {
+      return `var el = __meeel_find(${tq}); if (el && el.select) { el.focus(); el.select(); }`;
+    }
+
+    case 'set-width': {
+      const v = parts[2] || '100';
+      return `var el = __meeel_find(${tq}); if (el) el.style.width = ${JSON.stringify(v + (isNaN(parseFloat(v)) ? '' : 'px'))};`;
+    }
+    case 'set-height': {
+      const v = parts[2] || '100';
+      return `var el = __meeel_find(${tq}); if (el) el.style.height = ${JSON.stringify(v + (isNaN(parseFloat(v)) ? '' : 'px'))};`;
+    }
+    case 'set-font-size': {
+      const v = parseFloat(parts[2]) || 16;
+      return `var el = __meeel_find(${tq}); if (el) el.style.fontSize = ${JSON.stringify(v + 'px')};`;
+    }
+    case 'set-color': {
+      const c = parts[2] || 'black';
+      return `var el = __meeel_find(${tq}); if (el) el.style.color = ${JSON.stringify(c)};`;
+    }
+    case 'set-background': {
+      const c = parts[2] || 'white';
+      return `var el = __meeel_find(${tq}); if (el) el.style.backgroundColor = ${JSON.stringify(c)};`;
+    }
+    case 'set-border': {
+      const w = parseFloat(parts[2]) || 1;
+      const c = parts[3] || 'black';
+      return `var el = __meeel_find(${tq}); if (el) el.style.border = ${JSON.stringify(w + 'px solid ' + c)};`;
+    }
+    case 'set-radius': {
+      const v = parseFloat(parts[2]) || 4;
+      return `var el = __meeel_find(${tq}); if (el) el.style.borderRadius = ${JSON.stringify(v + 'px')};`;
+    }
+    case 'set-padding': {
+      const v = parseFloat(parts[2]) || 8;
+      return `var el = __meeel_find(${tq}); if (el) el.style.padding = ${JSON.stringify(v + 'px')};`;
+    }
+
+    case 'set-opacity': {
+      const v = Math.max(0, Math.min(1, parseFloat(parts[2]) || 1));
+      return `var el = __meeel_find(${tq}); if (el) el.style.opacity = String(${v});`;
+    }
+    case 'set-margin': {
+      const v = parseFloat(parts[2]) || 0;
+      return `var el = __meeel_find(${tq}); if (el) el.style.margin = ${JSON.stringify(v + 'px')};`;
+    }
+    case 'set-z': {
+      const v = parseInt(parts[2], 10) || 1;
+      return `var el = __meeel_find(${tq}); if (el) { el.style.position = el.style.position || 'relative'; el.style.zIndex = String(${v}); }`;
+    }
+    case 'set-cursor': {
+      const v = parts[2] || 'pointer';
+      return `var el = __meeel_find(${tq}); if (el) el.style.cursor = ${JSON.stringify(v)};`;
+    }
+    case 'set-title': {
+      const v = parts.slice(2).join(' ');
+      return `var el = __meeel_find(${tq}); if (el) el.title = ${JSON.stringify(v)};`;
+    }
+    case 'set-tooltip': {
+      const v = parts.slice(2).join(' ');
+      const vq = JSON.stringify(v);
+      return `var el = __meeel_find(${tq}); if (el) { el.title = ${vq}; el.style.position = el.style.position || 'relative'; }`;
+    }
+    case 'hide-scroll': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.overflow = 'hidden';`;
+    }
+    case 'show-scroll': {
+      return `var el = __meeel_find(${tq}); if (el) el.style.overflow = 'auto';`;
+    }
+
+    case 'type-text': {
+      const v = parts.slice(2).join(' ');
+      return `var el = __meeel_find(${tq}); if (el) { if (el.value !== undefined) el.value = ${JSON.stringify(v)}; else el.textContent = ${JSON.stringify(v)}; }`;
+    }
+    case 'focus-next': {
+      return `var el = __meeel_find(${tq}); if (el) { var __n = el.nextElementSibling; if (__n && __n.focus) __n.focus(); }`;
+    }
+    case 'increment-by': {
+      const v = parseFloat(parts[2]) || 1;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) + ${v});`;
+    }
+    case 'decrement-by': {
+      const v = parseFloat(parts[2]) || 1;
+      return `var el = __meeel_find(${tq}); if (el) el.textContent = String((parseInt(el.textContent, 10) || 0) - ${v});`;
+    }
+    case 'add-class': {
+      const v = parts[2] || '';
+      if (!v) return '';
+      return `var el = __meeel_find(${tq}); if (el) el.classList.add(${JSON.stringify(v)});`;
+    }
+    case 'remove-class': {
+      const v = parts[2] || '';
+      if (!v) return '';
+      return `var el = __meeel_find(${tq}); if (el) el.classList.remove(${JSON.stringify(v)});`;
+    }
+    case 'toggle-class': {
+      const v = parts[2] || '';
+      if (!v) return '';
+      return `var el = __meeel_find(${tq}); if (el) el.classList.toggle(${JSON.stringify(v)});`;
+    }
+
+    case 'save-session': {
+      const key = parts[1];
+      const fromKw = parts[2];
+      const srcTarget = parts[3];
+      if (!key) return '';
+      const kq = JSON.stringify(key);
+      if (fromKw === 'from' && srcTarget) {
+        const sq = JSON.stringify(srcTarget);
+        return `var __s = __meeel_find(${sq}); if (__s) sessionStorage.setItem(${kq}, __s.value !== undefined ? __s.value : __s.textContent);`;
+      }
+      if (fromKw === 'from-value') {
+        const value = parts.slice(3).join(' ');
+        return `sessionStorage.setItem(${kq}, ${JSON.stringify(value)});`;
+      }
+      return '';
+    }
+    case 'load-session': {
+      const key = parts[1];
+      const intoKw = parts[2];
+      const intoTarget = parts[3];
+      if (!key || intoKw !== 'into' || !intoTarget) return '';
+      const kq = JSON.stringify(key);
+      const itq = JSON.stringify(intoTarget);
+      return `var __t = __meeel_find(${itq}); var __v = sessionStorage.getItem(${kq}); if (__t && __v !== null) { if (__t.value !== undefined) __t.value = __v; else __t.textContent = __v; }`;
+    }
+    case 'get-cookie': {
+      const name = parts[1];
+      const intoKw = parts[2];
+      const intoTarget = parts[3];
+      if (!name || intoKw !== 'into' || !intoTarget) return '';
+      const nq = JSON.stringify(name);
+      const itq = JSON.stringify(intoTarget);
+      return `var __t = __meeel_find(${itq}); if (__t) { var __c = document.cookie.split('; ').find(function(r){ return r.indexOf(${nq} + '=') === 0; }); __t.textContent = __c ? __c.split('=').slice(1).join('=') : ''; }`;
+    }
+    case 'set-cookie': {
+      const name = parts[1];
+      const value = parts.slice(2).join(' ') || '';
+      if (!name) return '';
+      return `document.cookie = ${JSON.stringify(name)} + '=' + ${JSON.stringify(value)} + '; path=/';`;
+    }
+    case 'post-json': {
+      const url = parts[1];
+      const saveToKw = parts[2];
+      const saveTarget = parts[3];
+      if (!url || saveToKw !== 'save-to' || !saveTarget) return '';
+      const stq = JSON.stringify(saveTarget);
+      return `var __t = __meeel_find(${stq}); var __body = __t ? (__t.value !== undefined ? __t.value : __t.textContent) : '{}'; fetch(${JSON.stringify(url)}, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: __body }).then(function(r){ return r.text(); }).then(function(d){ if (__t) __t.textContent = d; }).catch(function(e){ if (__t) __t.textContent = 'Error: ' + e.message; });`;
+    }
+    case 'put-json': {
+      const url = parts[1];
+      const saveToKw = parts[2];
+      const saveTarget = parts[3];
+      if (!url || saveToKw !== 'save-to' || !saveTarget) return '';
+      const stq = JSON.stringify(saveTarget);
+      return `var __t = __meeel_find(${stq}); var __body = __t ? (__t.value !== undefined ? __t.value : __t.textContent) : '{}'; fetch(${JSON.stringify(url)}, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: __body }).then(function(r){ return r.text(); }).then(function(d){ if (__t) __t.textContent = d; }).catch(function(e){ if (__t) __t.textContent = 'Error: ' + e.message; });`;
+    }
+    case 'delete-json': {
+      const url = parts[1];
+      const saveToKw = parts[2];
+      const saveTarget = parts[3];
+      if (!url || saveToKw !== 'save-to' || !saveTarget) return '';
+      const stq = JSON.stringify(saveTarget);
+      return `var __t = __meeel_find(${stq}); fetch(${JSON.stringify(url)}, { method: 'DELETE' }).then(function(r){ return r.text(); }).then(function(d){ if (__t) __t.textContent = d || 'OK'; }).catch(function(e){ if (__t) __t.textContent = 'Error: ' + e.message; });`;
+    }
+
+    case 'download-file': {
+      const text = parts.slice(1).join(' ') || 'Downloaded';
+      return `(function(){ var __t = document.querySelector(${JSON.stringify('[id*="' + 'download-placeholder' + '"]')}); var __body = __t ? (__t.value !== undefined ? __t.value : __t.textContent) : ${JSON.stringify(text)}; var __b = new Blob([__body], {type: 'text/plain'}); var __a = document.createElement('a'); __a.href = URL.createObjectURL(__b); __a.download = 'meeel.txt'; document.body.appendChild(__a); __a.click(); setTimeout(function(){ URL.revokeObjectURL(__a.href); __a.remove(); }, 100); })()`;
+    }
+    case 'upload-file': {
+      return `var el = __meeel_find(${tq}); if (el) { var __in = document.createElement('input'); __in.type = 'file'; __in.onchange = function(){ var __f = __in.files[0]; if (!__f) return; var __r = new FileReader(); __r.onload = function(){ if (el.value !== undefined) el.value = __r.result; else el.textContent = __r.result; }; __r.readAsText(__f); }; __in.click(); }`;
+    }
+    case 'lock-page': {
+      const pass = parts.slice(1).join(' ') || 'meeel';
+      const pq = JSON.stringify(pass);
+      return `(function(){ var __p = prompt('Password:'); if (__p === ${pq}) { alert('Unlocked'); } else { document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif"><h2>Page Locked</h2><p>Refresh to try again.</p></div>'; } })()`;
+    }
+    case 'unlock-page': {
+      return `document.body.style.filter = '';`;
+    }
+
     default:
       return '';
   }

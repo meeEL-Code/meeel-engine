@@ -196,7 +196,7 @@ export function parse(tokens: Token[]): BlockNode {
       // Bare keyword
       const kw: AstNode = {
         kind: 'keyword',
-        name,
+        name: name.toLowerCase(),
         line: tok.line,
       };
       stack[stack.length - 1].children.push(kw);

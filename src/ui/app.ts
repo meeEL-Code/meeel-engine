@@ -636,6 +636,12 @@ function renderMessage(title: string, body: string, isPanel = false) {
   if (isPanel) {
     doc.open();
     doc.write(`<!DOCTYPE html><html><head><style>
+*:not(input):not(textarea):not([contenteditable]) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1a1a1a; color: #e0e0e0; min-height: 100vh; -webkit-font-smoothing: antialiased; }
       .err-panel { padding: 20px; }
@@ -667,6 +673,12 @@ function renderMessage(title: string, body: string, isPanel = false) {
 
   doc.open();
   doc.write(`<html><head><style>
+*:not(input):not(textarea):not([contenteditable]) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
     body { font-family: -apple-system, sans-serif; padding: 22px; background: #1a1a1a; color: #c00; }
     h3 { margin-bottom: 16px; color: #ff6b6b; font-size: 16px; font-weight: 600; }
     code { background: #2a2a2a; padding: 2px 6px; border-radius: 3px; color: #ff8f8f; }
@@ -2274,9 +2286,6 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'highlight', group: 'Visibility', description: 'Highlight element',
     code: 'on-click-[highlight result-box]',
     icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/>' },
-  { name: 'open-new-tab', group: 'Visibility', description: 'Open link in new tab',
-    code: 'on-click-[open-new-tab https://example.com]',
-    icon: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>' },
 
   // ═══ Numbers (18) ═══
   { name: 'increase', group: 'Numbers', description: 'Add 1',
@@ -2327,12 +2336,300 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'clamp', group: 'Numbers', description: 'Keep between two values',
     code: 'on-click-[clamp counter 0 100]',
     icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/><line x1="12" y1="6" x2="12" y2="18"/>' },
+  { name: 'negate', group: 'Numbers', description: 'Flip the sign',
+    code: 'on-click-[negate counter]',
+    icon: '<line x1="5" y1="12" x2="19" y2="12"/><line x1="12" y1="6" x2="12" y2="18" opacity="0.35"/>' },
   { name: 'format-number', group: 'Numbers', description: 'Add thousand commas',
     code: 'on-click-[format-number counter]',
     icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>' },
   { name: 'random-between', group: 'Numbers', description: 'Random in range',
     code: 'on-click-[random-between counter 1 100]',
     icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/>' },
+
+  { name: 'pulse', group: 'Visibility', description: 'Pulse bigger and smaller',
+    code: 'on-click-[pulse result-box]',
+    icon: '<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="10" opacity="0.35"/>' },
+  { name: 'shake', group: 'Visibility', description: 'Shake left and right',
+    code: 'on-click-[shake result-box]',
+    icon: '<polyline points="3 12 7 8 11 16 15 8 19 16 21 12"/>' },
+  { name: 'clone-to', group: 'Visibility', description: 'Copy element into another',
+    code: 'on-click-[clone-to source-box target-box]',
+    icon: '<rect x="3" y="3" width="12" height="12" rx="1"/><rect x="9" y="9" width="12" height="12" rx="1"/>' },
+  { name: 'move-to', group: 'Visibility', description: 'Move element into another',
+    code: 'on-click-[move-to source-box target-box]',
+    icon: '<rect x="3" y="3" width="10" height="10" rx="1"/><polyline points="9 15 15 15 15 21"/><line x1="13" y1="13" x2="21" y2="21"/>' },
+  { name: 'has-key', group: 'Text', description: 'Check if saved key exists',
+    code: 'on-click-[has-key username into status-text]',
+    icon: '<circle cx="11" cy="11" r="6"/><line x1="16" y1="16" x2="21" y2="21"/>' },
+  { name: 'list-keys', group: 'Text', description: 'Show all saved keys',
+    code: 'on-click-[list-keys into status-text]',
+    icon: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>' },
+
+  { name: 'split', group: 'Text', description: 'Break comma-list into lines',
+    code: 'on-click-[split list-text]',
+    icon: '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>' },
+  { name: 'join', group: 'Text', description: 'Combine lines into comma-list',
+    code: 'on-click-[join list-text]',
+    icon: '<line x1="3" y1="6" x2="12" y2="6"/><line x1="12" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="12" y2="18"/>' },
+  { name: 'count-items', group: 'Numbers', description: 'Count list items',
+    code: 'on-click-[count-items list-text]',
+    icon: '<circle cx="6" cy="6" r="1"/><circle cx="6" cy="12" r="1"/><circle cx="6" cy="18" r="1"/><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/>' },
+  { name: 'random-pick', group: 'Numbers', description: 'Pick one item at random',
+    code: 'on-click-[random-pick list-text]',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1"/><circle cx="16" cy="16" r="1"/><circle cx="12" cy="12" r="1"/>' },
+  { name: 'shuffle', group: 'Numbers', description: 'Mix items in random order',
+    code: 'on-click-[shuffle list-text]',
+    icon: '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>' },
+  { name: 'speak', group: 'Text', description: 'Read text out loud',
+    code: 'on-click-[speak greeting]',
+    icon: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>' },
+
+  { name: 'camera-open', group: 'Device', description: 'Turn on camera',
+    code: 'on-click-[camera-open camera-box]',
+    icon: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>' },
+  { name: 'mic-start', group: 'Device', description: 'Ask for microphone',
+    code: 'on-click-[mic-start mic-status]',
+    icon: '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/>' },
+  { name: 'location-get', group: 'Device', description: 'Find where you are',
+    code: 'on-click-[location-get place-text]',
+    icon: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>' },
+  { name: 'ping-url', group: 'Device', description: 'Check if a website is up',
+    code: 'on-click-[ping-url https://example.com into ping-status]',
+    icon: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>' },
+  { name: 'time-alert', group: 'Device', description: 'Remind me in X seconds',
+    code: 'on-click-[time-alert 5 Stand up!]',
+    icon: '<circle cx="12" cy="13" r="8"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="13" x2="15" y2="15"/>' },
+
+  { name: 'screen-wake', group: 'Device', description: 'Keep screen awake',
+    code: 'on-click-[screen-wake]',
+    icon: '<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/>' },
+  { name: 'brightness-up', group: 'Device', description: 'Make element brighter',
+    code: 'on-click-[brightness-up photo 1.5]',
+    icon: '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>' },
+
+  { name: 'clear-all', group: 'Storage', description: 'Clear all saved data',
+    code: 'on-click-[clear-all]',
+    icon: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>' },
+  { name: 'pad-start', group: 'Text', description: 'Add characters at start',
+    code: 'on-click-[pad-start counter 5 0]',
+    icon: '<polyline points="9 18 15 12 9 6"/><line x1="21" y1="6" x2="21" y2="18"/><line x1="3" y1="12" x2="9" y2="12"/>' },
+  { name: 'pad-end', group: 'Text', description: 'Add characters at end',
+    code: 'on-click-[pad-end counter 5 -]',
+    icon: '<polyline points="15 18 9 12 15 6"/><line x1="3" y1="6" x2="3" y2="18"/><line x1="15" y1="12" x2="21" y2="12"/>' },
+  { name: 'repeat-text', group: 'Text', description: 'Say it many times',
+    code: 'on-click-[repeat-text message 3]',
+    icon: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>' },
+  { name: 'truncate', group: 'Text', description: 'Cut text short',
+    code: 'on-click-[truncate bio 20]',
+    icon: '<line x1="3" y1="12" x2="21" y2="12"/><circle cx="8" cy="12" r="2" fill="white"/><circle cx="16" cy="12" r="2" fill="white"/>' },
+  { name: 'remove-spaces', group: 'Text', description: 'Delete every space',
+    code: 'on-click-[remove-spaces sentence]',
+    icon: '<rect x="3" y="6" width="8" height="4" rx="1"/><rect x="13" y="14" width="8" height="4" rx="1"/><line x1="13" y1="8" x2="21" y2="8" stroke-dasharray="2 2"/><line x1="3" y1="16" x2="11" y2="16" stroke-dasharray="2 2"/>' },
+
+  { name: 'contains', group: 'Text', description: 'Check if text has a word',
+    code: 'on-click-[contains bio love]',
+    icon: '<circle cx="11" cy="11" r="6"/><line x1="16" y1="16" x2="21" y2="21"/>' },
+  { name: 'starts-with', group: 'Text', description: 'Check text begins with',
+    code: 'on-click-[starts-with name Dr]',
+    icon: '<polyline points="9 18 3 12 9 6"/><line x1="21" y1="12" x2="3" y2="12"/>' },
+  { name: 'ends-with', group: 'Text', description: 'Check text finishes with',
+    code: 'on-click-[ends-with filename .pdf]',
+    icon: '<polyline points="15 18 21 12 15 6"/><line x1="3" y1="12" x2="21" y2="12"/>' },
+  { name: 'title-case', group: 'Text', description: 'Each Word Starts Big',
+    code: 'on-click-[title-case headline]',
+    icon: '<path d="M4 20V6a2 2 0 0 1 2-2h4a4 4 0 0 1 0 8H4"/><line x1="14" y1="20" x2="22" y2="20"/>' },
+  { name: 'mod', group: 'Numbers', description: 'Remainder after divide',
+    code: 'on-click-[mod counter 3]',
+    icon: '<line x1="4" y1="4" x2="20" y2="20"/><circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/>' },
+  { name: 'average', group: 'Numbers', description: 'Middle value of two',
+    code: 'on-click-[average score-a score-b]',
+    icon: '<line x1="3" y1="18" x2="21" y2="18"/><line x1="8" y1="14" x2="8" y2="18"/><line x1="16" y1="10" x2="16" y2="18"/><line x1="12" y1="12" x2="12" y2="12"/>' },
+  { name: 'sign', group: 'Numbers', description: 'Positive, negative or zero',
+    code: 'on-click-[sign balance]',
+    icon: '<line x1="4" y1="12" x2="20" y2="12"/><line x1="12" y1="4" x2="12" y2="20" opacity="0.35"/>' },
+  { name: 'is-even', group: 'Numbers', description: 'Even or odd number',
+    code: 'on-click-[is-even counter]',
+    icon: '<circle cx="12" cy="12" r="8"/><line x1="12" y1="4" x2="12" y2="20"/>' },
+
+  { name: 'bold-on', group: 'Text', description: 'Make text bold',
+    code: 'on-click-[bold-on headline]',
+    icon: '<path d="M6 4h7a4 4 0 0 1 0 8H6z"/><path d="M6 12h8a4 4 0 0 1 0 8H6z"/>' },
+  { name: 'bold-off', group: 'Text', description: 'Remove bold',
+    code: 'on-click-[bold-off headline]',
+    icon: '<path d="M6 4h7a4 4 0 0 1 0 8H6z" opacity="0.4"/><line x1="4" y1="4" x2="20" y2="20"/>' },
+  { name: 'italic-on', group: 'Text', description: 'Make text slanted',
+    code: 'on-click-[italic-on headline]',
+    icon: '<line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/>' },
+  { name: 'italic-off', group: 'Text', description: 'Remove slant',
+    code: 'on-click-[italic-off headline]',
+    icon: '<line x1="19" y1="4" x2="10" y2="4" opacity="0.4"/><line x1="14" y1="20" x2="5" y2="20" opacity="0.4"/><line x1="4" y1="4" x2="20" y2="20"/>' },
+  { name: 'underline-on', group: 'Text', description: 'Draw line below',
+    code: 'on-click-[underline-on headline]',
+    icon: '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" y1="20" x2="20" y2="20"/>' },
+  { name: 'underline-off', group: 'Text', description: 'Remove underline',
+    code: 'on-click-[underline-off headline]',
+    icon: '<path d="M6 4v6a6 6 0 0 0 12 0V4" opacity="0.4"/><line x1="4" y1="20" x2="20" y2="20" opacity="0.4"/><line x1="4" y1="4" x2="20" y2="20"/>' },
+  { name: 'align-center', group: 'Text', description: 'Center the text',
+    code: 'on-click-[align-center headline]',
+    icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>' },
+  { name: 'align-right', group: 'Text', description: 'Push text to right',
+    code: 'on-click-[align-right headline]',
+    icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>' },
+
+  { name: 'rotate', group: 'Animation', description: 'Spin around once',
+    code: 'on-click-[rotate logo]',
+    icon: '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>' },
+  { name: 'bounce', group: 'Animation', description: 'Jump up and down',
+    code: 'on-click-[bounce ball]',
+    icon: '<circle cx="12" cy="8" r="3"/><path d="M12 12v6"/><polyline points="9 15 12 12 15 15"/>' },
+  { name: 'blink', group: 'Animation', description: 'Flash on and off',
+    code: 'on-click-[blink light]',
+    icon: '<circle cx="12" cy="12" r="6"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>' },
+  { name: 'flip-horizontal', group: 'Animation', description: 'Mirror left to right',
+    code: 'on-click-[flip-horizontal photo]',
+    icon: '<path d="M12 3v18"/><polyline points="8 8 4 12 8 16"/><polyline points="16 8 20 12 16 16"/>' },
+  { name: 'flip-vertical', group: 'Animation', description: 'Upside down',
+    code: 'on-click-[flip-vertical photo]',
+    icon: '<line x1="3" y1="12" x2="21" y2="12"/><polyline points="8 8 12 4 16 8"/><polyline points="8 16 12 20 16 16"/>' },
+  { name: 'grow', group: 'Animation', description: 'Get bigger',
+    code: 'on-click-[grow headline]',
+    icon: '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>' },
+  { name: 'shrink', group: 'Animation', description: 'Get smaller',
+    code: 'on-click-[shrink headline]',
+    icon: '<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>' },
+  { name: 'swing', group: 'Animation', description: 'Sway side to side',
+    code: 'on-click-[swing bell]',
+    icon: '<path d="M12 3a2 2 0 0 1 2 2c3 1 4 4 4 8h-12c0-4 1-7 4-8a2 2 0 0 1 2-2z"/><line x1="12" y1="13" x2="12" y2="18"/><circle cx="12" cy="20" r="2"/>' },
+
+  { name: 'year', group: 'Date', description: 'Current year',
+    code: 'on-click-[year date-text]',
+    icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
+  { name: 'month', group: 'Date', description: 'Current month name',
+    code: 'on-click-[month date-text]',
+    icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="15" x2="16" y2="15"/>' },
+  { name: 'day', group: 'Date', description: 'Day of the month',
+    code: 'on-click-[day date-text]',
+    icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="2"/>' },
+  { name: 'hour', group: 'Date', description: 'Current hour',
+    code: 'on-click-[hour time-text]',
+    icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
+  { name: 'minute', group: 'Date', description: 'Current minute',
+    code: 'on-click-[minute time-text]',
+    icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 8 14"/>' },
+  { name: 'weekday', group: 'Date', description: 'Day of the week',
+    code: 'on-click-[weekday date-text]',
+    icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="7" y1="14" x2="11" y2="14"/><line x1="7" y1="18" x2="11" y2="18"/>' },
+  { name: 'timestamp', group: 'Date', description: 'Milliseconds since 1970',
+    code: 'on-click-[timestamp date-text]',
+    icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="12" r="1" fill="black"/>' },
+  { name: 'format-date', group: 'Date', description: 'YYYY-MM-DD',
+    code: 'on-click-[format-date date-text]',
+    icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="7" y1="15" x2="9" y2="15"/><line x1="11" y1="15" x2="13" y2="15"/><line x1="15" y1="15" x2="17" y2="15"/>' },
+
+  { name: 'disable', group: 'Form', description: 'Gray out a button',
+    code: 'on-click-[disable submit-button]',
+    icon: '<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>' },
+  { name: 'enable', group: 'Form', description: 'Make button clickable',
+    code: 'on-click-[enable submit-button]',
+    icon: '<circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 16 9"/>' },
+  { name: 'readonly-on', group: 'Form', description: 'Lock input from typing',
+    code: 'on-click-[readonly-on email-input]',
+    icon: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>' },
+  { name: 'readonly-off', group: 'Form', description: 'Allow typing again',
+    code: 'on-click-[readonly-off email-input]',
+    icon: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/>' },
+  { name: 'check', group: 'Form', description: 'Tick a checkbox',
+    code: 'on-click-[check agree-box]',
+    icon: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>' },
+  { name: 'uncheck', group: 'Form', description: 'Untick a checkbox',
+    code: 'on-click-[uncheck agree-box]',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/>' },
+  { name: 'clear-value', group: 'Form', description: 'Empty an input',
+    code: 'on-click-[clear-value email-input]',
+    icon: '<rect x="3" y="8" width="18" height="8" rx="2"/><line x1="9" y1="10" x2="15" y2="14"/><line x1="15" y1="10" x2="9" y2="14"/>' },
+  { name: 'select-text', group: 'Form', description: 'Highlight all text in input',
+    code: 'on-click-[select-text email-input]',
+    icon: '<rect x="3" y="6" width="18" height="12" rx="2"/><line x1="6" y1="6" x2="6" y2="18"/><line x1="18" y1="6" x2="18" y2="18"/>' },
+
+  { name: 'set-width', group: 'Size', description: 'Set how wide',
+    code: 'on-click-[set-width card 200]',
+    icon: '<line x1="3" y1="12" x2="21" y2="12"/><polyline points="6 9 3 12 6 15"/><polyline points="18 9 21 12 18 15"/>' },
+  { name: 'set-height', group: 'Size', description: 'Set how tall',
+    code: 'on-click-[set-height card 100]',
+    icon: '<line x1="12" y1="3" x2="12" y2="21"/><polyline points="9 6 12 3 15 6"/><polyline points="9 18 12 21 15 18"/>' },
+  { name: 'set-font-size', group: 'Size', description: 'Set text size',
+    code: 'on-click-[set-font-size headline 32]',
+    icon: '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>' },
+  { name: 'set-color', group: 'Size', description: 'Set text colour',
+    code: 'on-click-[set-color headline red]',
+    icon: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/>' },
+  { name: 'set-background', group: 'Size', description: 'Paint the box',
+    code: 'on-click-[set-background card lightblue]',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/>' },
+  { name: 'set-border', group: 'Size', description: 'Draw a border',
+    code: 'on-click-[set-border card 2 black]',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2" stroke-width="3"/>' },
+  { name: 'set-radius', group: 'Size', description: 'Round the corners',
+    code: 'on-click-[set-radius card 12]',
+    icon: '<path d="M21 12v4a5 5 0 0 1-5 5h-4a9 9 0 0 1-9-9V8a5 5 0 0 1 5-5h4a9 9 0 0 1 9 9z"/>' },
+  { name: 'set-padding', group: 'Size', description: 'Add space inside',
+    code: 'on-click-[set-padding card 20]',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 3"/><rect x="7" y="7" width="10" height="10"/>' },
+
+  { name: 'set-opacity', group: 'Size', description: 'How see-through',
+    code: 'on-click-[set-opacity card 0.5]',
+    icon: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>' },
+  { name: 'set-margin', group: 'Size', description: 'Add space outside',
+    code: 'on-click-[set-margin card 20]',
+    icon: '<rect x="7" y="7" width="10" height="10"/><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 3"/>' },
+  { name: 'set-z', group: 'Size', description: 'Stack in front or behind',
+    code: 'on-click-[set-z card 10]',
+    icon: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/>' },
+  { name: 'set-cursor', group: 'Size', description: 'Change mouse pointer',
+    code: 'on-click-[set-cursor card pointer]',
+    icon: '<path d="M4 4l7 16 3-7 7-3z"/>' },
+  { name: 'set-title', group: 'Size', description: 'Set hover title',
+    code: 'on-click-[set-title card Hover me]',
+    icon: '<rect x="3" y="6" width="18" height="12" rx="2"/><line x1="7" y1="11" x2="17" y2="11"/>' },
+  { name: 'set-tooltip', group: 'Size', description: 'Show hint on hover',
+    code: 'on-click-[set-tooltip card This is a tip]',
+    icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' },
+  { name: 'hide-scroll', group: 'Size', description: 'Block scrolling',
+    code: 'on-click-[hide-scroll card]',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/>' },
+  { name: 'show-scroll', group: 'Size', description: 'Allow scrolling',
+    code: 'on-click-[show-scroll card]',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="9 13 12 16 15 13"/>' },
+
+  { name: 'type-text', group: 'Form', description: 'Put text into input',
+    code: 'on-click-[type-text email-input hello@world]',
+    icon: '<rect x="3" y="6" width="18" height="12" rx="2"/><line x1="7" y1="12" x2="12" y2="12"/><line x1="7" y1="15" x2="15" y2="15"/>' },
+  { name: 'focus-next', group: 'Form', description: 'Jump to next input',
+    code: 'on-click-[focus-next name-input]',
+    icon: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="15 8 19 12 15 16"/>' },
+  { name: 'blur-all', group: 'Form', description: 'Close keyboard / unfocus',
+    code: 'on-click-[blur-all]',
+    icon: '<circle cx="12" cy="12" r="8" stroke-dasharray="2 2"/>' },
+  { name: 'increment-by', group: 'Numbers', description: 'Add custom number',
+    code: 'on-click-[increment-by counter 5]',
+    icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/><circle cx="19" cy="5" r="3" fill="currentColor"/>' },
+  { name: 'decrement-by', group: 'Numbers', description: 'Subtract custom number',
+    code: 'on-click-[decrement-by counter 3]',
+    icon: '<line x1="5" y1="12" x2="19" y2="12"/><circle cx="19" cy="5" r="3" fill="currentColor"/>' },
+  { name: 'add-class', group: 'Size', description: 'Add a style class',
+    code: 'on-click-[add-class card highlight]',
+    icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>' },
+  { name: 'remove-class', group: 'Size', description: 'Remove a style class',
+    code: 'on-click-[remove-class card highlight]',
+    icon: '<circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>' },
+  { name: 'toggle-class', group: 'Size', description: 'Flip a style class on/off',
+    code: 'on-click-[toggle-class card dark-mode]',
+    icon: '<circle cx="12" cy="12" r="10"/><path d="M12 2v20"/>' },
+
+  { name: 'open-new-tab', group: 'Visibility', description: 'Open link in new tab',
+    code: 'on-click-[open-new-tab https://example.com]',
+    icon: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>' },
+
 
   // ═══ Text (15) ═══
   { name: 'write', group: 'Text', description: 'Change text',
@@ -2368,18 +2665,9 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'count-words', group: 'Text', description: 'Count words',
     code: 'on-click-[count-words input-text]',
     icon: '<line x1="4" y1="9" x2="12" y2="9"/><line x1="4" y1="15" x2="16" y2="15"/>' },
-  { name: 'split', group: 'Text', description: 'Split text into list',
-    code: 'on-click-[split csv-text ,]',
-    icon: '<line x1="12" y1="3" x2="12" y2="21"/><polyline points="7 8 3 12 7 16"/><polyline points="17 8 21 12 17 16"/>' },
-  { name: 'join', group: 'Text', description: 'Join list into text',
-    code: 'on-click-[join words-list -]',
-    icon: '<polyline points="7 8 3 12 7 16"/><polyline points="17 8 21 12 17 16"/><line x1="3" y1="12" x2="21" y2="12"/>' },
   { name: 'reverse-text', group: 'Text', description: 'Reverse the text',
     code: 'on-click-[reverse-text greeting]',
     icon: '<polyline points="17 1 21 5 17 9"/><polyline points="7 23 3 19 7 15"/><line x1="21" y1="5" x2="3" y2="19"/>' },
-  { name: 'pad-start', group: 'Text', description: 'Add chars at start',
-    code: 'on-click-[pad-start counter 0 5]',
-    icon: '<polyline points="8 8 4 12 8 16"/><line x1="4" y1="12" x2="20" y2="12"/>' },
 
   // ═══ Copy & Paste (6) ═══
   { name: 'copy-from', group: 'Copy', description: 'Copy value b to a',
@@ -2391,12 +2679,6 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'paste-text', group: 'Copy', description: 'Paste from clipboard',
     code: 'on-click-[paste-text input-box]',
     icon: '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/>' },
-  { name: 'move-to', group: 'Copy', description: 'Move element to another',
-    code: 'on-click-[move-to item-a item-b]',
-    icon: '<path d="M5 12h14"/><polyline points="15 6 21 12 15 18"/>' },
-  { name: 'clone-to', group: 'Copy', description: 'Duplicate element',
-    code: 'on-click-[clone-to original copy]',
-    icon: '<rect x="9" y="9" width="13" height="13" rx="2"/><rect x="2" y="2" width="13" height="13" rx="2"/>' },
   { name: 'clear-clipboard', group: 'Copy', description: 'Empty the clipboard',
     code: 'on-click-[clear-clipboard]',
     icon: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>' },
@@ -2423,9 +2705,6 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'download-file', group: 'Fetch', description: 'Save file from URL',
     code: 'on-click-[download-file https://api.com/photo.jpg]',
     icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' },
-  { name: 'ping-url', group: 'Fetch', description: 'Check if URL is alive',
-    code: 'on-click-[ping-url https://api.com save-to status]',
-    icon: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>' },
 
   // ═══ Memory (10) ═══
   { name: 'remember', group: 'Memory', description: 'Save to localStorage',
@@ -2437,9 +2716,6 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'forget', group: 'Memory', description: 'Remove from localStorage',
     code: 'on-click-[forget username]',
     icon: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>' },
-  { name: 'clear-all', group: 'Memory', description: 'Clear all storage',
-    code: 'on-click-[clear-all]',
-    icon: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>' },
   { name: 'set-cookie', group: 'Memory', description: 'Set a browser cookie',
     code: 'on-click-[set-cookie theme dark]',
     icon: '<circle cx="12" cy="12" r="10"/><circle cx="8.5" cy="8.5" r="1"/><circle cx="15.5" cy="10.5" r="1"/><circle cx="13" cy="15.5" r="1"/>' },
@@ -2452,23 +2728,11 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'load-session', group: 'Memory', description: 'Load session value',
     code: 'on-click-[load-session cart into cart-list]',
     icon: '<rect x="3" y="3" width="18" height="18" rx="2"/>' },
-  { name: 'has-key', group: 'Memory', description: 'Check if key exists',
-    code: 'on-click-[has-key username then show welcome-text]',
-    icon: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>' },
-  { name: 'list-keys', group: 'Memory', description: 'Show all saved keys',
-    code: 'on-click-[list-keys into key-list]',
-    icon: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>' },
 
   // ═══ Random & Time (10) ═══
   { name: 'roll', group: 'Random', description: 'Roll dice 1-6',
     code: 'on-click-[roll dice 1-6]',
     icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.5" fill="currentColor"/>' },
-  { name: 'random-pick', group: 'Random', description: 'Pick one at random',
-    code: 'on-click-[random-pick name-list into winner-text]',
-    icon: '<path d="M20 4v6h-6"/><path d="M4 20v-6h6"/><path d="M4 10a8 8 0 0 1 14-4"/><path d="M20 14a8 8 0 0 1-14 4"/>' },
-  { name: 'shuffle', group: 'Random', description: 'Shuffle a list',
-    code: 'on-click-[shuffle card-list]',
-    icon: '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>' },
   { name: 'coin-flip', group: 'Random', description: 'Heads or tails',
     code: 'on-click-[coin-flip into result-text]',
     icon: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>' },
@@ -2501,9 +2765,6 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'notify', group: 'Device', description: 'Show notification',
     code: 'on-click-[notify Time is up]',
     icon: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>' },
-  { name: 'speak', group: 'Device', description: 'Read text out loud',
-    code: 'on-click-[speak greeting]',
-    icon: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>' },
   { name: 'fullscreen-enter', group: 'Device', description: 'Enter full screen',
     code: 'on-click-[fullscreen-enter]',
     icon: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>' },
@@ -2516,53 +2777,49 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'print', group: 'Device', description: 'Print current page',
     code: 'on-click-[print]',
     icon: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>' },
-  { name: 'camera-open', group: 'Device', description: 'Open camera',
-    code: 'on-click-[camera-open]',
-    icon: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>' },
-  { name: 'mic-start', group: 'Device', description: 'Start listening',
-    code: 'on-click-[mic-start]',
-    icon: '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/>' },
-  { name: 'location-get', group: 'Device', description: 'Get device location',
-    code: 'on-click-[location-get into address-text]',
-    icon: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>' },
-  { name: 'brightness-up', group: 'Device', description: 'Increase screen brightness',
-    code: 'on-click-[brightness-up]',
-    icon: '<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4" y1="12" x2="2" y2="12"/><line x1="22" y1="12" x2="20" y2="12"/>' },
   { name: 'screen-lock', group: 'Device', description: 'Lock the screen',
     code: 'on-click-[screen-lock]',
     icon: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>' },
-  { name: 'screen-wake', group: 'Device', description: 'Wake the screen',
-    code: 'on-click-[screen-wake]',
-    icon: '<circle cx="12" cy="12" r="5"/>' },
-  { name: 'time-alert', group: 'Device', description: 'Alert at specific time',
-    code: 'on-click-[time-alert 14:30 notify Meeting]',
-    icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
 
   // ═══ Logic (8) ═══
   { name: 'if', group: 'Logic', description: 'Do if condition true',
     code: 'on-click-[if counter is-5 write result You win!]',
     icon: '<path d="M6 3h12l4 6-10 12L2 9z"/>' },
+  /* TODO: re-enable when loop/condition syntax lands
   { name: 'else', group: 'Logic', description: 'Do if condition false',
     code: 'on-click-[if counter is-5 write result Win else write result Lose]',
     icon: '<path d="M6 3h12l4 6-10 12L2 9z"/><line x1="12" y1="9" x2="12" y2="15"/>' },
+  */
+  /* TODO: re-enable when loop/condition syntax lands
   { name: 'when', group: 'Logic', description: 'Alias for if',
     code: 'on-click-[when counter is-5 show win-text]',
     icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
+  */
+  /* TODO: re-enable when loop/condition syntax lands
   { name: 'while', group: 'Logic', description: 'Repeat while true',
     code: 'on-click-[while counter is-less-than-10 increase counter]',
     icon: '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>' },
+  */
+  /* TODO: re-enable when loop/condition syntax lands
   { name: 'and', group: 'Logic', description: 'Both conditions true',
     code: 'on-click-[if a is-5 and b is-10 show win]',
     icon: '<circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/>' },
+  */
+  /* TODO: re-enable when loop/condition syntax lands
   { name: 'or', group: 'Logic', description: 'Either condition true',
     code: 'on-click-[if a is-5 or b is-10 show win]',
     icon: '<circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/>' },
+  */
+  /* TODO: re-enable when loop/condition syntax lands
   { name: 'not', group: 'Logic', description: 'Flip a condition',
     code: 'on-click-[if not a is-5 show win]',
     icon: '<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>' },
+  */
+  /* TODO: re-enable when loop/condition syntax lands
   { name: 'break', group: 'Logic', description: 'Stop a loop',
     code: 'on-click-[break]',
     icon: '<rect x="6" y="6" width="12" height="12" rx="1"/>' },
+  */
 
   // ═══ System (10) ═══
   { name: 'reload-page', group: 'System', description: 'Refresh the page',
@@ -4367,4 +4624,466 @@ const STARTER_TEMPLATES: Record<string, string> = {
   if (shouldShow) {
     setTimeout(() => { welcome.hidden = false; }, 300);
   }
+})();
+
+/* ============================================================
+   First-time flow + Daily reminder + Settings
+   ============================================================ */
+
+const FIRST_VISIT_KEY    = 'meeEL-first-visit-done-v1';
+const NOTIFY_CHOICE_KEY  = 'meeEL-notify-choice-v1';
+const COOKIES_ACK_KEY    = 'meeEL-cookies-ack-v1';
+const DAILY_ENABLED_KEY  = 'meeEL-daily-enabled-v1';
+const DAILY_LAST_KEY     = 'meeEL-daily-last-fired-v1';
+
+function lsGet(k: string): string | null {
+  try { return localStorage.getItem(k); } catch { return null; }
+}
+function lsSet(k: string, v: string): void {
+  try { localStorage.setItem(k, v); } catch {}
+}
+function lsDel(k: string): void {
+  try { localStorage.removeItem(k); } catch {}
+}
+
+/* ── Sequential first-time flow: Welcome → Notify → Cookies ── */
+(function setupFirstTimeFlow() {
+  const welcome = document.getElementById('welcome-modal') as HTMLElement | null;
+  if (!welcome) return;
+
+  const doneFlag = lsGet(FIRST_VISIT_KEY) === '1';
+  if (doneFlag) return;
+
+  // Show welcome after a short pause
+  setTimeout(() => { welcome.hidden = false; }, 400);
+
+  // Close welcome → done. No more modals.
+  function finish() {
+    welcome.hidden = true;
+    lsSet(FIRST_VISIT_KEY, '1');
+  }
+
+  welcome.querySelectorAll('.welcome-option').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const name = (btn as HTMLElement).dataset.start || 'hello';
+      const code = STARTER_TEMPLATES[name] || STARTER_TEMPLATES['hello'];
+      const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
+      if (ed) {
+        ed.value = code;
+        ed.dispatchEvent(new Event('input', { bubbles: true }));
+        ed.focus();
+      }
+      finish();
+    });
+  });
+
+  const skip = document.getElementById('welcome-skip') as HTMLButtonElement | null;
+  skip?.addEventListener('click', finish);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !welcome.hidden) finish();
+  });
+})();
+
+/* ── Daily reminder — fires once per day if user allowed ── */
+/* ── Settings page ── */
+(function setupSettingsPage() {
+  const settingsPage = document.getElementById('settings-page') as HTMLElement | null;
+  const back = document.getElementById('settings-back') as HTMLButtonElement | null;
+  const close = document.getElementById('settings-close') as HTMLButtonElement | null;
+  const dailyToggle = document.getElementById('toggle-daily') as HTMLInputElement | null;
+  const permStatus = document.getElementById('notif-permission-status') as HTMLElement | null;
+  const permBtn = document.getElementById('notif-permission-btn') as HTMLButtonElement | null;
+  const clearBtn = document.getElementById('clear-storage-btn') as HTMLButtonElement | null;
+  const storageSize = document.getElementById('storage-size') as HTMLElement | null;
+  const replayBtn = document.getElementById('replay-welcome-btn') as HTMLButtonElement | null;
+
+  function openSettings() {
+    if (!settingsPage) return;
+    closeToolsDrawer();
+    settingsPage.hidden = false;
+    refreshSettings();
+  }
+  function closeSettings() {
+    if (!settingsPage) return;
+    settingsPage.hidden = true;
+  }
+
+  function refreshSettings() {
+    // Daily toggle
+    if (dailyToggle) {
+      const enabled = lsGet(DAILY_ENABLED_KEY) === 'yes';
+      dailyToggle.checked = enabled;
+      // Disable if permission not granted
+      const granted = ('Notification' in window) && Notification.permission === 'granted';
+      dailyToggle.disabled = !granted;
+    }
+    // Permission status
+    if (permStatus) {
+      if (!('Notification' in window)) {
+        permStatus.textContent = 'Not supported in this browser';
+        if (permBtn) permBtn.disabled = true;
+      } else if (Notification.permission === 'granted') {
+        permStatus.textContent = 'Allowed ✅';
+        if (permBtn) permBtn.disabled = true;
+      } else if (Notification.permission === 'denied') {
+        permStatus.textContent = 'Blocked — enable in browser settings';
+        if (permBtn) permBtn.disabled = true;
+      } else {
+        permStatus.textContent = 'Not asked yet';
+        if (permBtn) permBtn.disabled = false;
+      }
+    }
+    // Storage size
+    if (storageSize) {
+      let total = 0;
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k) continue;
+          total += k.length + (localStorage.getItem(k)?.length || 0);
+        }
+      } catch {}
+      const kb = (total / 1024).toFixed(1);
+      storageSize.textContent = kb + ' KB used';
+    }
+  }
+
+  back?.addEventListener('click', closeSettings);
+  close?.addEventListener('click', closeSettings);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && settingsPage && !settingsPage.hidden) closeSettings();
+  });
+
+  // Daily toggle
+  dailyToggle?.addEventListener('change', () => {
+    if (dailyToggle.checked) {
+      lsSet(DAILY_ENABLED_KEY, 'yes');
+    } else {
+      lsSet(DAILY_ENABLED_KEY, 'no');
+    }
+  });
+
+  // Ask permission button
+  permBtn?.addEventListener('click', async () => {
+    if (!('Notification' in window)) return;
+    try {
+      const res = await Notification.requestPermission();
+      if (res === 'granted') {
+        lsSet(DAILY_ENABLED_KEY, 'yes');
+        if (dailyToggle) dailyToggle.checked = true;
+      }
+      refreshSettings();
+    } catch {}
+  });
+
+  // Clear all storage
+  clearBtn?.addEventListener('click', () => {
+    const ok = confirm('Clear ALL saved data? Your code, settings and preferences will be gone.');
+    if (!ok) return;
+    try { localStorage.clear(); } catch {}
+    location.reload();
+  });
+
+  // Replay welcome
+  replayBtn?.addEventListener('click', () => {
+    lsDel(FIRST_VISIT_KEY);
+    lsDel('meeEL-welcome-seen-v1');
+    location.reload();
+  });
+
+  // Hook up the Settings card
+  document.querySelectorAll('.tools-card').forEach((card) => {
+    const tool = (card as HTMLElement).dataset.tool;
+    if (tool === 'settings') {
+      card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openSettings();
+      });
+    }
+  });
+})();
+
+/* ============================================================
+   Unsaved Work — track edits vs downloads
+   ============================================================ */
+
+const UNSAVED_AT_KEY      = 'meeEL-unsaved-at-v1';      // last edit time
+const DOWNLOADED_AT_KEY   = 'meeEL-downloaded-at-v1';   // last download time
+const UNSAVED_HIDE_KEY    = 'meeEL-unsaved-hide-v1';    // user dismissed until?
+const NOTIFIED_AT_KEY     = 'meeEL-notified-at-v1';     // last time we sent notification
+
+function getEditorCode(): string {
+  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
+  return ed ? ed.value.trim() : '';
+}
+
+function isRealWork(code: string): boolean {
+  // Real work = not empty, not just the default template
+  if (!code) return false;
+  if (code.length < 40) return false;         // too short to be meaningful
+  if (code.startsWith('home-page-[') && code.length < 200) return false;
+  if (code.startsWith('page-[') && code.length < 60) return false;
+  return true;
+}
+
+/* ── Mark unsaved on edit ── */
+(function trackEdits() {
+  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
+  if (!ed) return;
+
+  let timer: number | undefined;
+  ed.addEventListener('input', () => {
+    if (timer) clearTimeout(timer);
+    timer = window.setTimeout(() => {
+      const code = getEditorCode();
+      if (isRealWork(code)) {
+        try { localStorage.setItem(UNSAVED_AT_KEY, String(Date.now())); } catch {}
+      }
+    }, 1200);
+  });
+})();
+
+/* ── Mark downloaded on publish/download buttons ── */
+(function trackDownloads() {
+  function mark() {
+    try {
+      localStorage.setItem(DOWNLOADED_AT_KEY, String(Date.now()));
+      // Clear the "unsaved" flag — user has saved
+      localStorage.removeItem(UNSAVED_AT_KEY);
+      localStorage.removeItem(UNSAVED_HIDE_KEY);
+      localStorage.removeItem(NOTIFIED_AT_KEY);
+    } catch {}
+    // Hide banner
+    const banner = document.getElementById('unsaved-banner') as HTMLElement | null;
+    if (banner) banner.hidden = true;
+  }
+
+  const btns = [
+    'download-all',
+    'download-file',
+  ];
+  btns.forEach((id) => {
+    const el = document.getElementById(id) as HTMLButtonElement | null;
+    el?.addEventListener('click', mark);
+  });
+})();
+
+/* ── Show banner + notification when there's pending work ── */
+(function checkUnsavedWork() {
+  // Skip if user asked us to stop showing this
+  const hideUntil = lsGet(UNSAVED_HIDE_KEY);
+  if (hideUntil) {
+    const t = parseInt(hideUntil, 10);
+    if (!isNaN(t) && Date.now() < t) return;
+  }
+
+  const unsavedAt = lsGet(UNSAVED_AT_KEY);
+  if (!unsavedAt) return;
+
+  const unsavedTs = parseInt(unsavedAt, 10);
+  if (isNaN(unsavedTs)) return;
+
+  const downloadedAt = lsGet(DOWNLOADED_AT_KEY);
+  const downloadedTs = downloadedAt ? parseInt(downloadedAt, 10) : 0;
+
+  // If downloaded AFTER last edit → nothing pending
+  if (downloadedTs >= unsavedTs) return;
+
+  // Show banner after 800ms
+  setTimeout(() => {
+    const banner = document.getElementById('unsaved-banner') as HTMLElement | null;
+    if (banner) banner.hidden = false;
+  }, 800);
+
+  // Ask for notification permission (contextual) — only when there is real pending work
+  if (
+    'Notification' in window &&
+    Notification.permission === 'default' &&
+    !lsGet('meeEL-notif-asked-v1')
+  ) {
+    lsSet('meeEL-notif-asked-v1', '1');
+    // Ask after a short pause, so user sees the banner first
+    setTimeout(() => {
+      try {
+        Notification.requestPermission().then((perm) => {
+          if (perm === 'granted') {
+            try {
+              new Notification('meeEL', {
+                body: 'Great — I will tell you when your work is not saved.',
+                icon: '/favicon.svg',
+              });
+            } catch {}
+          }
+        });
+      } catch {}
+    }, 2500);
+  }
+
+  // Send a notification if permission granted + not too recent
+  const lastNotified = lsGet(NOTIFIED_AT_KEY);
+  const lastNotifiedTs = lastNotified ? parseInt(lastNotified, 10) : 0;
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+  const hoursSinceEdit = (Date.now() - unsavedTs) / (1000 * 60 * 60);
+
+  if (
+    'Notification' in window &&
+    Notification.permission === 'granted' &&
+    hoursSinceEdit >= 1 &&                        // at least 1 hour since last edit
+    (Date.now() - lastNotifiedTs) >= ONE_DAY      // not more than once a day
+  ) {
+    try {
+      new Notification('meeEL', {
+        body: 'You wrote code but didn\'t download it. Tap to open meeEL and save your work.',
+        icon: '/favicon.svg',
+        tag: 'meeel-unsaved',
+      });
+      lsSet(NOTIFIED_AT_KEY, String(Date.now()));
+    } catch {}
+  }
+})();
+
+/* ── Banner interactions ── */
+(function setupUnsavedBanner() {
+  const banner = document.getElementById('unsaved-banner') as HTMLElement | null;
+  const dlBtn = document.getElementById('unsaved-download-btn') as HTMLButtonElement | null;
+  const closeBtn = document.getElementById('unsaved-close') as HTMLButtonElement | null;
+  if (!banner) return;
+
+  dlBtn?.addEventListener('click', () => {
+    // Open the publish modal
+    const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement | null;
+    if (publishBtn) publishBtn.click();
+    banner.hidden = true;
+  });
+
+  closeBtn?.addEventListener('click', () => {
+    // Hide for 3 days
+    const threeDays = Date.now() + (3 * 24 * 60 * 60 * 1000);
+    lsSet(UNSAVED_HIDE_KEY, String(threeDays));
+    banner.hidden = true;
+  });
+})();
+
+/* ============================================================
+   Live unsaved-work check (no refresh needed)
+   ============================================================ */
+
+(function liveBannerCheck() {
+  const CHECK_INTERVAL = 30 * 1000;   // check every 30 seconds
+  const FIRST_CHECK    = 8 * 1000;    // first check 8s after load
+  const TYPING_GRACE   = 30 * 1000;   // wait 30s after typing before showing
+
+  function shouldShowBanner(): boolean {
+    const banner = document.getElementById('unsaved-banner') as HTMLElement | null;
+    if (!banner) return false;
+    if (!banner.hidden) return false; // already showing
+
+    // User dismissed recently?
+    const hideUntil = lsGet(UNSAVED_HIDE_KEY);
+    if (hideUntil) {
+      const t = parseInt(hideUntil, 10);
+      if (!isNaN(t) && Date.now() < t) return false;
+    }
+
+    // Is there unsaved work?
+    const unsavedAt = lsGet(UNSAVED_AT_KEY);
+    if (!unsavedAt) return false;
+    const unsavedTs = parseInt(unsavedAt, 10);
+    if (isNaN(unsavedTs)) return false;
+
+    // Has user downloaded AFTER the last edit?
+    const downloadedAt = lsGet(DOWNLOADED_AT_KEY);
+    const downloadedTs = downloadedAt ? parseInt(downloadedAt, 10) : 0;
+    if (downloadedTs >= unsavedTs) return false;
+
+    // Give user a grace period — don't nag while they're actively typing
+    const sinceEdit = Date.now() - unsavedTs;
+    if (sinceEdit < TYPING_GRACE) return false;
+
+    return true;
+  }
+
+  function check() {
+    if (shouldShowBanner()) {
+      const banner = document.getElementById('unsaved-banner') as HTMLElement | null;
+      if (banner) banner.hidden = false;
+    }
+  }
+
+  // First check after 8 seconds
+  setTimeout(check, FIRST_CHECK);
+  // Then every 30 seconds
+  setInterval(check, CHECK_INTERVAL);
+
+  // Also check when user leaves the tab (visibility change)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) check();
+  });
+
+  // Also check when the publish modal opens and closes
+  const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement | null;
+  publishBtn?.addEventListener('click', () => {
+    setTimeout(check, 500);
+  });
+})();
+
+/* ============================================================
+   Library Item Verification
+   ============================================================ */
+
+(function setupVerification() {
+  // Maps library item type → a small test code snippet
+  function buildTestCode(name: string, kind: string): string {
+    switch (kind) {
+      case 'block':
+        return `page-[\n  ${name}-[\n    content-[Test]\n  ]\n]\n`;
+      case 'property':
+        return `page-[\n  test-text-[\n    content-[Test]\n    ${name}-[test]\n  ]\n]\n`;
+      case 'token':
+        return `page-[\n  test-text-[\n    content-[Test]\n    ${name}\n  ]\n]\n`;
+      case 'action':
+        return `page-[\n  test-button-[\n    content-[Test]\n    on-click-[${name}]\n  ]\n]\n`;
+      default:
+        return '';
+    }
+  }
+
+  // Expose a global for library pages to call
+  (window as any).__meeel_testItem = function(name: string, kind: string) {
+    const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
+    if (!ed) return false;
+
+    const savedValue = ed.value;
+
+    // Insert test code
+    ed.value = buildTestCode(name, kind);
+    ed.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Wait for render, then check for errors
+    return new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        // Check preview document for error panel
+        const preview = document.getElementById('preview') as HTMLIFrameElement | null;
+        let hasError = false;
+        try {
+          const doc = preview?.contentDocument;
+          if (doc) {
+            const errText = doc.body?.textContent || '';
+            hasError = errText.includes('does not recognize') ||
+                       errText.includes('Unknown') ||
+                       errText.includes('Parse Error') ||
+                       errText.includes('STRUCTURE');
+          }
+        } catch {}
+
+        // Restore original code
+        ed.value = savedValue;
+        ed.dispatchEvent(new Event('input', { bubbles: true }));
+
+        resolve(!hasError);
+      }, 800);
+    });
+  };
 })();

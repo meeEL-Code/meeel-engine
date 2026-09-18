@@ -1,5 +1,34 @@
 import { Token, TokenType } from '../grammar/tokens';
 
+/* Keywords that user can write in ANY case (bold, Bold, BOLD) */
+const KNOWN_KEYWORDS = new Set<string>([
+  // Text styles
+  'bold', 'italic', 'underline',
+  // Shape
+  'round', 'circle', 'pill', 'sharp', 'shadow', 'no-border',
+  // Visibility
+  'hidden', 'visible', 'disabled', 'pointer', 'invisible', 'transparent',
+  // Layout
+  'flex', 'flex-column', 'flex-row', 'flex-wrap',
+  'full-width', 'full-height', 'full', 'fill', 'stretch', 'fit',
+  'block', 'inline', 'inline-block', 'grid',
+  // Position
+  'top', 'bottom', 'left', 'right', 'center', 'middle',
+  // State
+  'checked', 'selected', 'active', 'inactive',
+  // Font sizes
+  'font-tiny', 'font-small', 'font-medium', 'font-large',
+  'font-huge', 'font-massive',
+  // Gaps
+  'gap-small', 'gap-medium', 'gap-large',
+  // Screen modes
+  'row', 'column',
+]);
+
+function isKnownKeyword(word: string): boolean {
+  return KNOWN_KEYWORDS.has(word.toLowerCase());
+}
+
 export function lex(source: string): Token[] {
   const tokens: Token[] = [];
   let i = 0;
@@ -112,8 +141,13 @@ export function lex(source: string): Token[] {
       }
 
       // If name starts with uppercase and NOT followed by -[,
-      // treat it as a VALUE token (standalone uppercase word like "Ready", "Running")
+      // check if it's a known keyword first (Bold → bold)
       if (isUpperStart && !(peek() === '-' && peek(1) === '[')) {
+        if (isKnownKeyword(name)) {
+          pushToken(TokenType.NAME, name.toLowerCase(), startLine, startCol);
+          continue;
+        }
+        // Otherwise: treat as VALUE (content word like "Ready", "Running")
         pushToken(TokenType.VALUE, name, startLine, startCol);
         continue;
       }
