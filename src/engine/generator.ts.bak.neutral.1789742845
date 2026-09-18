@@ -1586,8 +1586,8 @@ function wrapHtml(html: string, css: string, js: string = ''): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Built with meeEL">
-<title>Home</title>
+<meta name="generator" content="meeEL — mee Innovations">
+<title>Made with meeEL</title>
 <style>
 ${css}
 </style>
@@ -1604,8 +1604,8 @@ function wrapHtmlExternal(html: string, cssFilename: string, jsFilename: string 
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Built with meeEL">
-<title>Home</title>
+<meta name="generator" content="meeEL — mee Innovations">
+<title>Made with meeEL</title>
 <link rel="stylesheet" href="${cssFilename}">
 </head>
 <body>
@@ -4433,7 +4433,7 @@ function generateJavaScript(
   if (handlers.length === 0 && timers.length === 0) return '';
 
   const lines: string[] = [];
-  lines.push('/* App script */');
+  lines.push('/* meeEL — generated script */');
   lines.push('(function () {');
   lines.push("  'use strict';");
   lines.push('');

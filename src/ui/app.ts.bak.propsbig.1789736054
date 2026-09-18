@@ -826,15 +826,13 @@ const downloadFileLabel = document.getElementById('download-file-label') as HTML
 
 const PUBLISH_STATE_KEY = 'meeel-publish-state-v1';
 
-type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'python' | 'env' | 'readme';
+type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'readme';
 let currentTab: PublishTab = 'meeel';
 let cachedParts: {
   meeel: string;
   html: string;
   css: string;
   js: string;
-  python: string;
-  env: string;
   readme: string;
   pages: PageOutput[];
 } | null = null;
@@ -854,94 +852,58 @@ function loadPublishState(): { open: boolean; tab: PublishTab } {
   }
 }
 
-function buildReadme(_meeelCode: string, pages: PageOutput[]): string {
-  var date = new Date().toISOString().split('T')[0];
-  var appName = (pages.length > 0 && pages[0].label) ? pages[0].label : 'My App';
+function buildReadme(meeelCode: string, pages: PageOutput[]): string {
+  const date = new Date().toISOString().split('T')[0];
+  const pagesTable = pages
+    .map((p) => `| \`${p.filename}\` | ${p.label} |`)
+    .join('\n');
 
-  var lines = [];
-  lines.push('# ' + appName);
-  lines.push('');
-  lines.push('A small web project — built with a simple English-based language.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## How to open it');
-  lines.push('');
-  lines.push('1. Double-click `index.html`');
-  lines.push('2. It opens in any browser — that\'s it.');
-  lines.push('');
-  lines.push('No install. No build step. No dependencies.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Pages in this project');
-  lines.push('');
-  lines.push('| File | Page |');
-  lines.push('| ---- | ---- |');
-  for (var i = 0; i < pages.length; i++) {
-    lines.push('| `' + pages[i].filename + '` | ' + pages[i].label + ' |');
-  }
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Files explained');
-  lines.push('');
-  lines.push('| File | What it does |');
-  lines.push('| ---- | ------------ |');
-  lines.push('| `index.html` | The page structure |');
-  lines.push('| `style.css` | Colors, sizes, layout |');
-  lines.push('| `script.js` | Click actions |');
-  lines.push('| `server.py` | Optional local server |');
-  lines.push('| `*.meeel` | Source code |');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Putting it online');
-  lines.push('');
-  lines.push('You can host this for free:');
-  lines.push('');
-  lines.push('**Netlify Drop** — go to `netlify.com/drop` and drag this folder. Live in 10 seconds.');
-  lines.push('');
-  lines.push('**Render** — create a free Static Site and connect your repo.');
-  lines.push('');
-  lines.push('**GitHub Pages** — upload the files, then Settings → Pages → Source: main branch.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Install as a phone app');
-  lines.push('');
-  lines.push('Open your live site on your phone:');
-  lines.push('');
-  lines.push('- **Android (Chrome):** tap the ⋮ menu → "Install app"');
-  lines.push('- **iPhone (Safari):** tap Share → "Add to Home Screen"');
-  lines.push('');
-  lines.push('It works offline too.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Optional — run the local server');
-  lines.push('');
-  lines.push('If you have Python installed:');
-  lines.push('');
-  lines.push('```');
-  lines.push('python server.py');
-  lines.push('```');
-  lines.push('');
-  lines.push('Your browser will open at `http://localhost:8000`.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Made with');
-  lines.push('');
-  lines.push('This project was created with **meeEL** — a simple language for building web pages with plain English.');
-  lines.push('');
-  lines.push('Learn more: [meeel-page.onrender.com](https://meeel-page.onrender.com)');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('*Created on ' + date + '*');
-  lines.push('');
-  return lines.join('\n');
+  return `# meeEL
+
+**A language through which you can create and build everything you need.**
+
+---
+
+## About this output
+
+This project was generated with **meeEL** — a simple, English-based
+language for building user interfaces. Instead of writing HTML, CSS,
+and JavaScript by hand, you write meeEL — and it becomes real code.
+
+## How to use
+
+1. Open \`index.html\` in any browser. (Or any of the other page files.)
+2. That's it. Everything is self-contained.
+
+No build tools. No dependencies. No setup.
+
+## Pages in this project
+
+| File | Page |
+| ---- | ---- |
+${pagesTable}
+
+## The meeEL source
+
+This output was generated from the following meeEL code:
+
+\`\`\`meeel
+${meeelCode}
+\`\`\`
+
+Edit this code in **meeEL Page** and it will regenerate instantly.
+
+## About meeEL
+
+- **Language:** meeEL
+- **Editor:** meeEL Page — the official code editor
+- **Philosophy:** Simple. Readable. For everyone.
+- **Made by:** mee Innovations
+
+---
+
+*Generated on ${date} · meeEL · mee Innovations*
+`;
 }
 
 function buildParts() {
@@ -953,8 +915,6 @@ function buildParts() {
     html: currentPage.htmlFile,
     css: currentPage.css,
     js: currentPage.js || '/* No interactivity in this page. */',
-    python: (currentPage as any).python || buildDefaultPython(),
-    env: buildEnvContent(),
     readme,
     pages: allPages,
   };
@@ -969,10 +929,6 @@ function updateDownloadButtons() {
     downloadFileLabel.textContent = 'Download .css';
   } else if (currentTab === 'js') {
     downloadFileLabel.textContent = 'Download .js';
-  } else if (currentTab === 'python') {
-    downloadFileLabel.textContent = 'Download .py';
-  } else if (currentTab === 'env') {
-    downloadFileLabel.textContent = 'Download .env';
   } else {
     downloadFileLabel.textContent = 'Download .md';
   }
@@ -986,8 +942,6 @@ function switchTab(tab: PublishTab) {
   else if (tab === 'html') modalCode.textContent = cachedParts.html;
   else if (tab === 'css') modalCode.textContent = cachedParts.css;
   else if (tab === 'js') modalCode.textContent = cachedParts.js;
-  else if (tab === 'python') modalCode.textContent = (cachedParts as any).python || '';
-  else if (tab === 'env') modalCode.textContent = (cachedParts as any).env || '';
   else modalCode.textContent = cachedParts.readme;
   updateDownloadButtons();
   savePublishState(true, tab);
@@ -1066,10 +1020,6 @@ downloadFile.addEventListener('click', () => {
     download(currentPage.cssFilename, currentPage.css, 'text/css');
   } else if (currentTab === 'js') {
     download(currentPage.jsFilename, currentPage.js || '/* No interactivity */', 'application/octet-stream');
-  } else if (currentTab === 'python') {
-    download('server.py', (cachedParts as any).python || '', 'application/octet-stream');
-  } else if (currentTab === 'env') {
-    download('.env', (cachedParts as any).env || '', 'text/plain');
   } else {
     download('README.md', cachedParts.readme, 'text/markdown');
   }
@@ -1677,7 +1627,7 @@ interface FontDef {
 }
 
 const FONTS: FontDef[] = [
-  // ── Sans-serif (30) ──
+  // ── Sans-serif (22) ──
   { name: 'Inter',           stack: 'Inter, sans-serif',                     tag: 'web' },
   { name: 'Roboto',          stack: 'Roboto, sans-serif',                    tag: 'web' },
   { name: 'Open Sans',       stack: '"Open Sans", sans-serif',               tag: 'web' },
@@ -1700,15 +1650,7 @@ const FONTS: FontDef[] = [
   { name: 'Mulish',          stack: 'Mulish, sans-serif',                    tag: 'web' },
   { name: 'Outfit',          stack: 'Outfit, sans-serif',                    tag: 'web' },
   { name: 'Figtree',         stack: 'Figtree, sans-serif',                   tag: 'web' },
-  { name: 'Heebo',           stack: 'Heebo, sans-serif',                     tag: 'web' },
-  { name: 'Assistant',       stack: 'Assistant, sans-serif',                 tag: 'web' },
-  { name: 'Archivo',         stack: 'Archivo, sans-serif',                   tag: 'web' },
-  { name: 'Cabin',           stack: 'Cabin, sans-serif',                     tag: 'web' },
-  { name: 'Dosis',           stack: 'Dosis, sans-serif',                     tag: 'web' },
-  { name: 'Josefin Sans',    stack: '"Josefin Sans", sans-serif',            tag: 'web' },
-  { name: 'Questrial',       stack: 'Questrial, sans-serif',                 tag: 'web' },
-  { name: 'Quicksand',       stack: 'Quicksand, sans-serif',                 tag: 'web' },
-  // ── Serif (22) ──
+  // ── Serif (16) ──
   { name: 'Playfair Display', stack: '"Playfair Display", serif',            tag: 'web' },
   { name: 'Merriweather',    stack: 'Merriweather, serif',                   tag: 'web' },
   { name: 'Lora',            stack: 'Lora, serif',                           tag: 'web' },
@@ -1725,13 +1667,7 @@ const FONTS: FontDef[] = [
   { name: 'Crimson Pro',     stack: '"Crimson Pro", serif',                  tag: 'web' },
   { name: 'Alegreya',        stack: 'Alegreya, serif',                       tag: 'web' },
   { name: 'Frank Ruhl Libre', stack: '"Frank Ruhl Libre", serif',            tag: 'web' },
-  { name: 'Zilla Slab',      stack: '"Zilla Slab", serif',                   tag: 'web' },
-  { name: 'Bree Serif',      stack: '"Bree Serif", serif',                   tag: 'web' },
-  { name: 'Cutive',          stack: 'Cutive, serif',                         tag: 'web' },
-  { name: 'Neuton',          stack: 'Neuton, serif',                         tag: 'web' },
-  { name: 'Old Standard TT', stack: '"Old Standard TT", serif',              tag: 'web' },
-  { name: 'Vollkorn',        stack: 'Vollkorn, serif',                       tag: 'web' },
-  // ── Monospace (12) ──
+  // ── Monospace (8) ──
   { name: 'JetBrains Mono',  stack: '"JetBrains Mono", monospace',           tag: 'web' },
   { name: 'Fira Code',       stack: '"Fira Code", monospace',                tag: 'web' },
   { name: 'Roboto Mono',     stack: '"Roboto Mono", monospace',              tag: 'web' },
@@ -1740,11 +1676,7 @@ const FONTS: FontDef[] = [
   { name: 'Space Mono',      stack: '"Space Mono", monospace',               tag: 'web' },
   { name: 'Courier Prime',   stack: '"Courier Prime", monospace',            tag: 'web' },
   { name: 'Inconsolata',     stack: 'Inconsolata, monospace',                tag: 'web' },
-  { name: 'Cousine',         stack: 'Cousine, monospace',                    tag: 'web' },
-  { name: 'Anonymous Pro',   stack: '"Anonymous Pro", monospace',            tag: 'web' },
-  { name: 'Ubuntu Mono',     stack: '"Ubuntu Mono", monospace',              tag: 'web' },
-  { name: 'PT Mono',         stack: '"PT Mono", monospace',                  tag: 'web' },
-  // ── Display (22) ──
+  // ── Display (12) ──
   { name: 'Anton',           stack: 'Anton, sans-serif',                     tag: 'style' },
   { name: 'Bebas Neue',      stack: '"Bebas Neue", sans-serif',              tag: 'style' },
   { name: 'Righteous',       stack: 'Righteous, sans-serif',                 tag: 'style' },
@@ -1757,17 +1689,7 @@ const FONTS: FontDef[] = [
   { name: 'Lobster',         stack: 'Lobster, cursive',                      tag: 'style' },
   { name: 'Titan One',       stack: '"Titan One", sans-serif',               tag: 'style' },
   { name: 'Bowlby One',      stack: '"Bowlby One", sans-serif',              tag: 'style' },
-  { name: 'Rubik Mono',      stack: '"Rubik Mono One", sans-serif',          tag: 'style' },
-  { name: 'Lilita One',      stack: '"Lilita One", sans-serif',              tag: 'style' },
-  { name: 'Passion One',     stack: '"Passion One", sans-serif',             tag: 'style' },
-  { name: 'Luckiest Guy',    stack: '"Luckiest Guy", cursive',               tag: 'style' },
-  { name: 'Shrikhand',       stack: 'Shrikhand, cursive',                    tag: 'style' },
-  { name: 'Fredoka',         stack: 'Fredoka, sans-serif',                   tag: 'style' },
-  { name: 'Chewy',           stack: 'Chewy, cursive',                        tag: 'style' },
-  { name: 'Baloo 2',         stack: '"Baloo 2", cursive',                    tag: 'style' },
-  { name: 'Bakbak One',      stack: '"Bakbak One", sans-serif',              tag: 'style' },
-  { name: 'Rampart One',     stack: '"Rampart One", cursive',                tag: 'style' },
-  // ── Handwriting (20) ──
+  // ── Handwriting / Script (10) ──
   { name: 'Dancing Script',  stack: '"Dancing Script", cursive',             tag: 'style' },
   { name: 'Pacifico',        stack: 'Pacifico, cursive',                     tag: 'style' },
   { name: 'Caveat',          stack: 'Caveat, cursive',                       tag: 'style' },
@@ -1778,16 +1700,6 @@ const FONTS: FontDef[] = [
   { name: 'Great Vibes',     stack: '"Great Vibes", cursive',                tag: 'style' },
   { name: 'Allura',          stack: 'Allura, cursive',                       tag: 'style' },
   { name: 'Parisienne',      stack: 'Parisienne, cursive',                   tag: 'style' },
-  { name: 'Sacramento',      stack: 'Sacramento, cursive',                   tag: 'style' },
-  { name: 'Amatic SC',       stack: '"Amatic SC", cursive',                  tag: 'style' },
-  { name: 'Permanent Marker', stack: '"Permanent Marker", cursive',          tag: 'style' },
-  { name: 'Courgette',       stack: 'Courgette, cursive',                    tag: 'style' },
-  { name: 'Yellowtail',      stack: 'Yellowtail, cursive',                   tag: 'style' },
-  { name: 'Cookie',          stack: 'Cookie, cursive',                       tag: 'style' },
-  { name: 'Alex Brush',      stack: '"Alex Brush", cursive',                 tag: 'style' },
-  { name: 'Tangerine',       stack: 'Tangerine, cursive',                    tag: 'style' },
-  { name: 'Berkshire Swash', stack: '"Berkshire Swash", cursive',            tag: 'style' },
-  { name: 'Italianno',       stack: 'Italianno, cursive',                    tag: 'style' },
 ];
 
 const fontsPage = document.getElementById('fonts-page') as HTMLElement | null;
@@ -1908,7 +1820,7 @@ interface NamedColor {
 }
 
 const NAMED_COLORS: NamedColor[] = [
-  // ═══ Basic (12) ═══
+  // ── Basics ──
   { name: 'Red',         hex: '#EF4444', meel: 'red' },
   { name: 'Orange',      hex: '#F97316', meel: 'orange' },
   { name: 'Yellow',      hex: '#EAB308', meel: 'yellow' },
@@ -1920,51 +1832,20 @@ const NAMED_COLORS: NamedColor[] = [
   { name: 'Black',       hex: '#000000', meel: 'black' },
   { name: 'White',       hex: '#FFFFFF', meel: 'white' },
   { name: 'Gray',        hex: '#6B7280', meel: 'gray' },
-  { name: 'Silver',      hex: '#C0C0C0', meel: 'silver' },
-
-  // ═══ Light shades (15) ═══
+  // ── Light shades ──
   { name: 'Light Gray',  hex: '#F3F4F6', meel: 'light-gray' },
   { name: 'Light Blue',  hex: '#DBEAFE', meel: 'light-blue' },
   { name: 'Light Green', hex: '#DCFCE7', meel: 'light-green' },
   { name: 'Light Red',   hex: '#FEE2E2', meel: 'light-red' },
-  { name: 'Light Yellow', hex: '#FEF9C3', meel: 'light-yellow' },
-  { name: 'Light Pink',  hex: '#FCE7F3', meel: 'light-pink' },
-  { name: 'Light Purple', hex: '#F3E8FF', meel: 'light-purple' },
-  { name: 'Light Orange', hex: '#FFEDD5', meel: 'light-orange' },
-  { name: 'Light Cyan',  hex: '#CFFAFE', meel: 'light-cyan' },
-  { name: 'Light Lime',  hex: '#ECFCCB', meel: 'light-lime' },
-  { name: 'Light Teal',  hex: '#CCFBF1', meel: 'light-teal' },
-  { name: 'Light Indigo', hex: '#E0E7FF', meel: 'light-indigo' },
-  { name: 'Light Rose',  hex: '#FFE4E6', meel: 'light-rose' },
-  { name: 'Light Amber', hex: '#FEF3C7', meel: 'light-amber' },
-  { name: 'Light Sky',   hex: '#E0F2FE', meel: 'light-sky' },
-
-  // ═══ Dark shades (15) ═══
+  // ── Dark shades ──
   { name: 'Dark Gray',   hex: '#374151', meel: 'dark-gray' },
   { name: 'Dark Blue',   hex: '#1E3A5F', meel: 'dark-blue' },
-  { name: 'Dark Green',  hex: '#14532D', meel: 'dark-green' },
-  { name: 'Dark Red',    hex: '#7F1D1D', meel: 'dark-red' },
-  { name: 'Dark Purple', hex: '#4C1D95', meel: 'dark-purple' },
-  { name: 'Dark Pink',   hex: '#831843', meel: 'dark-pink' },
-  { name: 'Dark Orange', hex: '#7C2D12', meel: 'dark-orange' },
-  { name: 'Dark Yellow', hex: '#713F12', meel: 'dark-yellow' },
-  { name: 'Dark Brown',  hex: '#451A03', meel: 'dark-brown' },
-  { name: 'Dark Cyan',   hex: '#164E63', meel: 'dark-cyan' },
-  { name: 'Dark Teal',   hex: '#134E4A', meel: 'dark-teal' },
-  { name: 'Dark Indigo', hex: '#312E81', meel: 'dark-indigo' },
-  { name: 'Dark Rose',   hex: '#881337', meel: 'dark-rose' },
-  { name: 'Dark Lime',   hex: '#365314', meel: 'dark-lime' },
-  { name: 'Dark Sky',    hex: '#0C4A6E', meel: 'dark-sky' },
-
-  // ═══ Brand / Sky (6) ═══
+  // ── Sky / brand ──
   { name: 'Sky Blue',    hex: '#38BDF8', meel: 'sky-blue' },
-  { name: 'Ocean Blue',  hex: '#0369A1', meel: 'ocean-blue' },
   { name: 'Off White',   hex: '#FAFAFA', meel: 'off-white' },
-  { name: 'Off Black',   hex: '#1A1A1A', meel: 'off-black' },
-  { name: 'Soft Red',    hex: '#F87171', meel: 'soft-red' },
-  { name: 'Soft Green',  hex: '#4ADE80', meel: 'soft-green' },
-
-  // ═══ Bright (15) ═══
+  { name: 'Soft Red',    hex: '#EF4444', meel: 'soft-red' },
+  { name: 'Soft Green',  hex: '#22C55E', meel: 'soft-green' },
+  // ── Bright ──
   { name: 'Lime',        hex: '#84CC16', meel: '#84CC16' },
   { name: 'Cyan',        hex: '#06B6D4', meel: '#06B6D4' },
   { name: 'Indigo',      hex: '#6366F1', meel: '#6366F1' },
@@ -1974,55 +1855,6 @@ const NAMED_COLORS: NamedColor[] = [
   { name: 'Amber',       hex: '#F59E0B', meel: '#F59E0B' },
   { name: 'Emerald',     hex: '#10B981', meel: '#10B981' },
   { name: 'Teal',        hex: '#14B8A6', meel: '#14B8A6' },
-  { name: 'Sky',         hex: '#0EA5E9', meel: '#0EA5E9' },
-  { name: 'Blue Sky',    hex: '#3B82F6', meel: '#3B82F6' },
-  { name: 'Mint',        hex: '#6EE7B7', meel: '#6EE7B7' },
-  { name: 'Peach',       hex: '#FDBA74', meel: '#FDBA74' },
-  { name: 'Coral',       hex: '#FF7F7F', meel: '#FF7F7F' },
-  { name: 'Salmon',      hex: '#FA8072', meel: '#FA8072' },
-
-  // ═══ Nature (15) ═══
-  { name: 'Forest',      hex: '#166534', meel: '#166534' },
-  { name: 'Olive',       hex: '#65A30D', meel: '#65A30D' },
-  { name: 'Sand',        hex: '#FCD34D', meel: '#FCD34D' },
-  { name: 'Coffee',      hex: '#78350F', meel: '#78350F' },
-  { name: 'Chocolate',   hex: '#7C2D12', meel: '#7C2D12' },
-  { name: 'Strawberry',  hex: '#DC2626', meel: '#DC2626' },
-  { name: 'Watermelon',  hex: '#F87171', meel: '#F87171' },
-  { name: 'Lavender',    hex: '#C4B5FD', meel: '#C4B5FD' },
-  { name: 'Mango',       hex: '#FBBF24', meel: '#FBBF24' },
-  { name: 'Lemon',       hex: '#FDE047', meel: '#FDE047' },
-  { name: 'Cherry',      hex: '#BE123C', meel: '#BE123C' },
-  { name: 'Grape',       hex: '#7E22CE', meel: '#7E22CE' },
-  { name: 'Tomato',      hex: '#EA580C', meel: '#EA580C' },
-  { name: 'Avocado',     hex: '#4D7C0F', meel: '#4D7C0F' },
-  { name: 'Ocean',       hex: '#0369A1', meel: '#0369A1' },
-
-  // ═══ UI / Web (10) ═══
-  { name: 'Primary',     hex: '#0A84FF', meel: 'primary' },
-  { name: 'Secondary',   hex: '#6B7280', meel: 'secondary' },
-  { name: 'Success',     hex: '#16A34A', meel: 'success' },
-  { name: 'Warning',     hex: '#F59E0B', meel: 'warning' },
-  { name: 'Danger',      hex: '#DC2626', meel: 'danger' },
-  { name: 'Info',        hex: '#0EA5E9', meel: 'info' },
-  { name: 'Muted',       hex: '#9CA3AF', meel: 'muted' },
-  { name: 'Accent',      hex: '#8B5CF6', meel: 'accent' },
-  { name: 'Text Main',   hex: '#1F2937', meel: 'text-main' },
-  { name: 'Text Light',  hex: '#6B7280', meel: 'text-light' },
-
-  // ═══ Neutral (12) ═══
-  { name: 'Stone',       hex: '#78716C', meel: '#78716C' },
-  { name: 'Slate',       hex: '#64748B', meel: '#64748B' },
-  { name: 'Zinc',        hex: '#71717A', meel: '#71717A' },
-  { name: 'Neutral',     hex: '#737373', meel: '#737373' },
-  { name: 'Charcoal',    hex: '#333333', meel: '#333333' },
-  { name: 'Smoke',       hex: '#6B6B6B', meel: '#6B6B6B' },
-  { name: 'Cream',       hex: '#FFFDD0', meel: '#FFFDD0' },
-  { name: 'Beige',       hex: '#F5F5DC', meel: '#F5F5DC' },
-  { name: 'Ivory',       hex: '#FFFFF0', meel: '#FFFFF0' },
-  { name: 'Pearl',       hex: '#F0EAD6', meel: '#F0EAD6' },
-  { name: 'Ash',         hex: '#B2BEB5', meel: '#B2BEB5' },
-  { name: 'Graphite',    hex: '#383838', meel: '#383838' },
 ];
 
 const colorPage = document.getElementById('color-page') as HTMLElement | null;
@@ -2481,7 +2313,7 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'delay', group: 'Time', description: 'Wait before next action',
     code: 'on-click-[delay 2 then show message]',
     icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/>' },
-  { name: 'today', group: 'Time', description: "Today's date",
+  { name: 'today', group: 'Time', description: 'Today's date',
     code: 'on-click-[today into date-text]',
     icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
   { name: 'now', group: 'Time', description: 'Current time',
@@ -2723,22 +2555,18 @@ interface PropEntry {
 }
 
 const PROPERTIES_LIST: PropEntry[] = [
-  // ═══ Color & Font (20) ═══
+  // ── Color & Font ──
   { group: 'Color & Font', name: 'background-color', description: 'Back color',
     code: 'background-color-[#0a84ff]' },
   { group: 'Color & Font', name: 'color', description: 'Text color',
     code: 'color-[white]' },
-  { group: 'Color & Font', name: 'background', description: 'Back color (short)',
-    code: 'background-[light-gray]' },
-  { group: 'Color & Font', name: 'font-family', description: 'Font family',
+  { group: 'Color & Font', name: 'font-family', description: 'Font',
     code: 'font-family-[Arial]' },
-  { group: 'Color & Font', name: 'font', description: 'Font (short)',
+  { group: 'Color & Font', name: 'font', description: 'Synonym of font-family',
     code: 'font-[Georgia]' },
   { group: 'Color & Font', name: 'font-size', description: 'Text size',
     code: 'font-size-[24px]' },
-  { group: 'Color & Font', name: 'text-size', description: 'Text size (short)',
-    code: 'text-size-[18px]' },
-  { group: 'Color & Font', name: 'font-weight', description: 'Thick or thin',
+  { group: 'Color & Font', name: 'font-weight', description: 'Thick/thin',
     code: 'font-weight-[bold]' },
   { group: 'Color & Font', name: 'font-style', description: 'Straight or italic',
     code: 'font-style-[italic]' },
@@ -2748,38 +2576,14 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'line-height-[1.5]' },
   { group: 'Color & Font', name: 'text-align', description: 'Text direction',
     code: 'text-align-[center]' },
-  { group: 'Color & Font', name: 'text-decoration', description: 'Underline or strike',
-    code: 'text-decoration-[underline]' },
-  { group: 'Color & Font', name: 'text-shadow', description: 'Shadow on text',
-    code: 'text-shadow-[1px-1px-2px-black]' },
-  { group: 'Color & Font', name: 'text-transform', description: 'Upper / lower / cap',
-    code: 'text-transform-[uppercase]' },
-  { group: 'Color & Font', name: 'word-spacing', description: 'Space between words',
-    code: 'word-spacing-[4px]' },
-  { group: 'Color & Font', name: 'white-space', description: 'How text wraps',
-    code: 'white-space-[nowrap]' },
-  { group: 'Color & Font', name: 'text-overflow', description: 'What to do with overflow',
-    code: 'text-overflow-[ellipsis]' },
-  { group: 'Color & Font', name: 'direction', description: 'Left to right or reverse',
-    code: 'direction-[rtl]' },
-  { group: 'Color & Font', name: 'opacity', description: 'Transparency',
-    code: 'opacity-[0.5]' },
 
-  // ═══ Size & Space (35) ═══
+  // ── Size & Space ──
   { group: 'Size & Space', name: 'width', description: 'Width',
     code: 'width-[200px]' },
   { group: 'Size & Space', name: 'height', description: 'Height',
     code: 'height-[100px]' },
-  { group: 'Size & Space', name: 'size', description: 'Width preset',
+  { group: 'Size & Space', name: 'size', description: 'Width preset — tiny to huge',
     code: 'size-[medium]' },
-  { group: 'Size & Space', name: 'min-width', description: 'Smallest width',
-    code: 'min-width-[100px]' },
-  { group: 'Size & Space', name: 'max-width', description: 'Largest width',
-    code: 'max-width-[500px]' },
-  { group: 'Size & Space', name: 'min-height', description: 'Smallest height',
-    code: 'min-height-[50px]' },
-  { group: 'Size & Space', name: 'max-height', description: 'Largest height',
-    code: 'max-height-[400px]' },
   { group: 'Size & Space', name: 'padding', description: 'Inner space',
     code: 'padding-[20px]' },
   { group: 'Size & Space', name: 'padding-top', description: 'Inner top',
@@ -2800,202 +2604,118 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'margin-left-[10px]' },
   { group: 'Size & Space', name: 'margin-right', description: 'Outer right',
     code: 'margin-right-[10px]' },
+  { group: 'Size & Space', name: 'border', description: 'Border — thin, thick, none',
+    code: 'border-[thin]' },
+  { group: 'Size & Space', name: 'border-radius', description: 'Rounded corners — round, pill, circle',
+    code: 'border-radius-[round]' },
+  { group: 'Size & Space', name: 'box-shadow', description: 'Shadow — soft, hard, glow',
+    code: 'box-shadow-[soft]' },
+  { group: 'Size & Space', name: 'opacity', description: 'Transparency',
+    code: 'opacity-[0.5]' },
   { group: 'Size & Space', name: 'gap', description: 'Space between',
     code: 'gap-[16px]' },
-  { group: 'Size & Space', name: 'row-gap', description: 'Vertical gap',
-    code: 'row-gap-[12px]' },
-  { group: 'Size & Space', name: 'column-gap', description: 'Horizontal gap',
-    code: 'column-gap-[12px]' },
-  { group: 'Size & Space', name: 'border', description: 'Border',
-    code: 'border-[thin]' },
-  { group: 'Size & Space', name: 'border-top', description: 'Only top border',
-    code: 'border-top-[1px-solid-black]' },
-  { group: 'Size & Space', name: 'border-bottom', description: 'Only bottom border',
-    code: 'border-bottom-[1px-solid-black]' },
-  { group: 'Size & Space', name: 'border-left', description: 'Only left border',
-    code: 'border-left-[1px-solid-black]' },
-  { group: 'Size & Space', name: 'border-right', description: 'Only right border',
-    code: 'border-right-[1px-solid-black]' },
-  { group: 'Size & Space', name: 'border-radius', description: 'Rounded corners',
-    code: 'border-radius-[round]' },
-  { group: 'Size & Space', name: 'box-shadow', description: 'Shadow',
-    code: 'box-shadow-[soft]' },
-  { group: 'Size & Space', name: 'shadow', description: 'Shadow (short)',
-    code: 'shadow-[soft]' },
-  { group: 'Size & Space', name: 'top', description: 'Top offset',
-    code: 'top-[20px]' },
-  { group: 'Size & Space', name: 'bottom', description: 'Bottom offset',
-    code: 'bottom-[20px]' },
-  { group: 'Size & Space', name: 'left', description: 'Left offset',
-    code: 'left-[20px]' },
-  { group: 'Size & Space', name: 'right', description: 'Right offset',
-    code: 'right-[20px]' },
-  { group: 'Size & Space', name: 'z-index', description: 'Stack order',
-    code: 'z-index-[10]' },
-  { group: 'Size & Space', name: 'overflow', description: 'Scroll or hide',
-    code: 'overflow-[hidden]' },
-  { group: 'Size & Space', name: 'overflow-x', description: 'Horizontal overflow',
-    code: 'overflow-x-[scroll]' },
-  { group: 'Size & Space', name: 'overflow-y', description: 'Vertical overflow',
-    code: 'overflow-y-[auto]' },
 
-  // ═══ Content (20) ═══
+  // ── Content ──
   { group: 'Content', name: 'content', description: 'Text inside',
     code: 'content-[Hello]' },
   { group: 'Content', name: 'url', description: 'Image or icon source',
     code: 'url-[photo.png]' },
-  { group: 'Content', name: 'src', description: 'Source URL',
-    code: 'src-[image.png]' },
   { group: 'Content', name: 'href', description: 'Link URL',
     code: 'href-[https://example.com]' },
-  { group: 'Content', name: 'target', description: 'Link opens where',
-    code: 'target-[_blank]' },
-  { group: 'Content', name: 'alt-text', description: 'Image alt text',
-    code: 'alt-text-[A cute cat]' },
-  { group: 'Content', name: 'title-attr', description: 'Tooltip text',
-    code: 'title-attr-[Hover me]' },
   { group: 'Content', name: 'input-type', description: 'Input type',
     code: 'input-type-[email]' },
   { group: 'Content', name: 'placeholder-text', description: 'Placeholder text',
     code: 'placeholder-text-[Search]' },
-  { group: 'Content', name: 'placeholder', description: 'Placeholder (short)',
-    code: 'placeholder-[Search]' },
   { group: 'Content', name: 'label-text', description: 'Side label',
     code: 'label-text-[Dark mode]' },
   { group: 'Content', name: 'title-text', description: 'Modal title',
     code: 'title-text-[Settings]' },
-  { group: 'Content', name: 'trigger-text', description: 'Modal trigger',
+  { group: 'Content', name: 'trigger-text', description: 'Modal trigger button',
     code: 'trigger-text-[Open]' },
-  { group: 'Content', name: 'close-text', description: 'Modal close',
+  { group: 'Content', name: 'close-text', description: 'Modal close button',
     code: 'close-text-[Close]' },
   { group: 'Content', name: 'tooltip-text', description: 'Tooltip text',
     code: 'tooltip-text-[Help]' },
-  { group: 'Content', name: 'hint-text', description: 'Text above color bar',
-    code: 'hint-text-[Pick a color]' },
-  { group: 'Content', name: 'default-color', description: 'Starting color',
-    code: 'default-color-[#0a84ff]' },
-  { group: 'Content', name: 'bar-radius', description: 'Color bar radius',
-    code: 'bar-radius-[12px]' },
-  { group: 'Content', name: 'bar-padding', description: 'Color bar padding',
-    code: 'bar-padding-[20px]' },
-  { group: 'Content', name: 'content-position', description: 'Content alignment',
-    code: 'content-position-[center]' },
 
-  // ═══ Interactive (25) ═══
+  // ── Interactive ──
   { group: 'Interactive', name: 'on-click', description: 'Click actions',
     code: 'on-click-[show menu]' },
-  { group: 'Interactive', name: 'on-input', description: 'On typing actions',
-    code: 'on-input-[write preview Hello]' },
   { group: 'Interactive', name: 'open', description: 'Opens another page',
     code: 'open-[home-page]' },
   { group: 'Interactive', name: 'call-id', description: 'Page identifier',
     code: 'call-id-[111111]' },
-  { group: 'Interactive', name: 'from-toggle', description: 'Toggle driver',
+  { group: 'Interactive', name: 'from-toggle', description: 'Which toggle drives this',
     code: 'from-toggle-[dark-toggle]' },
   { group: 'Interactive', name: 'min', description: 'Slider minimum',
     code: 'min-[0]' },
   { group: 'Interactive', name: 'max', description: 'Slider maximum',
     code: 'max-[100]' },
-  { group: 'Interactive', name: 'value', description: 'Slider or chart value',
+  { group: 'Interactive', name: 'value', description: 'Slider / chart value',
     code: 'value-[50]' },
   { group: 'Interactive', name: 'step', description: 'Slider step size',
     code: 'step-[5]' },
-  { group: 'Interactive', name: 'input-value', description: 'Default input value',
-    code: 'input-value-[Hello]' },
   { group: 'Interactive', name: 'on-color', description: 'Toggle ON color',
     code: 'on-color-[#0a84ff]' },
   { group: 'Interactive', name: 'off-color', description: 'Toggle OFF color',
     code: 'off-color-[#cccccc]' },
-  { group: 'Interactive', name: 'default-state', description: 'Toggle initial state',
+  { group: 'Interactive', name: 'default-state', description: 'Toggle starts on or off',
     code: 'default-state-[off]' },
-  { group: 'Interactive', name: 'default-checked', description: 'Checkbox initial state',
-    code: 'default-checked-[yes]' },
   { group: 'Interactive', name: 'check-color', description: 'Checkmark color',
     code: 'check-color-[#16a34a]' },
-  { group: 'Interactive', name: 'group-name', description: 'Radio group name',
+  { group: 'Interactive', name: 'group-name', description: 'Group name for radios',
     code: 'group-name-[size]' },
-  { group: 'Interactive', name: 'fill-color', description: 'Slider fill color',
+  { group: 'Interactive', name: 'fill-color', description: 'Fill color for slider / chart',
     code: 'fill-color-[#0a84ff]' },
-  { group: 'Interactive', name: 'track-color', description: 'Slider track color',
+  { group: 'Interactive', name: 'track-color', description: 'Track color for slider',
     code: 'track-color-[#eeeeee]' },
-  { group: 'Interactive', name: 'show-value', description: 'Show slider value',
-    code: 'show-value-[yes]' },
-  { group: 'Interactive', name: 'disabled-state', description: 'Disable element',
-    code: 'disabled-state-[yes]' },
-  { group: 'Interactive', name: 'read-only', description: 'Make read-only',
-    code: 'read-only-[yes]' },
-  { group: 'Interactive', name: 'required', description: 'Required field',
-    code: 'required-[yes]' },
-  { group: 'Interactive', name: 'pattern', description: 'Validate with pattern',
-    code: 'pattern-[email]' },
-  { group: 'Interactive', name: 'tooltip-position', description: 'Where tooltip shows',
-    code: 'tooltip-position-[top]' },
-  { group: 'Interactive', name: 'accordion-open', description: 'Open by default',
-    code: 'accordion-open-[yes]' },
 
-  // ═══ Chart & Data (10) ═══
+  // ── Chart & Data ──
   { group: 'Chart & Data', name: 'data', description: 'Chart numbers',
     code: 'data-[10 25 40 30 55]' },
   { group: 'Chart & Data', name: 'labels', description: 'Chart labels',
     code: 'labels-[Jan Feb Mar Apr]' },
   { group: 'Chart & Data', name: 'max-value', description: 'Chart maximum',
     code: 'max-value-[100]' },
-  { group: 'Chart & Data', name: 'chart-color', description: 'Bar or line color',
-    code: 'chart-color-[#0a84ff]' },
-  { group: 'Chart & Data', name: 'chart-bg', description: 'Chart background',
-    code: 'chart-bg-[white]' },
-  { group: 'Chart & Data', name: 'chart-border', description: 'Chart border',
-    code: 'chart-border-[#e5e5e5]' },
-  { group: 'Chart & Data', name: 'chart-radius', description: 'Chart corner radius',
-    code: 'chart-radius-[12px]' },
-  { group: 'Chart & Data', name: 'legend-show', description: 'Show chart legend',
-    code: 'legend-show-[yes]' },
-  { group: 'Chart & Data', name: 'grid-lines', description: 'Show grid lines',
-    code: 'grid-lines-[yes]' },
-  { group: 'Chart & Data', name: 'animation-time', description: 'Animation duration',
-    code: 'animation-time-[0.5s]' },
+  { group: 'Chart & Data', name: 'show-value', description: 'Show slider value',
+    code: 'show-value-[yes]' },
 
-  // ═══ Badge & Status (6) ═══
-  { group: 'Badge & Status', name: 'badge-color', description: 'Badge text color',
+  // ── Color Bar ──
+  { group: 'Color Bar', name: 'hint-text', description: 'Text above color bar',
+    code: 'hint-text-[Pick a color]' },
+  { group: 'Color Bar', name: 'default-color', description: 'Starting color',
+    code: 'default-color-[#0a84ff]' },
+  { group: 'Color Bar', name: 'bar-radius', description: 'Bar corner radius',
+    code: 'bar-radius-[12px]' },
+  { group: 'Color Bar', name: 'bar-padding', description: 'Bar padding',
+    code: 'bar-padding-[20px]' },
+
+  // ── Badge ──
+  { group: 'Badge', name: 'badge-color', description: 'Badge text color',
     code: 'badge-color-[white]' },
-  { group: 'Badge & Status', name: 'badge-bg', description: 'Badge background',
+  { group: 'Badge', name: 'badge-bg', description: 'Badge background',
     code: 'badge-bg-[#16a34a]' },
-  { group: 'Badge & Status', name: 'badge-shape', description: 'Badge shape',
-    code: 'badge-shape-[round]' },
-  { group: 'Badge & Status', name: 'badge-position', description: 'Badge position',
-    code: 'badge-position-[top-right]' },
-  { group: 'Badge & Status', name: 'status-dot', description: 'Show status dot',
-    code: 'status-dot-[online]' },
-  { group: 'Badge & Status', name: 'status-color', description: 'Status color',
-    code: 'status-color-[green]' },
 
-  // ═══ Video (4) ═══
+  // ── Video ──
   { group: 'Video', name: 'youtube', description: 'YouTube embed',
     code: 'youtube-[https://youtube.com/watch?v=ABC]' },
-  { group: 'Video', name: 'video-controls', description: 'Show video controls',
-    code: 'video-controls-[yes]' },
-  { group: 'Video', name: 'autoplay', description: 'Play on load',
-    code: 'autoplay-[yes]' },
-  { group: 'Video', name: 'loop-video', description: 'Loop forever',
-    code: 'loop-video-[yes]' },
 
-  // ═══ Connections (8) ═══
-  { group: 'Connections', name: 'supabase-url', description: 'Supabase URL',
+  // ── Position ──
+  { group: 'Position', name: 'content-position', description: 'Content alignment inside box',
+    code: 'content-position-[center]' },
+
+  // ── Connections ──
+  { group: 'Connections', name: 'supabase-url', description: 'Supabase project URL',
     code: 'supabase-url-[https://xxx.supabase.co]' },
-  { group: 'Connections', name: 'supabase-publishable-key', description: 'Supabase key',
+  { group: 'Connections', name: 'supabase-publishable-key', description: 'Supabase publishable key',
     code: 'supabase-publishable-key-[eyJ...]' },
   { group: 'Connections', name: 'firebase-api-key', description: 'Firebase API key',
     code: 'firebase-api-key-[AIza...]' },
-  { group: 'Connections', name: 'firebase-project-id', description: 'Firebase project',
+  { group: 'Connections', name: 'firebase-project-id', description: 'Firebase project ID',
     code: 'firebase-project-id-[my-app]' },
   { group: 'Connections', name: 'custom-api-url', description: 'Custom API URL',
     code: 'custom-api-url-[https://api.com]' },
   { group: 'Connections', name: 'custom-api-key', description: 'Custom API key',
     code: 'custom-api-key-[...]' },
-  { group: 'Connections', name: 'service-type', description: 'Which service',
-    code: 'service-type-[supabase]' },
-  { group: 'Connections', name: 'project-name', description: 'Project name',
-    code: 'project-name-[my-app]' },
 ];
 
 const propsPage = document.getElementById('props-page') as HTMLElement | null;
@@ -3743,176 +3463,62 @@ interface TokenEntry {
 }
 
 const TOKENS_LIST: TokenEntry[] = [
-  // ═══ Position (14) ═══
+  // ── Position ──
   { group: 'Position', name: 'top', description: 'At the top', value: 'top' },
   { group: 'Position', name: 'bottom', description: 'At the bottom', value: 'bottom' },
   { group: 'Position', name: 'left', description: 'On the left', value: 'left' },
   { group: 'Position', name: 'right', description: 'On the right', value: 'right' },
   { group: 'Position', name: 'center', description: 'Middle, side to side', value: 'center' },
   { group: 'Position', name: 'middle', description: 'Middle, top to bottom', value: 'middle' },
-  { group: 'Position', name: 'top-left', description: 'Top left corner', value: 'top-left' },
-  { group: 'Position', name: 'top-right', description: 'Top right corner', value: 'top-right' },
-  { group: 'Position', name: 'bottom-left', description: 'Bottom left corner', value: 'bottom-left' },
-  { group: 'Position', name: 'bottom-right', description: 'Bottom right corner', value: 'bottom-right' },
-  { group: 'Position', name: 'in-the-center', description: 'In the middle of parent', value: 'in-the-center' },
-  { group: 'Position', name: 'in-the-top', description: 'At top of parent', value: 'in-the-top' },
-  { group: 'Position', name: 'in-the-bottom', description: 'At bottom of parent', value: 'in-the-bottom' },
-  { group: 'Position', name: 'in-the-center-of-page', description: 'Middle of whole page', value: 'in-the-center-of-page' },
 
-  // ═══ Text style (10) ═══
+  // ── Text style ──
   { group: 'Text style', name: 'bold', description: 'Makes writing bold', value: 'bold' },
   { group: 'Text style', name: 'italic', description: 'Slants the writing', value: 'italic' },
   { group: 'Text style', name: 'underline', description: 'Adds a line under', value: 'underline' },
-  { group: 'Text style', name: 'uppercase', description: 'MAKES IT CAPS', value: 'uppercase' },
-  { group: 'Text style', name: 'lowercase', description: 'makes it small', value: 'lowercase' },
-  { group: 'Text style', name: 'capitalize', description: 'Every Word Caps', value: 'capitalize' },
-  { group: 'Text style', name: 'no-underline', description: 'Remove underline', value: 'no-underline' },
-  { group: 'Text style', name: 'line-through', description: 'Crossed out text', value: 'line-through' },
-  { group: 'Text style', name: 'text-nowrap', description: 'No line break', value: 'text-nowrap' },
-  { group: 'Text style', name: 'text-center', description: 'Center the text', value: 'text-center' },
 
-  // ═══ Shape (12) ═══
+  // ── Shape ──
   { group: 'Shape', name: 'round', description: 'Makes corners round', value: 'round' },
-  { group: 'Shape', name: 'circle', description: 'Perfect circle', value: 'circle' },
-  { group: 'Shape', name: 'pill', description: 'Pill shape', value: 'pill' },
-  { group: 'Shape', name: 'sharp', description: 'Sharp corners', value: 'sharp' },
   { group: 'Shape', name: 'shadow', description: 'Adds a soft shadow', value: 'shadow' },
-  { group: 'Shape', name: 'shadow-none', description: 'Remove shadow', value: 'shadow-none' },
-  { group: 'Shape', name: 'no-border', description: 'Remove the border', value: 'no-border' },
-  { group: 'Shape', name: 'border-thin', description: 'Thin border', value: 'border-thin' },
-  { group: 'Shape', name: 'border-thick', description: 'Thick border', value: 'border-thick' },
-  { group: 'Shape', name: 'square', description: 'Make it square', value: 'square' },
-  { group: 'Shape', name: 'wide', description: 'Make it wider', value: 'wide' },
-  { group: 'Shape', name: 'tall', description: 'Make it taller', value: 'tall' },
+  { group: 'Shape', name: 'no-border', description: 'Removes the border', value: 'no-border' },
 
-  // ═══ Visibility (14) ═══
+  // ── Visibility ──
   { group: 'Visibility', name: 'hidden', description: 'Hides the thing', value: 'hidden' },
   { group: 'Visibility', name: 'visible', description: 'Shows the thing', value: 'visible' },
-  { group: 'Visibility', name: 'invisible', description: 'Keeps space, hides thing', value: 'invisible' },
   { group: 'Visibility', name: 'disabled', description: 'Turns off', value: 'disabled' },
-  { group: 'Visibility', name: 'enabled', description: 'Turns on', value: 'enabled' },
-  { group: 'Visibility', name: 'pointer', description: 'Shows hand cursor', value: 'pointer' },
-  { group: 'Visibility', name: 'not-allowed', description: 'Shows blocked cursor', value: 'not-allowed' },
-  { group: 'Visibility', name: 'transparent', description: 'See-through', value: 'transparent' },
-  { group: 'Visibility', name: 'fade-in', description: 'Slowly appear', value: 'fade-in' },
-  { group: 'Visibility', name: 'fade-out', description: 'Slowly disappear', value: 'fade-out' },
-  { group: 'Visibility', name: 'blur', description: 'Blur effect', value: 'blur' },
-  { group: 'Visibility', name: 'grayscale', description: 'Black and white', value: 'grayscale' },
-  { group: 'Visibility', name: 'selectable', description: 'Can select text', value: 'selectable' },
-  { group: 'Visibility', name: 'no-select', description: 'Cannot select text', value: 'no-select' },
+  { group: 'Visibility', name: 'pointer', description: 'Shows a hand cursor', value: 'pointer' },
 
-  // ═══ Layout (22) ═══
+  // ── Layout ──
   { group: 'Layout', name: 'flex', description: 'Puts things side by side', value: 'flex' },
   { group: 'Layout', name: 'flex-row', description: 'Side by side', value: 'flex-row' },
   { group: 'Layout', name: 'flex-column', description: 'Stacks things', value: 'flex-column' },
-  { group: 'Layout', name: 'flex-wrap', description: 'Wrap to next line', value: 'flex-wrap' },
-  { group: 'Layout', name: 'justify-center', description: 'Center horizontally', value: 'justify-center' },
-  { group: 'Layout', name: 'justify-between', description: 'Space between', value: 'justify-between' },
-  { group: 'Layout', name: 'justify-around', description: 'Space around', value: 'justify-around' },
-  { group: 'Layout', name: 'justify-end', description: 'Push to end', value: 'justify-end' },
-  { group: 'Layout', name: 'justify-start', description: 'Push to start', value: 'justify-start' },
-  { group: 'Layout', name: 'align-center', description: 'Center vertically', value: 'align-center' },
-  { group: 'Layout', name: 'align-start', description: 'Align to top', value: 'align-start' },
-  { group: 'Layout', name: 'align-end', description: 'Align to bottom', value: 'align-end' },
   { group: 'Layout', name: 'full-width', description: 'Stretches wide', value: 'full-width' },
-  { group: 'Layout', name: 'full-height', description: 'Full height', value: 'full-height' },
   { group: 'Layout', name: 'full', description: 'Full width and height', value: 'full' },
   { group: 'Layout', name: 'fill', description: 'Fills the space', value: 'fill' },
   { group: 'Layout', name: 'stretch', description: 'Stretches to match parent', value: 'stretch' },
   { group: 'Layout', name: 'fit', description: 'Shrinks to content', value: 'fit' },
   { group: 'Layout', name: 'block', description: 'Full line', value: 'block' },
   { group: 'Layout', name: 'inline', description: 'Sits in a line', value: 'inline' },
-  { group: 'Layout', name: 'inline-block', description: 'Inline box', value: 'inline-block' },
-  { group: 'Layout', name: 'grid', description: 'Grid layout', value: 'grid' },
 
-  // ═══ State (10) ═══
+  // ── State ──
   { group: 'State', name: 'checked', description: 'Starts ticked', value: 'checked' },
-  { group: 'State', name: 'unchecked', description: 'Starts unticked', value: 'unchecked' },
   { group: 'State', name: 'selected', description: 'Starts selected', value: 'selected' },
-  { group: 'State', name: 'unselected', description: 'Starts unselected', value: 'unselected' },
-  { group: 'State', name: 'active', description: 'Currently active', value: 'active' },
-  { group: 'State', name: 'inactive', description: 'Not active', value: 'inactive' },
-  { group: 'State', name: 'opened', description: 'Opened by default', value: 'opened' },
-  { group: 'State', name: 'closed', description: 'Closed by default', value: 'closed' },
-  { group: 'State', name: 'loading', description: 'Loading state', value: 'loading' },
-  { group: 'State', name: 'error', description: 'Error state', value: 'error' },
 
-  // ═══ Font sizes (10) ═══
-  { group: 'Font sizes', name: 'font-tiny', description: 'Very small (10px)', value: 'font-tiny' },
-  { group: 'Font sizes', name: 'font-small', description: 'Small (13px)', value: 'font-small' },
-  { group: 'Font sizes', name: 'font-medium', description: 'Medium (16px)', value: 'font-medium' },
-  { group: 'Font sizes', name: 'font-large', description: 'Large (24px)', value: 'font-large' },
-  { group: 'Font sizes', name: 'font-huge', description: 'Very large (48px)', value: 'font-huge' },
-  { group: 'Font sizes', name: 'font-massive', description: 'Huge (72px)', value: 'font-massive' },
-  { group: 'Font sizes', name: 'text-tiny', description: 'Text small (12px)', value: 'text-tiny' },
-  { group: 'Font sizes', name: 'text-small', description: 'Text small (14px)', value: 'text-small' },
-  { group: 'Font sizes', name: 'text-medium', description: 'Text medium (18px)', value: 'text-medium' },
-  { group: 'Font sizes', name: 'text-large', description: 'Text large (24px)', value: 'text-large' },
+  // ── Font sizes ──
+  { group: 'Font sizes', name: 'font-tiny', description: 'Very small text (10px)', value: 'font-tiny' },
+  { group: 'Font sizes', name: 'font-small', description: 'Small text (13px)', value: 'font-small' },
+  { group: 'Font sizes', name: 'font-medium', description: 'Medium text (16px)', value: 'font-medium' },
+  { group: 'Font sizes', name: 'font-large', description: 'Large text (24px)', value: 'font-large' },
+  { group: 'Font sizes', name: 'font-huge', description: 'Very large text (48px)', value: 'font-huge' },
+  { group: 'Font sizes', name: 'font-massive', description: 'Huge text (72px)', value: 'font-massive' },
 
-  // ═══ Gaps (8) ═══
-  { group: 'Gaps', name: 'gap-tiny', description: 'Tiny space (4px)', value: 'gap-tiny' },
-  { group: 'Gaps', name: 'gap-small', description: 'Small (8px)', value: 'gap-small' },
-  { group: 'Gaps', name: 'gap-medium', description: 'Medium (16px)', value: 'gap-medium' },
-  { group: 'Gaps', name: 'gap-large', description: 'Large (24px)', value: 'gap-large' },
-  { group: 'Gaps', name: 'gap-huge', description: 'Very large (40px)', value: 'gap-huge' },
-  { group: 'Gaps', name: 'gap-none', description: 'No gap', value: 'gap-none' },
-  { group: 'Gaps', name: 'padding-small', description: 'Small padding (8px)', value: 'padding-small' },
-  { group: 'Gaps', name: 'padding-medium', description: 'Medium padding (16px)', value: 'padding-medium' },
+  // ── Gaps ──
+  { group: 'Gaps', name: 'gap-small', description: 'Small space (8px)', value: 'gap-small' },
+  { group: 'Gaps', name: 'gap-medium', description: 'Medium space (16px)', value: 'gap-medium' },
+  { group: 'Gaps', name: 'gap-large', description: 'Large space (24px)', value: 'gap-large' },
 
-  // ═══ Screen mode (8) ═══
+  // ── Screen mode ──
   { group: 'Screen mode', name: 'row', description: 'Side by side in mode', value: 'row' },
   { group: 'Screen mode', name: 'column', description: 'Stacked in mode', value: 'column' },
-  { group: 'Screen mode', name: 'side-by-side', description: 'Side by side (short)', value: 'side-by-side' },
-  { group: 'Screen mode', name: 'stacked', description: 'Stacked (short)', value: 'stacked' },
-  { group: 'Screen mode', name: 'hide-on-mobile', description: 'Hide on phones', value: 'hide-on-mobile' },
-  { group: 'Screen mode', name: 'show-on-mobile', description: 'Show only on phones', value: 'show-on-mobile' },
-  { group: 'Screen mode', name: 'hide-on-desktop', description: 'Hide on computers', value: 'hide-on-desktop' },
-  { group: 'Screen mode', name: 'show-on-desktop', description: 'Show only on computers', value: 'show-on-desktop' },
-
-  // ═══ Style (11) ═══
-  { group: 'Style', name: 'glass', description: 'Frosted glass effect', value: 'glass' },
-  { group: 'Style', name: 'neumorph', description: 'Soft 3D effect', value: 'neumorph' },
-  { group: 'Style', name: 'flat', description: 'Flat design', value: 'flat' },
-  { group: 'Style', name: 'raised', description: 'Raised with shadow', value: 'raised' },
-  { group: 'Style', name: 'inset', description: 'Sunken effect', value: 'inset' },
-  { group: 'Style', name: 'outline', description: 'Outline only', value: 'outline' },
-  { group: 'Style', name: 'filled', description: 'Solid fill', value: 'filled' },
-  { group: 'Style', name: 'ghost', description: 'Transparent button', value: 'ghost' },
-  { group: 'Style', name: 'accent', description: 'Accent color style', value: 'accent' },
-  { group: 'Style', name: 'muted', description: 'Faded colors', value: 'muted' },
-  { group: 'Style', name: 'bold-border', description: 'Strong border', value: 'bold-border' },
-
-  // ═══ Alignment (10) ═══
-  { group: 'Alignment', name: 'text-left', description: 'Left align text', value: 'text-left' },
-  { group: 'Alignment', name: 'text-right', description: 'Right align text', value: 'text-right' },
-  { group: 'Alignment', name: 'text-justify', description: 'Justify text', value: 'text-justify' },
-  { group: 'Alignment', name: 'align-top', description: 'Align to top', value: 'align-top' },
-  { group: 'Alignment', name: 'align-bottom', description: 'Align to bottom', value: 'align-bottom' },
-  { group: 'Alignment', name: 'align-middle', description: 'Align to middle', value: 'align-middle' },
-  { group: 'Alignment', name: 'align-baseline', description: 'Align to baseline', value: 'align-baseline' },
-  { group: 'Alignment', name: 'vertical-top', description: 'Top of line', value: 'vertical-top' },
-  { group: 'Alignment', name: 'vertical-middle', description: 'Middle of line', value: 'vertical-middle' },
-  { group: 'Alignment', name: 'vertical-bottom', description: 'Bottom of line', value: 'vertical-bottom' },
-
-  // ═══ Sizing (8) ═══
-  { group: 'Sizing', name: 'tiny-size', description: 'Very small size', value: 'tiny-size' },
-  { group: 'Sizing', name: 'small-size', description: 'Small size', value: 'small-size' },
-  { group: 'Sizing', name: 'medium-size', description: 'Medium size', value: 'medium-size' },
-  { group: 'Sizing', name: 'large-size', description: 'Large size', value: 'large-size' },
-  { group: 'Sizing', name: 'auto-size', description: 'Auto size', value: 'auto-size' },
-  { group: 'Sizing', name: 'screen-size', description: 'Full screen size', value: 'screen-size' },
-  { group: 'Sizing', name: 'half-width', description: 'Half the width', value: 'half-width' },
-  { group: 'Sizing', name: 'third-width', description: 'One third width', value: 'third-width' },
-
-  // ═══ Effects (8) ═══
-  { group: 'Effects', name: 'glow', description: 'Glowing effect', value: 'glow' },
-  { group: 'Effects', name: 'pulse', description: 'Pulsing animation', value: 'pulse' },
-  { group: 'Effects', name: 'bounce', description: 'Bouncing animation', value: 'bounce' },
-  { group: 'Effects', name: 'spin', description: 'Spinning animation', value: 'spin' },
-  { group: 'Effects', name: 'shake', description: 'Shaking animation', value: 'shake' },
-  { group: 'Effects', name: 'slide-in', description: 'Slide in from side', value: 'slide-in' },
-  { group: 'Effects', name: 'zoom-in', description: 'Zoom in animation', value: 'zoom-in' },
-  { group: 'Effects', name: 'flip', description: 'Flip animation', value: 'flip' },
 ];
 
 const tokensPage = document.getElementById('tokens-page') as HTMLElement | null;
@@ -4031,340 +3637,3 @@ document.querySelectorAll('.tools-card').forEach((card) => {
     });
   }
 });
-
-/* ============================================================
-   About meeEL + How to Publish Pages
-   ============================================================ */
-
-function setupDocPage(pageId: string, backId: string, closeId: string, toolName: string) {
-  const page = document.getElementById(pageId) as HTMLElement | null;
-  const back = document.getElementById(backId) as HTMLButtonElement | null;
-  const close = document.getElementById(closeId) as HTMLButtonElement | null;
-
-  const open = () => {
-    if (!page) return;
-    closeToolsDrawer();
-    page.hidden = false;
-    page.querySelector('.lib-page-body')?.scrollTo(0, 0);
-  };
-  const closeFn = () => {
-    if (!page) return;
-    page.hidden = true;
-  };
-
-  back?.addEventListener('click', closeFn);
-  close?.addEventListener('click', closeFn);
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && page && !page.hidden) closeFn();
-  });
-
-  document.querySelectorAll('.tools-card').forEach((card) => {
-    const tool = (card as HTMLElement).dataset.tool;
-    if (tool === toolName) {
-      card.addEventListener('click', (e) => {
-        e.stopPropagation();
-        open();
-      });
-    }
-  });
-}
-
-setupDocPage('about-page',   'about-back',   'about-close',   'about');
-setupDocPage('publish-page', 'howto-back', 'howto-close', 'publish');
-
-/* ============================================================
-   Language Tabs (English / বাংলা) for About + Publish
-   ============================================================ */
-
-document.querySelectorAll('.lang-tabs').forEach((tabs) => {
-  const tabsEl = tabs as HTMLElement;
-  const scope = tabsEl.dataset.langFor;
-  if (!scope) return;
-
-  const pageEl = document.getElementById(scope + '-page');
-  if (!pageEl) return;
-
-  const enEl = pageEl.querySelector('.doc-lang-en') as HTMLElement | null;
-  const bnEl = pageEl.querySelector('.doc-lang-bn') as HTMLElement | null;
-  if (!enEl || !bnEl) return;
-
-  const switchTo = (lang: string) => {
-    const isEn = lang === 'en';
-    enEl.hidden = !isEn;
-    bnEl.hidden = isEn;
-
-    tabsEl.querySelectorAll('.lang-tab').forEach((t) => {
-      t.classList.toggle('active', (t as HTMLElement).dataset.lang === lang);
-    });
-
-    // Update title
-    const titleEl = pageEl.querySelector('.lib-page-title') as HTMLElement | null;
-    if (titleEl) {
-      if (scope === 'about') {
-        titleEl.textContent = isEn ? 'About meeEL' : 'meeEL কী';
-      } else if (scope === 'publish') {
-        titleEl.textContent = isEn ? 'How to Publish' : 'প্রকাশ করবেন কীভাবে';
-      }
-    }
-
-    // Scroll to top
-    pageEl.querySelector('.lib-page-body')?.scrollTo(0, 0);
-  };
-
-  tabsEl.querySelectorAll('.lang-tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      const lang = (tab as HTMLElement).dataset.lang || 'en';
-      switchTo(lang);
-    });
-  });
-});
-
-/* ============================================================
-   Hash Routing — remember which page user is on
-   ============================================================ */
-
-(function setupHashRouting() {
-
-  // ── 1. When user clicks any tool card, update URL hash ──
-  document.querySelectorAll('.tools-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      const tool = (card as HTMLElement).dataset.tool;
-      if (!tool) return;
-      // Use pushState so no hashchange event fires (no double-open)
-      if (location.hash !== '#' + tool) {
-        history.pushState({ tool }, '', '#' + tool);
-      }
-    });
-  });
-
-  // ── 2. When user closes any library page, clear hash ──
-  document.addEventListener('click', (e) => {
-    const t = e.target as HTMLElement;
-    if (!t || !t.closest) return;
-    const btn = t.closest('.lib-page-back, .lib-page-close');
-    if (btn && location.hash) {
-      history.replaceState(null, '', location.pathname + location.search);
-    }
-  });
-
-  // ── 3. Browser back/forward button ──
-  window.addEventListener('popstate', () => {
-    const hash = location.hash.slice(1);
-
-    if (!hash) {
-      // Back to editor — hide all pages
-      document.querySelectorAll('.lib-page').forEach((p) => {
-        (p as HTMLElement).hidden = true;
-      });
-      return;
-    }
-
-    // Open the page that matches the hash
-    const card = document.querySelector(`[data-tool="${hash}"]`) as HTMLElement | null;
-    if (card) {
-      card.click();
-    } else {
-      // Fallback — try by page id
-      const page = document.getElementById(hash + '-page') as HTMLElement | null;
-      if (page) {
-        document.querySelectorAll('.lib-page').forEach((p) => {
-          (p as HTMLElement).hidden = true;
-        });
-        page.hidden = false;
-        page.querySelector('.lib-page-body')?.scrollTo(0, 0);
-      }
-    }
-  });
-
-  // ── 4. On initial load — restore page from hash ──
-  if (location.hash) {
-    const hash = location.hash.slice(1);
-    const card = document.querySelector(`[data-tool="${hash}"]`) as HTMLElement | null;
-    if (card) {
-      // Wait for all page setup to finish
-      setTimeout(() => card.click(), 200);
-    }
-  }
-
-})();
-
-
-/* ============================================================
-   ENV + PYTHON helpers
-   ============================================================ */
-
-function buildEnvContent(): string {
-  const src = editor.value;
-  const lines: string[] = [
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '🛡️  meeEL protected your API keys',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-    'The keys you wrote in connections-[...] were moved here.',
-    '',
-    'They never go into your HTML or JavaScript. This means:',
-    '',
-    '  ✅ Your site is safe to publish',
-    '  ✅ Your keys stay out of Git',
-    '  ✅ Nobody can see them in browser DevTools',
-    '',
-    '⚠️  Keep this file safe. Do NOT share it.',
-    '⚠️  Do NOT commit it to GitHub.',
-    '',
-    '    Add this line to your .gitignore:',
-    '        .env',
-    '',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-  ];
-
-  // ── Private keys section ──
-  const keys: string[] = [];
-
-  // Find connections-[...] block in source
-  const idx = src.indexOf('connections-[');
-  const found: Array<{ key: string; value: string }> = [];
-
-  if (idx !== -1) {
-    const start = idx + 'connections-['.length;
-    let depth = 1;
-    let i = start;
-    while (i < src.length && depth > 0) {
-      const c = src[i];
-      if (c === '[') depth++;
-      else if (c === ']') depth--;
-      if (depth === 0) break;
-      i++;
-    }
-    const inner = src.slice(start, i);
-
-    // Parse name-[value] pairs (accept UPPERCASE too)
-    const re = /([a-zA-Z][a-zA-Z0-9-]*)-\[([^\]]*)\]/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(inner)) !== null) {
-      const key = m[1].toUpperCase().replace(/-/g, '_');
-      found.push({ key, value: m[2] });
-    }
-  }
-
-  if (found.length > 0) {
-    keys.push('# ─── Your keys ───');
-    for (const { key, value } of found) {
-      keys.push(key + '=' + value);
-    }
-  } else {
-    lines.push('# No keys set.');
-    keys.push('SUPABASE_URL=');
-    keys.push('SUPABASE_KEY=');
-  }
-
-  return lines.join('\n') + keys.join('\n') + '\n';
-}
-
-function buildDefaultPython(): string {
-  return '"""\n' +
-    'Local server for your site.\n\n' +
-    'Run:  python server.py\n' +
-    'Then open http://localhost:8000\n' +
-    '"""\n\n' +
-    'import http.server\n' +
-    'import socketserver\n' +
-    'import webbrowser\n' +
-    'import os\n\n' +
-    'PORT = 8000\n\n\n' +
-    'class Handler(http.server.SimpleHTTPRequestHandler):\n' +
-    '    def do_GET(self):\n' +
-    '        if self.path == "/":\n' +
-    '            self.path = "/index.html"\n' +
-    '        return super().do_GET()\n\n\n' +
-    'def main():\n' +
-    '    here = os.path.dirname(os.path.abspath(__file__))\n' +
-    '    os.chdir(here)\n' +
-    '    with socketserver.TCPServer(("", PORT), Handler) as server:\n' +
-    '        address = "http://localhost:" + str(PORT)\n' +
-    '        print("Serving at " + address)\n' +
-    '        try:\n' +
-    '            webbrowser.open(address)\n' +
-    '        except Exception:\n' +
-    '            pass\n' +
-    '        try:\n' +
-    '            server.serve_forever()\n' +
-    '        except KeyboardInterrupt:\n' +
-    '            print("Server stopped.")\n\n\n' +
-    'if __name__ == "__main__":\n' +
-    '    main()\n';
-}
-
-
-/* ============================================================
-   Welcome Modal
-   ============================================================ */
-
-const WELCOME_SEEN_KEY = 'meeEL-welcome-seen-v1';
-const STARTER_KEY = 'meeEL-starter-template-v1';
-
-const STARTER_TEMPLATES: Record<string, string> = {
-  blank: `page-[\n  \n]\n`,
-
-  hello: `page-[\n  background-color-[light-gray]\n  padding-[40px]\n\n  hello-text-[\n    center\n    content-[Hello, world!]\n    font-size-[36px]\n    Bold\n    color-[dark-blue]\n  ]\n]\n`,
-
-  card: `page-[\n  background-color-[light-gray]\n  padding-[40px]\n\n  welcome-card-[\n    Center\n    middle\n    background-color-[white]\n    border-radius-[round]\n    shadow-[soft]\n    padding-[30px]\n\n    title-text-[\n      content-[Welcome]\n      font-size-[24px]\n      Bold\n      color-[dark-blue]\n      margin-bottom-[8px]\n    ]\n\n    sub-text-[\n      content-[This is a simple card.]\n      color-[gray]\n      font-size-[14px]\n    ]\n  ]\n]\n`,
-
-  nav: `page-[\n  background-color-[white]\n\n  main-nav-bar-[\n    background-color-[#0a84ff]\n    padding-[16px]\n    color-[white]\n\n    brand-title-[\n      content-[My App]\n      font-size-[18px]\n      Bold\n    ]\n\n    menu-button-[\n      content-[Menu]\n      background-color-[white]\n      color-[#0a84ff]\n      padding-[8px]\n      border-radius-[round]\n    ]\n  ]\n\n  hero-text-[\n    center\n    padding-[60px-20px]\n    content-[Welcome to my site]\n    font-size-[32px]\n    Bold\n    color-[black]\n  ]\n]\n`,
-};
-
-(function setupWelcome() {
-  const welcome = document.getElementById('welcome-modal') as HTMLElement | null;
-  const skipBtn = document.getElementById('welcome-skip') as HTMLButtonElement | null;
-  if (!welcome) return;
-
-  // Check if user already saw the welcome
-  let seen = false;
-  try { seen = localStorage.getItem(WELCOME_SEEN_KEY) === '1'; } catch {}
-
-  // Also: skip if editor already has non-default content
-  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
-  const currentCode = ed ? ed.value.trim() : '';
-  const isDefaultCode = currentCode === '' || currentCode.startsWith('home-page-[');
-  const shouldShow = !seen && isDefaultCode;
-
-  function markSeen() {
-    try { localStorage.setItem(WELCOME_SEEN_KEY, '1'); } catch {}
-  }
-
-  function closeWelcome() {
-    welcome.hidden = true;
-    markSeen();
-  }
-
-  function applyTemplate(name: string) {
-    const code = STARTER_TEMPLATES[name] || STARTER_TEMPLATES['hello'];
-    const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
-    if (!ed) return;
-    ed.value = code;
-    ed.dispatchEvent(new Event('input', { bubbles: true }));
-    ed.focus();
-    try { localStorage.setItem(STARTER_KEY, name); } catch {}
-  }
-
-  welcome.querySelectorAll('.welcome-option').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const name = (btn as HTMLElement).dataset.start || 'hello';
-      applyTemplate(name);
-      closeWelcome();
-    });
-  });
-
-  skipBtn?.addEventListener('click', closeWelcome);
-
-  // Escape to close
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !welcome.hidden) closeWelcome();
-  });
-
-  // Show on first load
-  if (shouldShow) {
-    setTimeout(() => { welcome.hidden = false; }, 300);
-  }
-})();

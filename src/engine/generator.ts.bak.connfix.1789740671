@@ -1489,7 +1489,6 @@ function collectOverrideCss(block: BlockNode): Record<string, string> {
         Object.assign(css, KEYWORD_CSS[kw]);
       }
     } else if (child.kind === 'property') {
-      if (block.name === 'connections') continue;
       if (isParametricKeyword(child.name)) continue;
 
       // Timer property — collect setInterval actions, no CSS output
@@ -1586,8 +1585,8 @@ function wrapHtml(html: string, css: string, js: string = ''): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Built with meeEL">
-<title>Home</title>
+<meta name="generator" content="meeEL — mee Innovations">
+<title>Made with meeEL</title>
 <style>
 ${css}
 </style>
@@ -1604,8 +1603,8 @@ function wrapHtmlExternal(html: string, cssFilename: string, jsFilename: string 
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Built with meeEL">
-<title>Home</title>
+<meta name="generator" content="meeEL — mee Innovations">
+<title>Made with meeEL</title>
 <link rel="stylesheet" href="${cssFilename}">
 </head>
 <body>
@@ -1849,10 +1848,6 @@ function generateBlock(
         Object.assign(css, KEYWORD_CSS[kw]);
       }
     } else if (child.kind === 'property') {
-      // connections-[...] block holds user's private keys for .env
-      // No HTML, no CSS — skip entirely
-      if (block.name === 'connections') continue;
-
       if (isParametricKeyword(child.name)) continue;
 
       // Timer: every-N-second(s)/minute(s)/hour(s)
@@ -4433,7 +4428,7 @@ function generateJavaScript(
   if (handlers.length === 0 && timers.length === 0) return '';
 
   const lines: string[] = [];
-  lines.push('/* App script */');
+  lines.push('/* meeEL — generated script */');
   lines.push('(function () {');
   lines.push("  'use strict';");
   lines.push('');

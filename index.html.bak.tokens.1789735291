@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>meeEL Page</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0a84ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="meeEL" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Raleway:wght@400;700&family=Nunito:wght@400;700&family=Work+Sans:wght@400;700&family=Source+Sans+3:wght@400;700&family=Oswald:wght@400;700&family=Ubuntu:wght@400;700&family=Rubik:wght@400;700&family=Karla:wght@400;700&family=Manrope:wght@400;700&family=Barlow:wght@400;700&family=DM+Sans:wght@400;700&family=Fira+Sans:wght@400;700&family=PT+Sans:wght@400;700&family=Mulish:wght@400;700&family=Outfit:wght@400;700&family=Figtree:wght@400;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Lora:wght@400;700&family=PT+Serif:wght@400;700&family=Noto+Serif:wght@400;700&family=Libre+Baskerville:wght@400;700&family=EB+Garamond:wght@400;700&family=Crimson+Text:wght@400;700&family=Cormorant+Garamond:wght@400;700&family=Spectral:wght@400;700&family=Tinos:wght@400;700&family=Domine:wght@400;700&family=Bitter:wght@400;700&family=Crimson+Pro:wght@400;700&family=Alegreya:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700&family=JetBrains+Mono:wght@400;700&family=Fira+Code:wght@400;700&family=Roboto+Mono:wght@400;700&family=Source+Code+Pro:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inconsolata:wght@400;700&family=Anton&family=Bebas+Neue&family=Righteous&family=Archivo+Black&family=Alfa+Slab+One&family=Bungee&family=Fugaz+One&family=Monoton&family=Abril+Fatface&family=Lobster&family=Titan+One&family=Bowlby+One&family=Dancing+Script:wght@400;700&family=Pacifico&family=Caveat:wght@400;700&family=Satisfy&family=Kalam:wght@400;700&family=Indie+Flower&family=Shadows+Into+Light&family=Great+Vibes&family=Allura&family=Parisienne&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/ui/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">
+      <svg class="logo-icon" viewBox="0 0 64 64" width="22" height="22" aria-hidden="true">
+        <rect width="64" height="64" rx="14" ry="14" fill="#0a84ff"/>
+        <path d="M18 48 L18 28 Q18 22 25 22 Q32 22 32 28 L32 48 M32 28 Q32 22 39 22 Q46 22 46 28 L46 48"
+              fill="none" stroke="#ffffff" stroke-width="5"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>meeEL Page</span>
+    </div>
+    <div class="topbar-right">
+      <span id="save-indicator" class="save-indicator"></span>
+      <button id="install-btn" class="btn-install" title="Install meeEL Page" aria-label="Install" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Install</span>
+      </button>
+      <button id="tools-btn" class="btn-tools" title="Tools" aria-label="Tools">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+      </button>
+      <button id="import-btn" class="btn-import" title="Import .meeel file" aria-label="Import">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </button>
+      <button id="publish-btn" class="btn-publish" title="Publish" aria-label="Publish">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
+      <input type="file" id="import-input" accept=".meeel,.me,.txt" hidden>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="pane editor-pane">
+      <div class="pane-header">Code</div>
+      <div class="editor-container">
+        <div class="gutter" id="gutter"></div>
+        <div class="editor-wrap">
+          <pre class="editor-highlight" aria-hidden="true"><code id="highlight-output"></code></pre>
+          <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+        </div>
+      </div>
+      <div class="suggestion-bar" id="suggestion-bar" hidden></div>
+    </section>
+    <section class="pane preview-pane">
+      <div class="pane-header">
+        <span>Preview</span>
+        <div class="preview-controls">
+          <select id="page-selector" class="page-selector" hidden></select>
+          <button id="preview-fullscreen" class="btn-icon" title="Full screen" aria-label="Full screen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+              <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+              <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <iframe id="preview"></iframe>
+    </section>
+  </main>
+
+  <!-- Publish Modal -->
+  <div class="modal-backdrop" id="publish-modal" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-brand">
+            <span>meeEL<span class="modal-brand-accent">.</span></span>
+          </div>
+          <div class="modal-subtitle">Download &amp; Publish</div>
+        </div>
+        <button class="modal-close" id="publish-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="meeel">meeEL</button>
+        <button class="modal-tab" data-tab="html">HTML</button>
+        <button class="modal-tab" data-tab="css">CSS</button>
+        <button class="modal-tab" data-tab="js">JS</button>
+        <button class="modal-tab" data-tab="readme">README</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="code-wrap">
+          <button class="copy-btn" id="copy-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span>Copy</span>
+          </button>
+          <pre id="modal-code"><code></code></pre>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <span class="modal-footer-hint">Made by mee Innovations</span>
+        <button class="btn-secondary" id="download-file">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span id="download-file-label">Download HTML</span>
+        </button>
+        <button class="btn-primary" id="download-all">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Download as ZIP</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Tools Drawer -->
+  <div class="tools-backdrop" id="tools-backdrop" hidden></div>
+  <aside class="tools-drawer" id="tools-drawer">
+    <div class="tools-header">
+      <span class="tools-title">Tools</span>
+      <button class="tools-close" id="tools-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="tools-body">
+      <button class="tools-card" data-tool="color" type="button">
+        <div class="tools-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="13.5" cy="6.5" r="2.5"/>
+            <circle cx="17.5" cy="10.5" r="2.5"/>
+            <circle cx="8.5" cy="7.5" r="2.5"/>
+            <circle cx="6.5" cy="12.5" r="2.5"/>
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.48-9-10-9z"/>
+          </svg></div>
+        <div class="tools-card-text">
+          <div class="tools-card-title">Color Picker</div>
+          <div class="tools-card-desc">Tap any color</div>
+        </div>
+      </button>
+
+      <button class="tools-card" data-tool="font" type="button">
+        <div class="tools-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 7 4 4 20 4 20 7"/>
+            <line x1="9" y1="20" x2="15" y2="20"/>
+            <line x1="12" y1="4" x2="12" y2="20"/>
+          </svg></div>
+        <div class="tools-card-text">
+          <div class="tools-card-title">Font Library</div>
+          <div class="tools-card-desc">60+ fonts inside</div>
+        </div>
+      </button>
+
+      <button class="tools-card" data-tool="blocks" type="button">
+        <div class="tools-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg></div>
+        <div class="tools-card-text">
+          <div class="tools-card-title">Blocks</div>
+          <div class="tools-card-desc">60 blocks — cards, forms, pages</div>
+        </div>
+      </button>
+
+      <button class="tools-card" data-tool="properties" type="button">
+        <div class="tools-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="18" x2="20" y2="18"/>
+            <circle cx="9" cy="6" r="2" fill="#131316"/>
+            <circle cx="15" cy="12" r="2" fill="#131316"/>
+            <circle cx="7" cy="18" r="2" fill="#131316"/>
+          </svg></div>
+        <div class="tools-card-text">
+          <div class="tools-card-title">Properties</div>
+          <div class="tools-card-desc">66 settings — colors, sizes</div>
+        </div>
+      </button>
+
+      <button class="tools-card" data-tool="actions" type="button">
+        <div class="tools-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg></div>
+        <div class="tools-card-text">
+          <div class="tools-card-title">Actions</div>
+          <div class="tools-card-desc">27 actions — click, show, hide</div>
+        </div>
+      </button>
+
+      <button class="tools-card" data-tool="icons" type="button">
+        <div class="tools-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg></div>
+        <div class="tools-card-text">
+          <div class="tools-card-title">Icons</div>
+          <div class="tools-card-desc">48 icons ready to use</div>
+        </div>
+      </button>
+
+      <div class="tools-divider"></div>
+
+      <button class="tools-card tools-card-settings" data-tool="settings" type="button">
+        <div class="tools-card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg></div>
+        <div class="tools-card-text">
+          <div class="tools-card-title">Settings</div>
+        </div>
+      </button>
+    </div>
+  </aside>
+
+
+  <!-- Icons Library Page -->
+  <div class="lib-page" id="icons-page" hidden>
+    <div class="lib-page-header">
+      <button class="lib-page-back" id="icons-back" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <span class="lib-page-title">Icons</span>
+      <button class="lib-page-close" id="icons-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="lib-page-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="icons-search" placeholder="Search icons..." autocomplete="off" />
+    </div>
+    <div class="lib-page-body">
+      <div class="icons-grid" id="icons-grid"></div>
+    </div>
+  </div>
+
+
+  <!-- Fonts Library Page -->
+  <div class="lib-page" id="fonts-page" hidden>
+    <div class="lib-page-header">
+      <button class="lib-page-back" id="fonts-back" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <span class="lib-page-title">Fonts</span>
+      <button class="lib-page-close" id="fonts-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="lib-page-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="fonts-search" placeholder="Search fonts..." autocomplete="off" />
+    </div>
+    <div class="lib-page-body">
+      <div class="fonts-grid" id="fonts-grid"></div>
+    </div>
+  </div>
+
+
+  <!-- Color Library Page -->
+  <div class="lib-page" id="color-page" hidden>
+    <div class="lib-page-header">
+      <button class="lib-page-back" id="color-back" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <span class="lib-page-title">Colors</span>
+      <button class="lib-page-close" id="color-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="lib-page-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="color-search" placeholder="Search colors..." autocomplete="off" />
+    </div>
+    <div class="lib-page-body">
+      <div class="color-section-title">Pick any color</div>
+      <div class="color-picker-wrap">
+        <div class="color-picker-track" id="color-picker-track">
+          <div class="color-picker-indicator" id="color-picker-indicator">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+        </div>
+        <div class="color-picker-info">
+          <div class="color-picker-swatch" id="color-picker-swatch"></div>
+          <div class="color-picker-meta">
+            <div class="color-picker-hex" id="color-picker-hex">#3DF5B0</div>
+            <div class="color-picker-name" id="color-picker-name">Spring Green</div>
+          </div>
+          <button class="color-picker-copy" id="color-picker-copy" type="button">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="color-section-title">Named colors</div>
+      <div class="colors-grid" id="colors-grid"></div>
+    </div>
+  </div>
+
+
+  <!-- Actions Library Page -->
+  <div class="lib-page" id="actions-page" hidden>
+    <div class="lib-page-header">
+      <button class="lib-page-back" id="actions-back" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <span class="lib-page-title">Actions</span>
+      <button class="lib-page-close" id="actions-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="lib-page-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="actions-search" placeholder="Search actions..." autocomplete="off" />
+    </div>
+    <div class="lib-page-body">
+      <div class="actions-grid" id="actions-grid"></div>
+    </div>
+  </div>
+
+
+  <!-- Properties Library Page -->
+  <div class="lib-page" id="props-page" hidden>
+    <div class="lib-page-header">
+      <button class="lib-page-back" id="props-back" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <span class="lib-page-title">Properties</span>
+      <button class="lib-page-close" id="props-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="lib-page-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="props-search" placeholder="Search properties..." autocomplete="off" />
+    </div>
+    <div class="lib-page-body">
+      <div class="props-group" id="props-group"></div>
+    </div>
+  </div>
+
+
+  <!-- Blocks Library Page -->
+  <div class="lib-page" id="blocks-page" hidden>
+    <div class="lib-page-header">
+      <button class="lib-page-back" id="blocks-back" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+      </button>
+      <span class="lib-page-title">Blocks</span>
+      <button class="lib-page-close" id="blocks-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="lib-page-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="blocks-search" placeholder="Search blocks..." autocomplete="off" />
+    </div>
+    <div class="lib-page-body">
+      <div class="blocks-group" id="blocks-group"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/ui/app.ts"></script>
+</body>
+</html>

@@ -855,93 +855,96 @@ function loadPublishState(): { open: boolean; tab: PublishTab } {
 }
 
 function buildReadme(_meeelCode: string, pages: PageOutput[]): string {
-  var date = new Date().toISOString().split('T')[0];
-  var appName = (pages.length > 0 && pages[0].label) ? pages[0].label : 'My App';
+  const date = new Date().toISOString().split('T')[0];
+  const appName = pages.length > 0
+    ? (pages[0].label || 'My App')
+    : 'My App';
 
-  var lines = [];
-  lines.push('# ' + appName);
-  lines.push('');
-  lines.push('A small web project — built with a simple English-based language.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## How to open it');
-  lines.push('');
-  lines.push('1. Double-click `index.html`');
-  lines.push('2. It opens in any browser — that\'s it.');
-  lines.push('');
-  lines.push('No install. No build step. No dependencies.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Pages in this project');
-  lines.push('');
-  lines.push('| File | Page |');
-  lines.push('| ---- | ---- |');
-  for (var i = 0; i < pages.length; i++) {
-    lines.push('| `' + pages[i].filename + '` | ' + pages[i].label + ' |');
-  }
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Files explained');
-  lines.push('');
-  lines.push('| File | What it does |');
-  lines.push('| ---- | ------------ |');
-  lines.push('| `index.html` | The page structure |');
-  lines.push('| `style.css` | Colors, sizes, layout |');
-  lines.push('| `script.js` | Click actions |');
-  lines.push('| `server.py` | Optional local server |');
-  lines.push('| `*.meeel` | Source code |');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Putting it online');
-  lines.push('');
-  lines.push('You can host this for free:');
-  lines.push('');
-  lines.push('**Netlify Drop** — go to `netlify.com/drop` and drag this folder. Live in 10 seconds.');
-  lines.push('');
-  lines.push('**Render** — create a free Static Site and connect your repo.');
-  lines.push('');
-  lines.push('**GitHub Pages** — upload the files, then Settings → Pages → Source: main branch.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Install as a phone app');
-  lines.push('');
-  lines.push('Open your live site on your phone:');
-  lines.push('');
-  lines.push('- **Android (Chrome):** tap the ⋮ menu → "Install app"');
-  lines.push('- **iPhone (Safari):** tap Share → "Add to Home Screen"');
-  lines.push('');
-  lines.push('It works offline too.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Optional — run the local server');
-  lines.push('');
-  lines.push('If you have Python installed:');
-  lines.push('');
-  lines.push('```');
-  lines.push('python server.py');
-  lines.push('```');
-  lines.push('');
-  lines.push('Your browser will open at `http://localhost:8000`.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Made with');
-  lines.push('');
-  lines.push('This project was created with **meeEL** — a simple language for building web pages with plain English.');
-  lines.push('');
-  lines.push('Learn more: [meeel-page.onrender.com](https://meeel-page.onrender.com)');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('*Created on ' + date + '*');
-  lines.push('');
-  return lines.join('\n');
+  const pagesTable = pages
+    .map((p) => `| \\`${p.filename}\\` | ${p.label} |`)
+    .join('\n');
+
+  return `# ${appName}
+
+A small web project — built with a simple English-based language.
+
+---
+
+## How to open it
+
+1. Double-click \\`index.html\\`
+2. It opens in any browser — that's it.
+
+No install. No build step. No dependencies.
+
+---
+
+## Pages in this project
+
+| File | Page |
+| ---- | ---- |
+${pagesTable}
+
+---
+
+## Files explained
+
+| File | What it does |
+| ---- | ------------ |
+| \\`index.html\\` | The page structure |
+| \\`style.css\\` | Colors, sizes, layout |
+| \\`script.js\\` | Click actions |
+| \\`server.py\\` | Optional local server |
+| \\`*.meeel\\` | Source code |
+
+---
+
+## Putting it online
+
+You can host this for free:
+
+**Netlify Drop** — go to \\`netlify.com/drop\\` and drag this folder. Live in 10 seconds.
+
+**Render** — create a free Static Site and connect your repo.
+
+**GitHub Pages** — upload the files, then Settings → Pages → Source: main branch.
+
+---
+
+## Install as a phone app
+
+Open your live site on your phone:
+
+- **Android (Chrome):** tap the ⋮ menu → "Install app"
+- **iPhone (Safari):** tap Share → "Add to Home Screen"
+
+It works offline too.
+
+---
+
+## Optional — run the local server
+
+If you have Python installed, open a terminal in this folder and run:
+
+\\`\\`\\`
+python server.py
+\\`\\`\\`
+
+Your browser will open at \\`http://localhost:8000\\`.
+
+---
+
+## Made with
+
+This project was created with **meeEL** — a simple language for building
+web pages with plain English.
+
+Learn more: [meeel-page.onrender.com](https://meeel-page.onrender.com)
+
+---
+
+*Created on ${date}*
+`;
 }
 
 function buildParts() {
@@ -4197,30 +4200,15 @@ document.querySelectorAll('.lang-tabs').forEach((tabs) => {
 function buildEnvContent(): string {
   const src = editor.value;
   const lines: string[] = [
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '🛡️  meeEL protected your API keys',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    '# ==============================================',
+    '# meeEL — Private keys',
+    '# ==============================================',
+    '# This file is for YOUR eyes only.',
+    '# Do NOT share it. Do NOT commit it to GitHub.',
     '',
-    'The keys you wrote in connections-[...] were moved here.',
-    '',
-    'They never go into your HTML or JavaScript. This means:',
-    '',
-    '  ✅ Your site is safe to publish',
-    '  ✅ Your keys stay out of Git',
-    '  ✅ Nobody can see them in browser DevTools',
-    '',
-    '⚠️  Keep this file safe. Do NOT share it.',
-    '⚠️  Do NOT commit it to GitHub.',
-    '',
-    '    Add this line to your .gitignore:',
-    '        .env',
-    '',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    '# Format:   NAME=value',
     '',
   ];
-
-  // ── Private keys section ──
-  const keys: string[] = [];
 
   // Find connections-[...] block in source
   const idx = src.indexOf('connections-[');
@@ -4249,41 +4237,57 @@ function buildEnvContent(): string {
   }
 
   if (found.length > 0) {
-    keys.push('# ─── Your keys ───');
+    lines.push('# ─── Values from connections-[...] block ───');
     for (const { key, value } of found) {
-      keys.push(key + '=' + value);
+      lines.push(key + '=' + value);
     }
   } else {
-    lines.push('# No keys set.');
-    keys.push('SUPABASE_URL=');
-    keys.push('SUPABASE_KEY=');
+    lines.push('# No connections block found.');
+    lines.push('# Add one to your meeEL code:');
+    lines.push('#   connections-[ supabase-url-[https://xxx.supabase.co] ]');
+    lines.push('');
+    lines.push('SUPABASE_URL=');
+    lines.push('SUPABASE_KEY=');
   }
 
-  return lines.join('\n') + keys.join('\n') + '\n';
+  return lines.join('\n');
 }
 
 function buildDefaultPython(): string {
   return '"""\n' +
-    'Local server for your site.\n\n' +
-    'Run:  python server.py\n' +
-    'Then open http://localhost:8000\n' +
+    'Local Server\n' +
+    '============\n\n' +
+    'Serves the website on your own computer.\n' +
+    'You do not need to know Python to use it.\n\n' +
+    'How to use\n' +
+    '----------\n' +
+    '1. Put all files in one folder.\n' +
+    '2. Open a terminal in that folder.\n' +
+    '3. Run:  python server.py\n' +
+    '4. Your browser opens at http://localhost:8000\n\n' +
+    'To stop the server, press Control and C together.\n' +
     '"""\n\n' +
     'import http.server\n' +
     'import socketserver\n' +
     'import webbrowser\n' +
-    'import os\n\n' +
+    'import os\n\n\n' +
     'PORT = 8000\n\n\n' +
     'class Handler(http.server.SimpleHTTPRequestHandler):\n' +
+    '    """Serve the folder as a website."""\n\n' +
     '    def do_GET(self):\n' +
     '        if self.path == "/":\n' +
     '            self.path = "/index.html"\n' +
     '        return super().do_GET()\n\n\n' +
     'def main():\n' +
     '    here = os.path.dirname(os.path.abspath(__file__))\n' +
-    '    os.chdir(here)\n' +
+    '    os.chdir(here)\n\n' +
     '    with socketserver.TCPServer(("", PORT), Handler) as server:\n' +
     '        address = "http://localhost:" + str(PORT)\n' +
-    '        print("Serving at " + address)\n' +
+    '        print()\n' +
+    '        print("Server is running.")\n' +
+    '        print("Open: " + address)\n' +
+    '        print("Press Control and C together to stop.")\n' +
+    '        print()\n' +
     '        try:\n' +
     '            webbrowser.open(address)\n' +
     '        except Exception:\n' +
@@ -4291,80 +4295,8 @@ function buildDefaultPython(): string {
     '        try:\n' +
     '            server.serve_forever()\n' +
     '        except KeyboardInterrupt:\n' +
+    '            print()\n' +
     '            print("Server stopped.")\n\n\n' +
     'if __name__ == "__main__":\n' +
     '    main()\n';
 }
-
-
-/* ============================================================
-   Welcome Modal
-   ============================================================ */
-
-const WELCOME_SEEN_KEY = 'meeEL-welcome-seen-v1';
-const STARTER_KEY = 'meeEL-starter-template-v1';
-
-const STARTER_TEMPLATES: Record<string, string> = {
-  blank: `page-[\n  \n]\n`,
-
-  hello: `page-[\n  background-color-[light-gray]\n  padding-[40px]\n\n  hello-text-[\n    center\n    content-[Hello, world!]\n    font-size-[36px]\n    Bold\n    color-[dark-blue]\n  ]\n]\n`,
-
-  card: `page-[\n  background-color-[light-gray]\n  padding-[40px]\n\n  welcome-card-[\n    Center\n    middle\n    background-color-[white]\n    border-radius-[round]\n    shadow-[soft]\n    padding-[30px]\n\n    title-text-[\n      content-[Welcome]\n      font-size-[24px]\n      Bold\n      color-[dark-blue]\n      margin-bottom-[8px]\n    ]\n\n    sub-text-[\n      content-[This is a simple card.]\n      color-[gray]\n      font-size-[14px]\n    ]\n  ]\n]\n`,
-
-  nav: `page-[\n  background-color-[white]\n\n  main-nav-bar-[\n    background-color-[#0a84ff]\n    padding-[16px]\n    color-[white]\n\n    brand-title-[\n      content-[My App]\n      font-size-[18px]\n      Bold\n    ]\n\n    menu-button-[\n      content-[Menu]\n      background-color-[white]\n      color-[#0a84ff]\n      padding-[8px]\n      border-radius-[round]\n    ]\n  ]\n\n  hero-text-[\n    center\n    padding-[60px-20px]\n    content-[Welcome to my site]\n    font-size-[32px]\n    Bold\n    color-[black]\n  ]\n]\n`,
-};
-
-(function setupWelcome() {
-  const welcome = document.getElementById('welcome-modal') as HTMLElement | null;
-  const skipBtn = document.getElementById('welcome-skip') as HTMLButtonElement | null;
-  if (!welcome) return;
-
-  // Check if user already saw the welcome
-  let seen = false;
-  try { seen = localStorage.getItem(WELCOME_SEEN_KEY) === '1'; } catch {}
-
-  // Also: skip if editor already has non-default content
-  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
-  const currentCode = ed ? ed.value.trim() : '';
-  const isDefaultCode = currentCode === '' || currentCode.startsWith('home-page-[');
-  const shouldShow = !seen && isDefaultCode;
-
-  function markSeen() {
-    try { localStorage.setItem(WELCOME_SEEN_KEY, '1'); } catch {}
-  }
-
-  function closeWelcome() {
-    welcome.hidden = true;
-    markSeen();
-  }
-
-  function applyTemplate(name: string) {
-    const code = STARTER_TEMPLATES[name] || STARTER_TEMPLATES['hello'];
-    const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
-    if (!ed) return;
-    ed.value = code;
-    ed.dispatchEvent(new Event('input', { bubbles: true }));
-    ed.focus();
-    try { localStorage.setItem(STARTER_KEY, name); } catch {}
-  }
-
-  welcome.querySelectorAll('.welcome-option').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const name = (btn as HTMLElement).dataset.start || 'hello';
-      applyTemplate(name);
-      closeWelcome();
-    });
-  });
-
-  skipBtn?.addEventListener('click', closeWelcome);
-
-  // Escape to close
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !welcome.hidden) closeWelcome();
-  });
-
-  // Show on first load
-  if (shouldShow) {
-    setTimeout(() => { welcome.hidden = false; }, 300);
-  }
-})();

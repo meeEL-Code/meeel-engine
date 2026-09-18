@@ -120,8 +120,6 @@
         <button class="modal-tab" data-tab="html">HTML</button>
         <button class="modal-tab" data-tab="css">CSS</button>
         <button class="modal-tab" data-tab="js">JS</button>
-        <button class="modal-tab" data-tab="python">PYTHON</button>
-        <button class="modal-tab" data-tab="env">ENV</button>
         <button class="modal-tab" data-tab="readme">README</button>
       </div>
 
@@ -758,11 +756,9 @@
       </div>
 
   
-  </div>
-
   <div class="lib-page" id="publish-page" hidden>
     <div class="lib-page-header">
-      <button class="lib-page-back" id="howto-back" aria-label="Back">
+      <button class="lib-page-back" id="publish-back" aria-label="Back">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"/>
           <polyline points="12 19 5 12 12 5"/>
@@ -773,7 +769,7 @@
         <button class="lang-tab active" data-lang="en" type="button">English</button>
         <button class="lang-tab" data-lang="bn" type="button">বাংলা</button>
       </div>
-      <button class="lib-page-close" id="howto-close" aria-label="Close">
+      <button class="lib-page-close" id="publish-close" aria-label="Close">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"/>
           <line x1="6" y1="6" x2="18" y2="18"/>
@@ -781,251 +777,110 @@
       </button>
     </div>
     <div class="lib-page-body">
+      <div class="doc-page">
 
-      <div class="doc-lang doc-lang-en">
-        <div class="doc-page">
-          <h1>How to Publish</h1>
-          <p>When your meeEL code is ready, tap the blue <strong>Download</strong> button at the top right. Choose <strong>Download as ZIP</strong> — meeEL gives you all files packed together.</p>
+        <h1>How to Publish</h1>
+        <p>
+          When your meeEL code is ready, tap the blue <strong>Download</strong> button at the
+          top right. Choose <strong>Download as ZIP</strong> — meeEL gives you all files
+          packed together.
+        </p>
 
-          <div class="doc-highlight">
-            <strong>One meeEL file → four files</strong><br/>
-            Your <code>.meeel</code> code becomes real HTML, CSS, JavaScript and a Python server.
-          </div>
-
-          <h2>Step 1 — Download your ZIP</h2>
-          <ol>
-            <li>Tap the blue <strong>Download</strong> button at the top right.</li>
-            <li>Choose <strong>Download as ZIP</strong>.</li>
-            <li>You will get a file called <code>meeEL-Codes.zip</code>.</li>
-          </ol>
-          <p>The ZIP contains:</p>
-          <ul>
-            <li><code>home.html</code> — your page structure</li>
-            <li><code>home.css</code> — colors and sizes</li>
-            <li><code>home.js</code> — click actions</li>
-            <li><code>home.meeel</code> — your original code</li>
-            <li><code>server.py</code> — a small Python server</li>
-            <li><code>README.md</code> — full guide</li>
-          </ul>
-
-          <h2>Step 2 — See it on your own computer</h2>
-          <p>Unzip the file. Inside the folder, just <strong>double-click</strong> <code>home.html</code> — it opens in your browser. That is your site, running on your device.</p>
-          <p>If you want the small Python server:</p>
-          <ol>
-            <li>Open a terminal in the folder.</li>
-            <li>Run: <code>python server.py</code></li>
-            <li>Your browser opens at <code>http://localhost:8000</code></li>
-          </ol>
-
-          <h2>Step 3 — Put it on the internet</h2>
-          <p>You can host your site for free. Three easy options:</p>
-
-          <h3>Option A — Render (recommended)</h3>
-          <ol>
-            <li>Create a free account at <code>render.com</code></li>
-            <li>Create a new <strong>Static Site</strong>.</li>
-            <li>Connect your GitHub repo — or drag your ZIP.</li>
-            <li>Render gives you a live URL. Done.</li>
-          </ol>
-
-          <h3>Option B — Netlify</h3>
-          <ol>
-            <li>Go to <code>netlify.com/drop</code></li>
-            <li>Drag your unzipped folder onto the page.</li>
-            <li>Your site is live in 10 seconds.</li>
-          </ol>
-
-          <h3>Option C — GitHub Pages</h3>
-          <ol>
-            <li>Create a GitHub repo.</li>
-            <li>Upload the unzipped files.</li>
-            <li>Settings → Pages → Source: main branch.</li>
-            <li>Your site appears at <code>yourname.github.io/repo</code></li>
-          </ol>
-
-          <h2>Step 4 — Install as a phone app</h2>
-          <p>meeEL sites work like phone apps. Open your live site on your phone:</p>
-          <ul>
-            <li><strong>Android (Chrome):</strong> tap the ⋮ menu → "Install app"</li>
-            <li><strong>iPhone (Safari):</strong> tap Share → "Add to Home Screen"</li>
-          </ul>
-          <p>Your site now sits on the home screen like a real app. It works offline too.</p>
-
-          <h2>About your API keys</h2>
-          <p>If you used <code>connections-[...]</code> to store a Supabase or Firebase key, meeEL separates those from your code and puts them in a <code>.env</code> file. Your real key never goes into the HTML or JavaScript.</p>
-          <div class="doc-warning">
-            <strong>Never</strong> put a service-role key or private key into a public site. Only publishable keys belong in the browser.
-          </div>
-
-          <h2>Need help?</h2>
-          <p>Open the <strong>Learn to write</strong> book inside the Tools drawer — it walks through everything chapter by chapter.</p>
-
-          <div class="doc-footer">
-            <div class="doc-footer-brand">mee Innovations</div>
-            <div class="doc-footer-tagline">Happy building.</div>
-          </div>
+        <div class="doc-highlight">
+          <strong>One meeEL file → four files</strong><br/>
+          Your <code>.meeel</code> code becomes real HTML, CSS, JavaScript and a Python server.
         </div>
-      </div>
 
-      <div class="doc-lang doc-lang-bn" hidden>
-        <div class="doc-page">
-          <h1>প্রকাশ করবেন কীভাবে</h1>
-          <p>আপনারmeeEL কোড রেডি হলে, উপরে ডানদিকে নীল <strong>Download</strong> বাটনে চাপুন। <strong>Download as ZIP</strong> বেছে নিন —meeEL সব ফাইল একসাথে প্যাক করে দেবে।</p>
+        <h2>Step 1 — Download your ZIP</h2>
+        <ol>
+          <li>Tap the blue <strong>Download</strong> button at the top right.</li>
+          <li>Choose <strong>Download as ZIP</strong>.</li>
+          <li>You will get a file called <code>meeEL-Codes.zip</code>.</li>
+        </ol>
+        <p>The ZIP contains:</p>
+        <ul>
+          <li><code>home.html</code> — your page structure</li>
+          <li><code>home.css</code> — colors and sizes</li>
+          <li><code>home.js</code> — click actions</li>
+          <li><code>home.meeel</code> — your original code</li>
+          <li><code>server.py</code> — a small Python server</li>
+          <li><code>README.md</code> — full guide</li>
+        </ul>
 
-          <div class="doc-highlight">
-            <strong>একটাmeeEL ফাইল → চারটে ফাইল</strong><br/>
-            আপনার <code>.meeel</code> কোড সত্যিকারের HTML, CSS, JavaScript আর একটা Python সার্ভারে বদলে যায়।
-          </div>
+        <h2>Step 2 — See it on your own computer</h2>
+        <p>
+          Unzip the file. Inside the folder, just <strong>double-click</strong>
+          <code>home.html</code> — it opens in your browser. That is your site, running
+          on your device.
+        </p>
+        <p>If you want the small Python server:</p>
+        <ol>
+          <li>Open a terminal in the folder.</li>
+          <li>Run: <code>python server.py</code></li>
+          <li>Your browser opens at <code>http://localhost:8000</code></li>
+        </ol>
 
-          <h2>ধাপ ১ — আপনার ZIP ডাউনলোড করুন</h2>
-          <ol>
-            <li>উপরে ডানদিকে নীল <strong>Download</strong> বাটনে চাপুন।</li>
-            <li><strong>Download as ZIP</strong> বেছে নিন।</li>
-            <li><code>meeEL-Codes.zip</code> নামে একটা ফাইল পাবেন।</li>
-          </ol>
-          <p>ZIP-এ থাকবে:</p>
-          <ul>
-            <li><code>home.html</code> — পেজের গঠন</li>
-            <li><code>home.css</code> — রঙ আর আকার</li>
-            <li><code>home.js</code> — ক্লিকের কাজ</li>
-            <li><code>home.meeel</code> — আপনার আসল কোড</li>
-            <li><code>server.py</code> — একটা ছোট Python সার্ভার</li>
-            <li><code>README.md</code> — সম্পূর্ণ গাইড</li>
-          </ul>
+        <h2>Step 3 — Put it on the internet</h2>
+        <p>
+          You can host your site for free. Here are three easy options:
+        </p>
 
-          <h2>ধাপ ২ — নিজের কম্পিউটারে দেখুন</h2>
-          <p>ZIP খুলুন। ফোল্ডারের ভেতরে <code>home.html</code>-এ <strong>ডাবল-ক্লিক</strong> করুন — ব্রাউজারে খুলে যাবে। এটাই আপনার সাইট, আপনার ডিভাইসে চলছে।</p>
-          <p>Python সার্ভার চালাতে চাইলে:</p>
-          <ol>
-            <li>ফোল্ডারে একটা টার্মিনাল খুলুন।</li>
-            <li>চালান: <code>python server.py</code></li>
-            <li>ব্রাউজার নিজেই <code>http://localhost:8000</code>-এ খুলবে।</li>
-          </ol>
+        <h3>Option A — Render (recommended)</h3>
+        <ol>
+          <li>Create a free account at <code>render.com</code></li>
+          <li>Create a new <strong>Static Site</strong>.</li>
+          <li>Connect your GitHub repo — or drag your ZIP.</li>
+          <li>Render gives you a live URL. Done.</li>
+        </ol>
 
-          <h2>ধাপ ৩ — ইন্টারনেটে তুলুন</h2>
-          <p>ফ্রিতে হোস্ট করতে পারবেন। তিনটে সহজ উপায়:</p>
+        <h3>Option B — Netlify</h3>
+        <ol>
+          <li>Go to <code>netlify.com/drop</code></li>
+          <li>Drag your unzipped folder onto the page.</li>
+          <li>Your site is live in 10 seconds.</li>
+        </ol>
 
-          <h3>উপায় ক — Render (সবচেয়ে ভালো)</h3>
-          <ol>
-            <li><code>render.com</code>-এ ফ্রি অ্যাকাউন্ট খুলুন।</li>
-            <li>নতুন <strong>Static Site</strong> বানান।</li>
-            <li>GitHub repo কানেক্ট করুন — বা ZIP ড্র্যাগ করুন।</li>
-            <li>Render আপনাকে একটা লাইভ URL দেবে। ব্যস।</li>
-          </ol>
+        <h3>Option C — GitHub Pages</h3>
+        <ol>
+          <li>Create a GitHub repo.</li>
+          <li>Upload the unzipped files.</li>
+          <li>Settings → Pages → Source: main branch.</li>
+          <li>Your site appears at <code>yourname.github.io/repo</code></li>
+        </ol>
 
-          <h3>উপায় খ — Netlify</h3>
-          <ol>
-            <li><code>netlify.com/drop</code>-এ যান।</li>
-            <li>ZIP-খোলা ফোল্ডারটা সোজা পেজে ড্র্যাগ করুন।</li>
-            <li>১০ সেকেন্ডে সাইট লাইভ।</li>
-          </ol>
+        <h2>Step 4 — Install as a phone app</h2>
+        <p>
+          meeEL sites work like phone apps. Open your live site on your phone:
+        </p>
+        <ul>
+          <li><strong>Android (Chrome):</strong> tap the ⋮ menu → "Install app"</li>
+          <li><strong>iPhone (Safari):</strong> tap Share → "Add to Home Screen"</li>
+        </ul>
+        <p>Your site now sits on the home screen like a real app. It works offline too.</p>
 
-          <h3>উপায় গ — GitHub Pages</h3>
-          <ol>
-            <li>একটা GitHub repo বানান।</li>
-            <li>ZIP-খোলা ফাইলগুলো আপলোড করুন।</li>
-            <li>Settings → Pages → Source: main branch।</li>
-            <li>সাইট দেখা যাবে <code>yourname.github.io/repo</code>-এ।</li>
-          </ol>
-
-          <h2>ধাপ ৪ — ফোনে অ্যাপ হিসেবে ইনস্টল</h2>
-          <p>meeEL সাইট ফোনের অ্যাপের মতো কাজ করে। ফোনে আপনার লাইভ সাইট খুলুন:</p>
-          <ul>
-            <li><strong>Android (Chrome):</strong> ⋮ মেনু → "Install app"</li>
-            <li><strong>iPhone (Safari):</strong> Share → "Add to Home Screen"</li>
-          </ul>
-          <p>এখন সাইটটা হোম স্ক্রিনে বসে থাকবে, অ্যাপের মতো। অফলাইনেও চলবে।</p>
-
-          <h2>আপনার API key নিয়ে</h2>
-          <p><code>connections-[...]</code> দিয়ে Supabase বা Firebase key রেখে থাকলে,meeEL সেগুলো আলাদা করে <code>.env</code> ফাইলে রাখে। আসল key কখনো HTML বা JavaScript-এ যায় না।</p>
-          <div class="doc-warning">
-            <strong>কখনো</strong> service-role key বা private key পাবলিক সাইটে দেবেন না। শুধু publishable key ব্রাউজারে চলে।
-          </div>
-
-          <h2>সাহায্য দরকার?</h2>
-          <p>Tools drawer-এ <strong>Learn to write</strong> বই খুলুন — অধ্যায়ে অধ্যায়ে সব শেখাবে, ইংরেজি আর বাংলায়।</p>
-
-          <div class="doc-footer">
-            <div class="doc-footer-brand">mee Innovations</div>
-            <div class="doc-footer-tagline">শুভ নির্মাণ।</div>
-          </div>
+        <h2>About your API keys</h2>
+        <p>
+          If you used <code>connections-[...]</code> to store a Supabase or Firebase key,
+          meeEL separates those from your code and puts them in a
+          <code>.env</code> file. Your real key never goes into the HTML or JavaScript.
+        </p>
+        <div class="doc-warning">
+          <strong>Never</strong> put a service-role key or private key into a public site.
+          Only publishable keys belong in the browser. meeEL warns you about this in the
+          Download panel.
         </div>
-      </div>
 
-    </div>
-  </div>
+        <h2>Need help?</h2>
+        <p>
+          Open the <strong>Learn to write</strong> book inside the Tools drawer — it walks
+          through everything chapter by chapter, in English and বাংলা.
+        </p>
 
-  
-  <!-- Welcome Modal -->
-  <div class="welcome-backdrop" id="welcome-modal" hidden>
-    <div class="welcome-card">
-      <div class="welcome-logo">
-        <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">
-          <rect width="64" height="64" rx="14" ry="14" fill="#0a84ff"/>
-          <path d="M18 48 L18 28 Q18 22 25 22 Q32 22 32 28 L32 48 M32 28 Q32 22 39 22 Q46 22 46 28 L46 48"
-                fill="none" stroke="#ffffff" stroke-width="5"
-                stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <h1 class="welcome-title">Welcome to meeEL</h1>
-      <p class="welcome-sub">A language through which you can create and build everything you need.</p>
+        <div class="doc-footer">
+          <div class="doc-footer-brand">mee Innovations</div>
+          <div class="doc-footer-tagline">Happy building.</div>
+        </div>
 
-      <div class="welcome-options">
-        <button class="welcome-option" data-start="blank" type="button">
-          <div class="welcome-option-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-            </svg>
-          </div>
-          <div class="welcome-option-text">
-            <div class="welcome-option-title">Start blank</div>
-            <div class="welcome-option-desc">Empty page — write from scratch</div>
-          </div>
-        </button>
-
-        <button class="welcome-option" data-start="hello" type="button">
-          <div class="welcome-option-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="7" x2="20" y2="7"/>
-              <line x1="4" y1="12" x2="18" y2="12"/>
-              <line x1="4" y1="17" x2="14" y2="17"/>
-            </svg>
-          </div>
-          <div class="welcome-option-text">
-            <div class="welcome-option-title">Say Hello</div>
-            <div class="welcome-option-desc">A page with one greeting text</div>
-          </div>
-        </button>
-
-        <button class="welcome-option" data-start="card" type="button">
-          <div class="welcome-option-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="16" rx="2"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </div>
-          <div class="welcome-option-text">
-            <div class="welcome-option-title">A card</div>
-            <div class="welcome-option-desc">Centered card with title and text</div>
-          </div>
-        </button>
-
-        <button class="welcome-option" data-start="nav" type="button">
-          <div class="welcome-option-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="5" rx="1"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-            </svg>
-          </div>
-          <div class="welcome-option-text">
-            <div class="welcome-option-title">A page with a top bar</div>
-            <div class="welcome-option-desc">Nav bar with logo and menu button</div>
-          </div>
-        </button>
-      </div>
-
-      <div class="welcome-footer">
-        <button class="welcome-skip" id="welcome-skip" type="button">Skip — I know what I'm doing</button>
       </div>
     </div>
   </div>

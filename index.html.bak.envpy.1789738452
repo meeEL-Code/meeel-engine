@@ -120,8 +120,6 @@
         <button class="modal-tab" data-tab="html">HTML</button>
         <button class="modal-tab" data-tab="css">CSS</button>
         <button class="modal-tab" data-tab="js">JS</button>
-        <button class="modal-tab" data-tab="python">PYTHON</button>
-        <button class="modal-tab" data-tab="env">ENV</button>
         <button class="modal-tab" data-tab="readme">README</button>
       </div>
 
@@ -955,81 +953,6 @@
     </div>
   </div>
 
-  
-  <!-- Welcome Modal -->
-  <div class="welcome-backdrop" id="welcome-modal" hidden>
-    <div class="welcome-card">
-      <div class="welcome-logo">
-        <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">
-          <rect width="64" height="64" rx="14" ry="14" fill="#0a84ff"/>
-          <path d="M18 48 L18 28 Q18 22 25 22 Q32 22 32 28 L32 48 M32 28 Q32 22 39 22 Q46 22 46 28 L46 48"
-                fill="none" stroke="#ffffff" stroke-width="5"
-                stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <h1 class="welcome-title">Welcome to meeEL</h1>
-      <p class="welcome-sub">A language through which you can create and build everything you need.</p>
-
-      <div class="welcome-options">
-        <button class="welcome-option" data-start="blank" type="button">
-          <div class="welcome-option-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-            </svg>
-          </div>
-          <div class="welcome-option-text">
-            <div class="welcome-option-title">Start blank</div>
-            <div class="welcome-option-desc">Empty page — write from scratch</div>
-          </div>
-        </button>
-
-        <button class="welcome-option" data-start="hello" type="button">
-          <div class="welcome-option-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="7" x2="20" y2="7"/>
-              <line x1="4" y1="12" x2="18" y2="12"/>
-              <line x1="4" y1="17" x2="14" y2="17"/>
-            </svg>
-          </div>
-          <div class="welcome-option-text">
-            <div class="welcome-option-title">Say Hello</div>
-            <div class="welcome-option-desc">A page with one greeting text</div>
-          </div>
-        </button>
-
-        <button class="welcome-option" data-start="card" type="button">
-          <div class="welcome-option-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="16" rx="2"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </div>
-          <div class="welcome-option-text">
-            <div class="welcome-option-title">A card</div>
-            <div class="welcome-option-desc">Centered card with title and text</div>
-          </div>
-        </button>
-
-        <button class="welcome-option" data-start="nav" type="button">
-          <div class="welcome-option-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="5" rx="1"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-            </svg>
-          </div>
-          <div class="welcome-option-text">
-            <div class="welcome-option-title">A page with a top bar</div>
-            <div class="welcome-option-desc">Nav bar with logo and menu button</div>
-          </div>
-        </button>
-      </div>
-
-      <div class="welcome-footer">
-        <button class="welcome-skip" id="welcome-skip" type="button">Skip — I know what I'm doing</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="/src/ui/app.ts"></script>
+    <script type="module" src="/src/ui/app.ts"></script>
 </body>
 </html>

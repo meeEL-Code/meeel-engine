@@ -4197,30 +4197,10 @@ document.querySelectorAll('.lang-tabs').forEach((tabs) => {
 function buildEnvContent(): string {
   const src = editor.value;
   const lines: string[] = [
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '🛡️  meeEL protected your API keys',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-    'The keys you wrote in connections-[...] were moved here.',
-    '',
-    'They never go into your HTML or JavaScript. This means:',
-    '',
-    '  ✅ Your site is safe to publish',
-    '  ✅ Your keys stay out of Git',
-    '  ✅ Nobody can see them in browser DevTools',
-    '',
-    '⚠️  Keep this file safe. Do NOT share it.',
-    '⚠️  Do NOT commit it to GitHub.',
-    '',
-    '    Add this line to your .gitignore:',
-    '        .env',
-    '',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+    '# Private keys',
+    '# Keep this file secret. Do NOT commit to GitHub.',
     '',
   ];
-
-  // ── Private keys section ──
-  const keys: string[] = [];
 
   // Find connections-[...] block in source
   const idx = src.indexOf('connections-[');
@@ -4249,17 +4229,18 @@ function buildEnvContent(): string {
   }
 
   if (found.length > 0) {
-    keys.push('# ─── Your keys ───');
+    lines.push('# ─── Values from connections-[...] block ───');
     for (const { key, value } of found) {
-      keys.push(key + '=' + value);
+      lines.push(key + '=' + value);
     }
   } else {
     lines.push('# No keys set.');
-    keys.push('SUPABASE_URL=');
-    keys.push('SUPABASE_KEY=');
+    lines.push('');
+    lines.push('SUPABASE_URL=');
+    lines.push('SUPABASE_KEY=');
   }
 
-  return lines.join('\n') + keys.join('\n') + '\n';
+  return lines.join('\n');
 }
 
 function buildDefaultPython(): string {
@@ -4296,75 +4277,3 @@ function buildDefaultPython(): string {
     '    main()\n';
 }
 
-
-/* ============================================================
-   Welcome Modal
-   ============================================================ */
-
-const WELCOME_SEEN_KEY = 'meeEL-welcome-seen-v1';
-const STARTER_KEY = 'meeEL-starter-template-v1';
-
-const STARTER_TEMPLATES: Record<string, string> = {
-  blank: `page-[\n  \n]\n`,
-
-  hello: `page-[\n  background-color-[light-gray]\n  padding-[40px]\n\n  hello-text-[\n    center\n    content-[Hello, world!]\n    font-size-[36px]\n    Bold\n    color-[dark-blue]\n  ]\n]\n`,
-
-  card: `page-[\n  background-color-[light-gray]\n  padding-[40px]\n\n  welcome-card-[\n    Center\n    middle\n    background-color-[white]\n    border-radius-[round]\n    shadow-[soft]\n    padding-[30px]\n\n    title-text-[\n      content-[Welcome]\n      font-size-[24px]\n      Bold\n      color-[dark-blue]\n      margin-bottom-[8px]\n    ]\n\n    sub-text-[\n      content-[This is a simple card.]\n      color-[gray]\n      font-size-[14px]\n    ]\n  ]\n]\n`,
-
-  nav: `page-[\n  background-color-[white]\n\n  main-nav-bar-[\n    background-color-[#0a84ff]\n    padding-[16px]\n    color-[white]\n\n    brand-title-[\n      content-[My App]\n      font-size-[18px]\n      Bold\n    ]\n\n    menu-button-[\n      content-[Menu]\n      background-color-[white]\n      color-[#0a84ff]\n      padding-[8px]\n      border-radius-[round]\n    ]\n  ]\n\n  hero-text-[\n    center\n    padding-[60px-20px]\n    content-[Welcome to my site]\n    font-size-[32px]\n    Bold\n    color-[black]\n  ]\n]\n`,
-};
-
-(function setupWelcome() {
-  const welcome = document.getElementById('welcome-modal') as HTMLElement | null;
-  const skipBtn = document.getElementById('welcome-skip') as HTMLButtonElement | null;
-  if (!welcome) return;
-
-  // Check if user already saw the welcome
-  let seen = false;
-  try { seen = localStorage.getItem(WELCOME_SEEN_KEY) === '1'; } catch {}
-
-  // Also: skip if editor already has non-default content
-  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
-  const currentCode = ed ? ed.value.trim() : '';
-  const isDefaultCode = currentCode === '' || currentCode.startsWith('home-page-[');
-  const shouldShow = !seen && isDefaultCode;
-
-  function markSeen() {
-    try { localStorage.setItem(WELCOME_SEEN_KEY, '1'); } catch {}
-  }
-
-  function closeWelcome() {
-    welcome.hidden = true;
-    markSeen();
-  }
-
-  function applyTemplate(name: string) {
-    const code = STARTER_TEMPLATES[name] || STARTER_TEMPLATES['hello'];
-    const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
-    if (!ed) return;
-    ed.value = code;
-    ed.dispatchEvent(new Event('input', { bubbles: true }));
-    ed.focus();
-    try { localStorage.setItem(STARTER_KEY, name); } catch {}
-  }
-
-  welcome.querySelectorAll('.welcome-option').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const name = (btn as HTMLElement).dataset.start || 'hello';
-      applyTemplate(name);
-      closeWelcome();
-    });
-  });
-
-  skipBtn?.addEventListener('click', closeWelcome);
-
-  // Escape to close
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !welcome.hidden) closeWelcome();
-  });
-
-  // Show on first load
-  if (shouldShow) {
-    setTimeout(() => { welcome.hidden = false; }, 300);
-  }
-})();

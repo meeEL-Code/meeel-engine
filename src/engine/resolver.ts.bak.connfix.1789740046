@@ -67,8 +67,6 @@ function checkBlock(
 
       checkBlock(child, allNames, errors, block.name);
     } else if (child.kind === 'property') {
-      // connections-[...] block = user's private keys — any name allowed
-      if (block.name === 'connections') { continue; }
       // Skip timer properties — handled by generator
       if (/^every-\d+-(millisecond|milliseconds|second|seconds|minute|minutes|hour|hours)$/.test(child.name)) {
         continue;

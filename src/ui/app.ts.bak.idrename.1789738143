@@ -826,15 +826,13 @@ const downloadFileLabel = document.getElementById('download-file-label') as HTML
 
 const PUBLISH_STATE_KEY = 'meeel-publish-state-v1';
 
-type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'python' | 'env' | 'readme';
+type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'readme';
 let currentTab: PublishTab = 'meeel';
 let cachedParts: {
   meeel: string;
   html: string;
   css: string;
   js: string;
-  python: string;
-  env: string;
   readme: string;
   pages: PageOutput[];
 } | null = null;
@@ -854,94 +852,58 @@ function loadPublishState(): { open: boolean; tab: PublishTab } {
   }
 }
 
-function buildReadme(_meeelCode: string, pages: PageOutput[]): string {
-  var date = new Date().toISOString().split('T')[0];
-  var appName = (pages.length > 0 && pages[0].label) ? pages[0].label : 'My App';
+function buildReadme(meeelCode: string, pages: PageOutput[]): string {
+  const date = new Date().toISOString().split('T')[0];
+  const pagesTable = pages
+    .map((p) => `| \`${p.filename}\` | ${p.label} |`)
+    .join('\n');
 
-  var lines = [];
-  lines.push('# ' + appName);
-  lines.push('');
-  lines.push('A small web project — built with a simple English-based language.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## How to open it');
-  lines.push('');
-  lines.push('1. Double-click `index.html`');
-  lines.push('2. It opens in any browser — that\'s it.');
-  lines.push('');
-  lines.push('No install. No build step. No dependencies.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Pages in this project');
-  lines.push('');
-  lines.push('| File | Page |');
-  lines.push('| ---- | ---- |');
-  for (var i = 0; i < pages.length; i++) {
-    lines.push('| `' + pages[i].filename + '` | ' + pages[i].label + ' |');
-  }
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Files explained');
-  lines.push('');
-  lines.push('| File | What it does |');
-  lines.push('| ---- | ------------ |');
-  lines.push('| `index.html` | The page structure |');
-  lines.push('| `style.css` | Colors, sizes, layout |');
-  lines.push('| `script.js` | Click actions |');
-  lines.push('| `server.py` | Optional local server |');
-  lines.push('| `*.meeel` | Source code |');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Putting it online');
-  lines.push('');
-  lines.push('You can host this for free:');
-  lines.push('');
-  lines.push('**Netlify Drop** — go to `netlify.com/drop` and drag this folder. Live in 10 seconds.');
-  lines.push('');
-  lines.push('**Render** — create a free Static Site and connect your repo.');
-  lines.push('');
-  lines.push('**GitHub Pages** — upload the files, then Settings → Pages → Source: main branch.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Install as a phone app');
-  lines.push('');
-  lines.push('Open your live site on your phone:');
-  lines.push('');
-  lines.push('- **Android (Chrome):** tap the ⋮ menu → "Install app"');
-  lines.push('- **iPhone (Safari):** tap Share → "Add to Home Screen"');
-  lines.push('');
-  lines.push('It works offline too.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Optional — run the local server');
-  lines.push('');
-  lines.push('If you have Python installed:');
-  lines.push('');
-  lines.push('```');
-  lines.push('python server.py');
-  lines.push('```');
-  lines.push('');
-  lines.push('Your browser will open at `http://localhost:8000`.');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('## Made with');
-  lines.push('');
-  lines.push('This project was created with **meeEL** — a simple language for building web pages with plain English.');
-  lines.push('');
-  lines.push('Learn more: [meeel-page.onrender.com](https://meeel-page.onrender.com)');
-  lines.push('');
-  lines.push('---');
-  lines.push('');
-  lines.push('*Created on ' + date + '*');
-  lines.push('');
-  return lines.join('\n');
+  return `# meeEL
+
+**A language through which you can create and build everything you need.**
+
+---
+
+## About this output
+
+This project was generated with **meeEL** — a simple, English-based
+language for building user interfaces. Instead of writing HTML, CSS,
+and JavaScript by hand, you write meeEL — and it becomes real code.
+
+## How to use
+
+1. Open \`index.html\` in any browser. (Or any of the other page files.)
+2. That's it. Everything is self-contained.
+
+No build tools. No dependencies. No setup.
+
+## Pages in this project
+
+| File | Page |
+| ---- | ---- |
+${pagesTable}
+
+## The meeEL source
+
+This output was generated from the following meeEL code:
+
+\`\`\`meeel
+${meeelCode}
+\`\`\`
+
+Edit this code in **meeEL Page** and it will regenerate instantly.
+
+## About meeEL
+
+- **Language:** meeEL
+- **Editor:** meeEL Page — the official code editor
+- **Philosophy:** Simple. Readable. For everyone.
+- **Made by:** mee Innovations
+
+---
+
+*Generated on ${date} · meeEL · mee Innovations*
+`;
 }
 
 function buildParts() {
@@ -953,8 +915,6 @@ function buildParts() {
     html: currentPage.htmlFile,
     css: currentPage.css,
     js: currentPage.js || '/* No interactivity in this page. */',
-    python: (currentPage as any).python || buildDefaultPython(),
-    env: buildEnvContent(),
     readme,
     pages: allPages,
   };
@@ -969,10 +929,6 @@ function updateDownloadButtons() {
     downloadFileLabel.textContent = 'Download .css';
   } else if (currentTab === 'js') {
     downloadFileLabel.textContent = 'Download .js';
-  } else if (currentTab === 'python') {
-    downloadFileLabel.textContent = 'Download .py';
-  } else if (currentTab === 'env') {
-    downloadFileLabel.textContent = 'Download .env';
   } else {
     downloadFileLabel.textContent = 'Download .md';
   }
@@ -986,8 +942,6 @@ function switchTab(tab: PublishTab) {
   else if (tab === 'html') modalCode.textContent = cachedParts.html;
   else if (tab === 'css') modalCode.textContent = cachedParts.css;
   else if (tab === 'js') modalCode.textContent = cachedParts.js;
-  else if (tab === 'python') modalCode.textContent = (cachedParts as any).python || '';
-  else if (tab === 'env') modalCode.textContent = (cachedParts as any).env || '';
   else modalCode.textContent = cachedParts.readme;
   updateDownloadButtons();
   savePublishState(true, tab);
@@ -1066,10 +1020,6 @@ downloadFile.addEventListener('click', () => {
     download(currentPage.cssFilename, currentPage.css, 'text/css');
   } else if (currentTab === 'js') {
     download(currentPage.jsFilename, currentPage.js || '/* No interactivity */', 'application/octet-stream');
-  } else if (currentTab === 'python') {
-    download('server.py', (cachedParts as any).python || '', 'application/octet-stream');
-  } else if (currentTab === 'env') {
-    download('.env', (cachedParts as any).env || '', 'text/plain');
   } else {
     download('README.md', cachedParts.readme, 'text/markdown');
   }
@@ -4071,7 +4021,7 @@ function setupDocPage(pageId: string, backId: string, closeId: string, toolName:
 }
 
 setupDocPage('about-page',   'about-back',   'about-close',   'about');
-setupDocPage('publish-page', 'howto-back', 'howto-close', 'publish');
+setupDocPage('publish-page', 'publish-back', 'publish-close', 'publish');
 
 /* ============================================================
    Language Tabs (English / বাংলা) for About + Publish
@@ -4119,252 +4069,3 @@ document.querySelectorAll('.lang-tabs').forEach((tabs) => {
     });
   });
 });
-
-/* ============================================================
-   Hash Routing — remember which page user is on
-   ============================================================ */
-
-(function setupHashRouting() {
-
-  // ── 1. When user clicks any tool card, update URL hash ──
-  document.querySelectorAll('.tools-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      const tool = (card as HTMLElement).dataset.tool;
-      if (!tool) return;
-      // Use pushState so no hashchange event fires (no double-open)
-      if (location.hash !== '#' + tool) {
-        history.pushState({ tool }, '', '#' + tool);
-      }
-    });
-  });
-
-  // ── 2. When user closes any library page, clear hash ──
-  document.addEventListener('click', (e) => {
-    const t = e.target as HTMLElement;
-    if (!t || !t.closest) return;
-    const btn = t.closest('.lib-page-back, .lib-page-close');
-    if (btn && location.hash) {
-      history.replaceState(null, '', location.pathname + location.search);
-    }
-  });
-
-  // ── 3. Browser back/forward button ──
-  window.addEventListener('popstate', () => {
-    const hash = location.hash.slice(1);
-
-    if (!hash) {
-      // Back to editor — hide all pages
-      document.querySelectorAll('.lib-page').forEach((p) => {
-        (p as HTMLElement).hidden = true;
-      });
-      return;
-    }
-
-    // Open the page that matches the hash
-    const card = document.querySelector(`[data-tool="${hash}"]`) as HTMLElement | null;
-    if (card) {
-      card.click();
-    } else {
-      // Fallback — try by page id
-      const page = document.getElementById(hash + '-page') as HTMLElement | null;
-      if (page) {
-        document.querySelectorAll('.lib-page').forEach((p) => {
-          (p as HTMLElement).hidden = true;
-        });
-        page.hidden = false;
-        page.querySelector('.lib-page-body')?.scrollTo(0, 0);
-      }
-    }
-  });
-
-  // ── 4. On initial load — restore page from hash ──
-  if (location.hash) {
-    const hash = location.hash.slice(1);
-    const card = document.querySelector(`[data-tool="${hash}"]`) as HTMLElement | null;
-    if (card) {
-      // Wait for all page setup to finish
-      setTimeout(() => card.click(), 200);
-    }
-  }
-
-})();
-
-
-/* ============================================================
-   ENV + PYTHON helpers
-   ============================================================ */
-
-function buildEnvContent(): string {
-  const src = editor.value;
-  const lines: string[] = [
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '🛡️  meeEL protected your API keys',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-    'The keys you wrote in connections-[...] were moved here.',
-    '',
-    'They never go into your HTML or JavaScript. This means:',
-    '',
-    '  ✅ Your site is safe to publish',
-    '  ✅ Your keys stay out of Git',
-    '  ✅ Nobody can see them in browser DevTools',
-    '',
-    '⚠️  Keep this file safe. Do NOT share it.',
-    '⚠️  Do NOT commit it to GitHub.',
-    '',
-    '    Add this line to your .gitignore:',
-    '        .env',
-    '',
-    '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-    '',
-  ];
-
-  // ── Private keys section ──
-  const keys: string[] = [];
-
-  // Find connections-[...] block in source
-  const idx = src.indexOf('connections-[');
-  const found: Array<{ key: string; value: string }> = [];
-
-  if (idx !== -1) {
-    const start = idx + 'connections-['.length;
-    let depth = 1;
-    let i = start;
-    while (i < src.length && depth > 0) {
-      const c = src[i];
-      if (c === '[') depth++;
-      else if (c === ']') depth--;
-      if (depth === 0) break;
-      i++;
-    }
-    const inner = src.slice(start, i);
-
-    // Parse name-[value] pairs (accept UPPERCASE too)
-    const re = /([a-zA-Z][a-zA-Z0-9-]*)-\[([^\]]*)\]/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(inner)) !== null) {
-      const key = m[1].toUpperCase().replace(/-/g, '_');
-      found.push({ key, value: m[2] });
-    }
-  }
-
-  if (found.length > 0) {
-    keys.push('# ─── Your keys ───');
-    for (const { key, value } of found) {
-      keys.push(key + '=' + value);
-    }
-  } else {
-    lines.push('# No keys set.');
-    keys.push('SUPABASE_URL=');
-    keys.push('SUPABASE_KEY=');
-  }
-
-  return lines.join('\n') + keys.join('\n') + '\n';
-}
-
-function buildDefaultPython(): string {
-  return '"""\n' +
-    'Local server for your site.\n\n' +
-    'Run:  python server.py\n' +
-    'Then open http://localhost:8000\n' +
-    '"""\n\n' +
-    'import http.server\n' +
-    'import socketserver\n' +
-    'import webbrowser\n' +
-    'import os\n\n' +
-    'PORT = 8000\n\n\n' +
-    'class Handler(http.server.SimpleHTTPRequestHandler):\n' +
-    '    def do_GET(self):\n' +
-    '        if self.path == "/":\n' +
-    '            self.path = "/index.html"\n' +
-    '        return super().do_GET()\n\n\n' +
-    'def main():\n' +
-    '    here = os.path.dirname(os.path.abspath(__file__))\n' +
-    '    os.chdir(here)\n' +
-    '    with socketserver.TCPServer(("", PORT), Handler) as server:\n' +
-    '        address = "http://localhost:" + str(PORT)\n' +
-    '        print("Serving at " + address)\n' +
-    '        try:\n' +
-    '            webbrowser.open(address)\n' +
-    '        except Exception:\n' +
-    '            pass\n' +
-    '        try:\n' +
-    '            server.serve_forever()\n' +
-    '        except KeyboardInterrupt:\n' +
-    '            print("Server stopped.")\n\n\n' +
-    'if __name__ == "__main__":\n' +
-    '    main()\n';
-}
-
-
-/* ============================================================
-   Welcome Modal
-   ============================================================ */
-
-const WELCOME_SEEN_KEY = 'meeEL-welcome-seen-v1';
-const STARTER_KEY = 'meeEL-starter-template-v1';
-
-const STARTER_TEMPLATES: Record<string, string> = {
-  blank: `page-[\n  \n]\n`,
-
-  hello: `page-[\n  background-color-[light-gray]\n  padding-[40px]\n\n  hello-text-[\n    center\n    content-[Hello, world!]\n    font-size-[36px]\n    Bold\n    color-[dark-blue]\n  ]\n]\n`,
-
-  card: `page-[\n  background-color-[light-gray]\n  padding-[40px]\n\n  welcome-card-[\n    Center\n    middle\n    background-color-[white]\n    border-radius-[round]\n    shadow-[soft]\n    padding-[30px]\n\n    title-text-[\n      content-[Welcome]\n      font-size-[24px]\n      Bold\n      color-[dark-blue]\n      margin-bottom-[8px]\n    ]\n\n    sub-text-[\n      content-[This is a simple card.]\n      color-[gray]\n      font-size-[14px]\n    ]\n  ]\n]\n`,
-
-  nav: `page-[\n  background-color-[white]\n\n  main-nav-bar-[\n    background-color-[#0a84ff]\n    padding-[16px]\n    color-[white]\n\n    brand-title-[\n      content-[My App]\n      font-size-[18px]\n      Bold\n    ]\n\n    menu-button-[\n      content-[Menu]\n      background-color-[white]\n      color-[#0a84ff]\n      padding-[8px]\n      border-radius-[round]\n    ]\n  ]\n\n  hero-text-[\n    center\n    padding-[60px-20px]\n    content-[Welcome to my site]\n    font-size-[32px]\n    Bold\n    color-[black]\n  ]\n]\n`,
-};
-
-(function setupWelcome() {
-  const welcome = document.getElementById('welcome-modal') as HTMLElement | null;
-  const skipBtn = document.getElementById('welcome-skip') as HTMLButtonElement | null;
-  if (!welcome) return;
-
-  // Check if user already saw the welcome
-  let seen = false;
-  try { seen = localStorage.getItem(WELCOME_SEEN_KEY) === '1'; } catch {}
-
-  // Also: skip if editor already has non-default content
-  const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
-  const currentCode = ed ? ed.value.trim() : '';
-  const isDefaultCode = currentCode === '' || currentCode.startsWith('home-page-[');
-  const shouldShow = !seen && isDefaultCode;
-
-  function markSeen() {
-    try { localStorage.setItem(WELCOME_SEEN_KEY, '1'); } catch {}
-  }
-
-  function closeWelcome() {
-    welcome.hidden = true;
-    markSeen();
-  }
-
-  function applyTemplate(name: string) {
-    const code = STARTER_TEMPLATES[name] || STARTER_TEMPLATES['hello'];
-    const ed = document.getElementById('editor') as HTMLTextAreaElement | null;
-    if (!ed) return;
-    ed.value = code;
-    ed.dispatchEvent(new Event('input', { bubbles: true }));
-    ed.focus();
-    try { localStorage.setItem(STARTER_KEY, name); } catch {}
-  }
-
-  welcome.querySelectorAll('.welcome-option').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const name = (btn as HTMLElement).dataset.start || 'hello';
-      applyTemplate(name);
-      closeWelcome();
-    });
-  });
-
-  skipBtn?.addEventListener('click', closeWelcome);
-
-  // Escape to close
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !welcome.hidden) closeWelcome();
-  });
-
-  // Show on first load
-  if (shouldShow) {
-    setTimeout(() => { welcome.hidden = false; }, 300);
-  }
-})();

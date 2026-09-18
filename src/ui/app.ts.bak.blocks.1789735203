@@ -1,0 +1,2472 @@
+import { lex } from '../engine/lexer';
+import { parse } from '../engine/parser';
+import { resolve, ResolveError } from '../engine/resolver';
+import { generatePages, PageOutput } from '../engine/generator';
+import {
+  resolveBlock,
+  POSITION_KEYWORDS,
+  KEYWORD_CSS,
+  isParametricKeyword,
+  FIXED_BLOCKS,
+  SUFFIX_BLOCKS,
+  PROPERTIES,
+} from '../engine/registry';
+
+const DEFAULT_CODE = `home-page-[
+  background-color-[black]
+
+  text-1-[
+    center
+    middle
+    content-[Hello meeEL!]
+    font-size-[48px]
+    color-[white]
+  ]
+]
+`;
+
+const editor = document.getElementById('editor') as HTMLTextAreaElement;
+const highlightOut = document.getElementById('highlight-output') as HTMLElement;
+const preview = document.getElementById('preview') as HTMLIFrameElement;
+const gutter = document.getElementById('gutter') as HTMLElement;
+const suggestionBar = document.getElementById('suggestion-bar') as HTMLElement;
+const pageSelector = document.getElementById('page-selector') as HTMLSelectElement;
+
+editor.value = DEFAULT_CODE;
+
+let debounceTimer: number | undefined;
+let errorMap = new Map<number, string | undefined>();
+
+let allPages: PageOutput[] = [];
+let currentPageIndex = 0;
+
+/* ============ SVG ICONS ============ */
+
+const SVG_BULB = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.5.4.9.9 1.1 1.5l.4 1.8h5l.4-1.8c.2-.6.6-1.1 1.1-1.5A7 7 0 0 0 12 2z"/></svg>`;
+
+const SVG_BOLT = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>`;
+
+const SVG_WARN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+
+/* ============ HIGHLIGHT ============ */
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function highlightNormal(line: string): string {
+  const trimmed = line.trim();
+
+  // Comment line — whole line
+  if (trimmed.startsWith('#')) {
+    return `<span class="tok-comment">${escapeHtml(line)}</span>`;
+  }
+
+  // Inline comment after content
+  const commentIdx = line.indexOf('#');
+  if (commentIdx > 0) {
+    const before = line.slice(0, commentIdx);
+    const comment = line.slice(commentIdx);
+    return highlightNormal(before) + `<span class="tok-comment">${escapeHtml(comment)}</span>`;
+  }
+
+  if (trimmed === ']') {
+    return line.replace(']', '<span class="tok-bracket">]</span>');
+  }
+  const m = line.match(/^(\s*)([a-z][a-z0-9-]*)(-\[)([^\]]*)\](\s*)$/);
+  if (m) {
+    const [, indent, name, dashBracket, value, tail] = m;
+    const isBlock = resolveBlock(name) !== null;
+    const nameClass = isBlock ? 'tok-block' : 'tok-property';
+    const trimmedValue = value.trim();
+    const valueHtml = trimmedValue
+      ? `<span class="${isBlock ? 'tok-keyword' : 'tok-value'}">${escapeHtml(value)}</span>`
+      : '';
+    return indent +
+      `<span class="${nameClass}">${name}</span>` +
+      `<span class="tok-bracket">${dashBracket}</span>` +
+      valueHtml +
+      `<span class="tok-bracket">]</span>` +
+      tail;
+  }
+  const m2 = line.match(/^(\s*)([a-z][a-z0-9-]*)(-\[)(\s*)$/);
+  if (m2) {
+    const [, indent, name, dashBracket, tail] = m2;
+    const isBlock = resolveBlock(name) !== null;
+    const nameClass = isBlock ? 'tok-block' : 'tok-property';
+    return indent +
+      `<span class="${nameClass}">${name}</span>` +
+      `<span class="tok-bracket">${dashBracket}</span>` +
+      tail;
+  }
+  const m3 = line.match(/^(\s*)([a-z][a-z0-9-]*)(\s*)$/);
+  if (m3) {
+    const [, indent, name, tail] = m3;
+    return indent + `<span class="tok-keyword">${name}</span>` + tail;
+  }
+  return escapeHtml(line);
+}
+
+function highlightWithError(line: string, errToken: string | undefined): string {
+  const trimmed = line.trim();
+  if (!errToken) {
+    const idx = line.indexOf(trimmed);
+    if (idx === -1) return escapeHtml(line);
+    const before = escapeHtml(line.slice(0, idx));
+    const mid = escapeHtml(trimmed);
+    const after = escapeHtml(line.slice(idx + trimmed.length));
+    return `${before}<span class="tok-error">${mid}</span>${after}`;
+  }
+  const m = line.match(/^(\s*)([a-z][a-z0-9-]*)(-\[)([^\]]*)\](\s*)$/);
+  if (m) {
+    const [, indent, name, dashBracket, value, tail] = m;
+    const isBlock = resolveBlock(name) !== null;
+    const nameClass = isBlock ? 'tok-block' : 'tok-property';
+    const trimmedValue = value.trim();
+    const valueHtml = trimmedValue
+      ? `<span class="${isBlock ? 'tok-keyword' : 'tok-value'}">${escapeHtml(value)}</span>`
+      : '';
+    const nameHtml = name === errToken
+      ? `<span class="tok-error">${name}</span>`
+      : `<span class="${nameClass}">${name}</span>`;
+    return indent + nameHtml +
+      `<span class="tok-bracket">${dashBracket}</span>` +
+      valueHtml +
+      `<span class="tok-bracket">]</span>` + tail;
+  }
+  const m2 = line.match(/^(\s*)([a-z][a-z0-9-]*)(-\[)(\s*)$/);
+  if (m2) {
+    const [, indent, name, dashBracket, tail] = m2;
+    const isBlock = resolveBlock(name) !== null;
+    const nameClass = isBlock ? 'tok-block' : 'tok-property';
+    const nameHtml = name === errToken
+      ? `<span class="tok-error">${name}</span>`
+      : `<span class="${nameClass}">${name}</span>`;
+    return indent + nameHtml +
+      `<span class="tok-bracket">${dashBracket}</span>` + tail;
+  }
+  const m3 = line.match(/^(\s*)([a-z][a-z0-9-]*)(\s*)$/);
+  if (m3) {
+    const [, indent, name, tail] = m3;
+    const nameHtml = name === errToken
+      ? `<span class="tok-error">${name}</span>`
+      : `<span class="tok-keyword">${name}</span>`;
+    return indent + nameHtml + tail;
+  }
+  return escapeHtml(line);
+}
+
+function highlightLine(line: string, lineNo: number): string {
+  if (!errorMap.has(lineNo)) return highlightNormal(line);
+  return highlightWithError(line, errorMap.get(lineNo));
+}
+
+function highlight(source: string): string {
+  return source
+    .split('\n')
+    .map((line, i) => highlightLine(line, i + 1))
+    .join('\n');
+}
+
+/* ============ SYNC ============ */
+
+function syncGutter() {
+  const lines = editor.value.split('\n');
+  const html = lines
+    .map((_, i) => {
+      const n = i + 1;
+      const cls = errorMap.has(n) ? 'ln has-error' : 'ln';
+      return `<span class="${cls}">${n}</span>`;
+    })
+    .join('');
+  gutter.innerHTML = html;
+  gutter.scrollTop = editor.scrollTop;
+}
+
+let __lastHighlightedText: string | null = null;
+
+function syncHighlight(force = false) {
+  const currentText = editor.value;
+  if (!force && currentText === __lastHighlightedText) {
+    // Nothing changed — just sync scroll
+    const pre = highlightOut.parentElement as HTMLPreElement;
+    pre.scrollTop = editor.scrollTop;
+    pre.scrollLeft = editor.scrollLeft;
+    return;
+  }
+  __lastHighlightedText = currentText;
+
+  const t0 = performance.now();
+  highlightOut.innerHTML = highlight(currentText) + '\n';
+  const pre = highlightOut.parentElement as HTMLPreElement;
+  pre.scrollTop = editor.scrollTop;
+  pre.scrollLeft = editor.scrollLeft;
+  const t1 = performance.now();
+  if (t1 - t0 > 50) {
+    // Only log slow highlights for debugging
+    console.debug(`Highlight took ${Math.round(t1 - t0)}ms for ${currentText.length} chars`);
+  }
+}
+
+editor.addEventListener('scroll', () => {
+  const pre = highlightOut.parentElement as HTMLPreElement;
+  pre.scrollTop = editor.scrollTop;
+  pre.scrollLeft = editor.scrollLeft;
+  gutter.scrollTop = editor.scrollTop;
+});
+
+/* ============ AUTOCOMPLETE ============ */
+
+interface Suggestion {
+  name: string;
+  category: 'block' | 'property' | 'keyword';
+}
+
+let allSuggestions: Suggestion[] = [];
+
+function buildSuggestionList(): Suggestion[] {
+  const list: Suggestion[] = [];
+  for (const name of Object.keys(FIXED_BLOCKS)) {
+    list.push({ name, category: 'block' });
+  }
+  for (const { suffix } of SUFFIX_BLOCKS) {
+    const s = suffix.replace('-', '');
+    list.push({ name: s, category: 'block' });
+  }
+  for (const name of Object.keys(PROPERTIES)) {
+    list.push({ name, category: 'property' });
+  }
+  for (const name of POSITION_KEYWORDS) {
+    list.push({ name, category: 'keyword' });
+  }
+  for (const name of Object.keys(KEYWORD_CSS)) {
+    list.push({ name, category: 'keyword' });
+  }
+  const seen = new Set<string>();
+  return list.filter((s) => {
+    if (seen.has(s.name)) return false;
+    seen.add(s.name);
+    return true;
+  });
+}
+
+allSuggestions = buildSuggestionList();
+
+let currentSuggestions: Suggestion[] = [];
+let activeIndex = 0;
+
+function getCurrentWord(): { word: string; start: number; end: number } | null {
+  const pos = editor.selectionStart;
+  if (editor.selectionStart !== editor.selectionEnd) return null;
+  const before = editor.value.slice(0, pos);
+  const match = before.match(/[a-z][a-z0-9-]*$/);
+  if (!match) return null;
+  return { word: match[0], start: pos - match[0].length, end: pos };
+}
+
+function getSuggestions(word: string): Suggestion[] {
+  if (word.length < 2) return [];
+  const lower = word.toLowerCase();
+  const matches = allSuggestions.filter((s) =>
+    s.name.startsWith(lower) && s.name !== lower
+  );
+  matches.sort((a, b) => {
+    if (a.name.length !== b.name.length) return a.name.length - b.name.length;
+    return a.name.localeCompare(b.name);
+  });
+  return matches.slice(0, 20);
+}
+
+function renderSuggestions() {
+  if (currentSuggestions.length === 0) {
+    suggestionBar.hidden = true;
+    suggestionBar.innerHTML = '';
+    return;
+  }
+  suggestionBar.hidden = false;
+  suggestionBar.innerHTML = currentSuggestions
+    .map((s, i) => {
+      const catClass = `sugg-cat ${s.category}`;
+      const active = i === activeIndex ? ' active' : '';
+      return `<div class="sugg-item${active}" data-idx="${i}" data-name="${escapeHtml(s.name)}">
+        <span class="${catClass}">${s.category.slice(0, 3)}</span>
+        <span class="sugg-name">${escapeHtml(s.name)}</span>
+      </div>`;
+    })
+    .join('');
+}
+
+function acceptSuggestion(idx: number) {
+  const word = getCurrentWord();
+  if (!word) return;
+  const s = currentSuggestions[idx];
+  if (!s) return;
+
+  const before = editor.value.slice(0, word.start);
+  const after = editor.value.slice(word.end);
+
+  const lineStart = before.lastIndexOf('\n') + 1;
+  const currentLine = before.slice(lineStart);
+  const indentMatch = currentLine.match(/^(\s*)/);
+  const currentIndent = indentMatch ? indentMatch[1] : '';
+  const innerIndent = currentIndent + '  ';
+
+  let insert = s.name;
+  let cursorOffset = insert.length;
+
+  if (s.category === 'block') {
+    insert = s.name + '-[\n' + innerIndent + '\n' + currentIndent + ']';
+    cursorOffset = s.name.length + 2 + innerIndent.length;
+  } else if (s.category === 'property') {
+    insert = s.name + '-[]';
+    cursorOffset = s.name.length + 2;
+  }
+
+  editor.value = before + insert + after;
+  const newPos = word.start + cursorOffset;
+  editor.selectionStart = editor.selectionEnd = newPos;
+
+  clearSuggestions();
+  syncHighlight();
+  syncGutter();
+  render();
+  editor.focus();
+}
+
+function clearSuggestions() {
+  currentSuggestions = [];
+  activeIndex = 0;
+  suggestionBar.hidden = true;
+  suggestionBar.innerHTML = '';
+}
+
+function updateSuggestions() {
+  const word = getCurrentWord();
+  if (!word) {
+    clearSuggestions();
+    return;
+  }
+  const list = getSuggestions(word.word);
+  if (list.length === 0) {
+    clearSuggestions();
+    return;
+  }
+  currentSuggestions = list;
+  activeIndex = 0;
+  renderSuggestions();
+}
+
+suggestionBar.addEventListener('mousedown', (e) => {
+  const target = e.target as HTMLElement;
+  const item = target.closest('.sugg-item') as HTMLElement;
+  if (!item) return;
+  e.preventDefault();
+  const idx = parseInt(item.dataset.idx || '0', 10);
+  acceptSuggestion(idx);
+});
+
+suggestionBar.addEventListener('touchstart', (e) => {
+  const target = e.target as HTMLElement;
+  const item = target.closest('.sugg-item') as HTMLElement;
+  if (!item) return;
+  e.preventDefault();
+  const idx = parseInt(item.dataset.idx || '0', 10);
+  acceptSuggestion(idx);
+}, { passive: false });
+
+/* ============ RENDER ============ */
+
+function render() {
+  errorMap = new Map();
+  const source = editor.value;
+
+  try {
+    const tokens = lex(source);
+    const ast = parse(tokens);
+
+    const errors = resolve(ast);
+    if (errors.length > 0) {
+      for (const e of errors) {
+        errorMap.set(e.line, e.token);
+      }
+      syncGutter();
+      syncHighlight();
+      renderErrors(errors);
+      return;
+    }
+
+    syncGutter();
+    syncHighlight();
+
+    allPages = generatePages(ast);
+
+    if (allPages.length === 0) {
+      renderBlank();
+      updatePageSelector();
+      return;
+    }
+
+    if (currentPageIndex >= allPages.length) {
+      currentPageIndex = 0;
+    }
+
+    updatePageSelector();
+    renderCurrentPage();
+  } catch (err) {
+    syncGutter();
+    syncHighlight();
+
+    // ParseError with line info?
+    const parseErr = err as { line?: number; message?: string; suggestion?: string };
+    if (typeof parseErr.line === 'number') {
+      errorMap.set(parseErr.line, undefined);
+      syncGutter();
+      syncHighlight();
+      renderParseError({
+        message: parseErr.message || 'Parse error',
+        line: parseErr.line,
+        suggestion: parseErr.suggestion,
+      });
+    } else {
+      const message = err instanceof Error ? err.message : String(err);
+      renderMessage('Parse Error', escapeHtml(message));
+    }
+  }
+}
+
+function renderParseError(err: {
+  message: string;
+  line: number;
+  suggestion?: string;
+}) {
+  const cardsHtml = `
+    <div class="err-card">
+      <div class="err-head">
+        <span class="line-chip">Line ${err.line}</span>
+        <span class="type-badge type-generic">Structure</span>
+      </div>
+      <div class="err-msg">${escapeHtml(err.message)}</div>
+      ${
+        err.suggestion
+          ? `<div class="suggestion">
+              <span class="sugg-icon">${SVG_BULB}</span>
+              <span class="sugg-text">${escapeHtml(err.suggestion)}</span>
+            </div>`
+          : ''
+      }
+    </div>
+  `;
+
+  const body = `
+    <div class="err-panel">
+      <div class="err-header">
+        <span class="err-icon">${SVG_WARN}</span>
+        <span class="err-title">1 error</span>
+      </div>
+      <div class="err-list">${cardsHtml}</div>
+    </div>
+  `;
+  renderMessage('', body, true);
+}
+
+function renderCurrentPage() {
+  const page = allPages[currentPageIndex];
+  if (!page) return;
+  const doc = preview.contentDocument;
+  if (!doc) return;
+  doc.open();
+  doc.write(page.html);
+  doc.close();
+
+  // After doc.write, install click interception
+  // (must run after DOM is built)
+  setTimeout(interceptPreviewLinks, 0);
+}
+
+function interceptPreviewLinks() {
+  const doc = preview.contentDocument;
+  if (!doc) return;
+
+  doc.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const linkEl = target.closest('[data-meeel-target]') as HTMLElement | null;
+    if (!linkEl) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const targetFile = linkEl.getAttribute('data-meeel-target');
+    if (!targetFile) return;
+
+    const page = allPages.find((p) => p.filename === targetFile);
+    if (page) {
+      currentPageIndex = allPages.indexOf(page);
+      updatePageSelector();
+      renderCurrentPage();
+    }
+  }, true); // capture phase
+}
+
+function updatePageSelector() {
+  if (!pageSelector) return;
+  if (allPages.length <= 1) {
+    pageSelector.hidden = true;
+    pageSelector.innerHTML = '';
+    return;
+  }
+  pageSelector.hidden = false;
+  pageSelector.innerHTML = allPages
+    .map((p, i) =>
+      `<option value="${i}"${i === currentPageIndex ? ' selected' : ''}>${escapeHtml(p.label)}</option>`
+    )
+    .join('');
+}
+
+pageSelector.addEventListener('change', () => {
+  currentPageIndex = parseInt(pageSelector.value, 10) || 0;
+  renderCurrentPage();
+  if (publishModal && !publishModal.hidden) {
+    cachedParts = buildParts();
+    switchTab(currentTab);
+  }
+});
+
+function renderBlank() {
+  const doc = preview.contentDocument;
+  if (!doc) return;
+  doc.open();
+  doc.write(`
+    <html><body style="font-family: monospace; padding: 20px; background: #f5f5f5; color: #999; display: flex; align-items: center; justify-content: center; height: 100vh;">
+      <div style="text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 12px;">∅</div>
+        <div>Write something to see preview</div>
+      </div>
+    </body></html>
+  `);
+  doc.close();
+}
+
+/* ============ ERROR PANEL ============ */
+
+function classifyError(msg: string): { label: string; cls: string } {
+  if (msg.startsWith('Unknown block')) return { label: 'Block', cls: 'type-block' };
+  if (msg.startsWith('Unknown property')) return { label: 'Property', cls: 'type-prop' };
+  if (msg.startsWith('Unknown keyword')) return { label: 'Keyword', cls: 'type-keyword' };
+  if (msg.startsWith('Reference')) return { label: 'Reference', cls: 'type-ref' };
+  if (msg.startsWith('Duplicate')) return { label: 'Duplicate', cls: 'type-dup' };
+  return { label: 'Error', cls: 'type-generic' };
+}
+
+function extractWrong(msg: string): string | null {
+  const m = msg.match(/'([^']+)'/);
+  return m ? m[1] : null;
+}
+
+function extractSuggestion(sug: string | undefined): string | null {
+  if (!sug) return null;
+  const m = sug.match(/'([^']+)'/);
+  return m ? m[1] : null;
+}
+
+function escapeAttr(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function renderErrors(errors: ResolveError[]) {
+  const count = errors.length;
+  const cardsHtml = errors.map((e) => {
+    const { label, cls } = classifyError(e.message);
+    const wrong = extractWrong(e.message);
+    const sugg = extractSuggestion(e.suggestion);
+
+    let fixBtn = '';
+    if (wrong && sugg) {
+      fixBtn = `<button class="fix-btn" onclick="window.parent.fixError(${e.line}, '${escapeAttr(wrong)}', '${escapeAttr(sugg)}')">
+        ${SVG_BOLT}<span>Fix</span>
+      </button>`;
+    }
+
+    let suggestionRow = '';
+    if (e.suggestion) {
+      suggestionRow = `<div class="suggestion">
+        <span class="sugg-icon">${SVG_BULB}</span>
+        <span class="sugg-text">${escapeHtml(e.suggestion)}</span>
+        ${fixBtn}
+      </div>`;
+    }
+
+    let mainMsg = e.message;
+    if (wrong) {
+      mainMsg = mainMsg.replace(`'${wrong}'`, `<code>${escapeHtml(wrong)}</code>`);
+    } else {
+      mainMsg = escapeHtml(mainMsg);
+    }
+
+    return `<div class="err-card">
+      <div class="err-head">
+        <span class="line-chip">Line ${e.line}</span>
+        <span class="type-badge ${cls}">${label}</span>
+      </div>
+      <div class="err-msg">${mainMsg}</div>
+      ${suggestionRow}
+    </div>`;
+  }).join('');
+
+  const body = `
+    <div class="err-panel">
+      <div class="err-header">
+        <span class="err-icon">${SVG_WARN}</span>
+        <span class="err-title">${count} error${count > 1 ? 's' : ''}</span>
+      </div>
+      <div class="err-list">${cardsHtml}</div>
+    </div>
+  `;
+  renderMessage('', body, true);
+}
+
+function renderMessage(title: string, body: string, isPanel = false) {
+  const doc = preview.contentDocument;
+  if (!doc) return;
+
+  if (isPanel) {
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1a1a1a; color: #e0e0e0; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+      .err-panel { padding: 20px; }
+      .err-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #2a2a2a; }
+      .err-icon { display: inline-flex; color: #ff6b6b; }
+      .err-title { color: #f0f0f0; font-size: 15px; font-weight: 600; }
+      .err-list { display: flex; flex-direction: column; gap: 10px; }
+      .err-card { background: #242424; border-left: 3px solid #ff6b6b; border-radius: 6px; padding: 14px 16px; }
+      .err-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+      .line-chip { display: inline-flex; align-items: center; background: #333; color: #d0d0d0; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; font-family: ui-monospace, monospace; }
+      .type-badge { display: inline-flex; font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+      .type-block { background: #1e3a5f; color: #7ec699; }
+      .type-prop { background: #2d4a2d; color: #a5e8a5; }
+      .type-keyword { background: #5a3f1e; color: #ffb87a; }
+      .type-ref { background: #4a2d4a; color: #e8a5e8; }
+      .type-dup { background: #5a5a1e; color: #ffd866; }
+      .type-generic { background: #444; color: #ccc; }
+      .err-msg { color: #d0d0d0; font-size: 13.5px; line-height: 1.55; }
+      .err-msg code { background: #1a1a1a; color: #ff8f8f; padding: 1px 6px; border-radius: 3px; font-family: ui-monospace, monospace; font-size: 12.5px; }
+      .suggestion { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px; background: rgba(22, 163, 74, 0.10); border: 1px solid rgba(22, 163, 74, 0.25); border-radius: 5px; font-size: 12.5px; color: #86efac; }
+      .sugg-icon { display: inline-flex; flex-shrink: 0; color: #86efac; }
+      .sugg-text { flex: 1; font-style: italic; }
+      .fix-btn { display: inline-flex; align-items: center; gap: 5px; background: #16a34a; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+      .fix-btn:hover { background: #15803d; }
+    </style></head><body>${body}</body></html>`);
+    doc.close();
+    return;
+  }
+
+  doc.open();
+  doc.write(`<html><head><style>
+    body { font-family: -apple-system, sans-serif; padding: 22px; background: #1a1a1a; color: #c00; }
+    h3 { margin-bottom: 16px; color: #ff6b6b; font-size: 16px; font-weight: 600; }
+    code { background: #2a2a2a; padding: 2px 6px; border-radius: 3px; color: #ff8f8f; }
+  </style></head><body><h3>${escapeHtml(title)}</h3><div style="color:#d0d0d0">${body}</div></body></html>`);
+  doc.close();
+}
+
+/* ============ FIX HANDLER ============ */
+
+(window as any).fixError = (line: number, wrong: string, right: string) => {
+  const lines = editor.value.split('\n');
+  const idx = line - 1;
+  if (idx < 0 || idx >= lines.length) return;
+  lines[idx] = lines[idx].replace(wrong, right);
+  editor.value = lines.join('\n');
+  syncGutter();
+  syncHighlight();
+  render();
+  editor.focus();
+};
+
+/* ============ EVENTS ============ */
+
+// Debounce timers for performance
+let highlightDebounce: number | undefined;
+let renderDebounce: number | undefined;
+
+function scheduleHighlight() {
+  if (highlightDebounce) clearTimeout(highlightDebounce);
+  highlightDebounce = window.setTimeout(() => {
+    syncHighlight();
+    syncGutter();
+  }, 80);
+}
+
+function scheduleRender() {
+  if (renderDebounce) clearTimeout(renderDebounce);
+  renderDebounce = window.setTimeout(render, 400);
+}
+
+editor.addEventListener('input', () => {
+  const len = editor.value.length;
+  if (len > 3000) {
+    // Very large file — use slower debounce to avoid freezing
+    if (highlightDebounce) clearTimeout(highlightDebounce);
+    highlightDebounce = window.setTimeout(() => {
+      syncHighlight();
+      syncGutter();
+    }, 200);
+    if (renderDebounce) clearTimeout(renderDebounce);
+    renderDebounce = window.setTimeout(render, 800);
+  } else {
+    scheduleHighlight();
+    scheduleRender();
+  }
+  updateSuggestions();
+  scheduleSave();
+});
+
+editor.addEventListener('click', () => {
+  updateSuggestions();
+});
+
+editor.addEventListener('keydown', (e) => {
+  if (suggestionBar.hidden === false && currentSuggestions.length > 0) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      acceptSuggestion(activeIndex);
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      clearSuggestions();
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, currentSuggestions.length - 1);
+      renderSuggestions();
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      renderSuggestions();
+      return;
+    }
+  }
+
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value =
+      editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+    editor.selectionStart = editor.selectionEnd = start + 2;
+    syncHighlight();
+    syncGutter();
+  }
+
+  if (e.key === 'Escape') clearSuggestions();
+});
+
+/* ============ SAVE / LOAD ============ */
+
+const STORAGE_KEY = 'meeel-code-v1';
+
+function loadSavedCode(): string | null {
+  try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
+}
+
+let saveTimer: number | undefined;
+
+function saveCode() {
+  try {
+    localStorage.setItem(STORAGE_KEY, editor.value);
+    showSaveIndicator();
+  } catch {}
+}
+
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(saveCode, 800);
+}
+
+const saveIndicator = document.getElementById('save-indicator') as HTMLElement | null;
+
+function showSaveIndicator() {
+  if (!saveIndicator) return;
+  const t = new Date();
+  const hh = String(t.getHours()).padStart(2, '0');
+  const mm = String(t.getMinutes()).padStart(2, '0');
+  const ss = String(t.getSeconds()).padStart(2, '0');
+  saveIndicator.textContent = `Saved ${hh}:${mm}:${ss}`;
+  saveIndicator.style.opacity = '1';
+  setTimeout(() => {
+    if (saveIndicator) saveIndicator.style.opacity = '0.5';
+  }, 2000);
+}
+
+const saved = loadSavedCode();
+if (saved) editor.value = saved;
+
+editor.addEventListener('blur', () => saveCode());
+
+/* ============ PUBLISH MODAL ============ */
+
+const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement;
+const publishModal = document.getElementById('publish-modal') as HTMLElement;
+const publishClose = document.getElementById('publish-close') as HTMLButtonElement;
+const modalCode = document.querySelector('#modal-code code') as HTMLElement;
+const modalTabs = document.querySelectorAll('.modal-tab') as NodeListOf<HTMLButtonElement>;
+const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
+const downloadFile = document.getElementById('download-file') as HTMLButtonElement;
+const downloadAll = document.getElementById('download-all') as HTMLButtonElement;
+const downloadFileLabel = document.getElementById('download-file-label') as HTMLElement;
+
+const PUBLISH_STATE_KEY = 'meeel-publish-state-v1';
+
+type PublishTab = 'meeel' | 'html' | 'css' | 'js' | 'readme';
+let currentTab: PublishTab = 'meeel';
+let cachedParts: {
+  meeel: string;
+  html: string;
+  css: string;
+  js: string;
+  readme: string;
+  pages: PageOutput[];
+} | null = null;
+
+function savePublishState(open: boolean, tab: PublishTab) {
+  try { localStorage.setItem(PUBLISH_STATE_KEY, JSON.stringify({ open, tab })); } catch {}
+}
+
+function loadPublishState(): { open: boolean; tab: PublishTab } {
+  try {
+    const raw = localStorage.getItem(PUBLISH_STATE_KEY);
+    if (!raw) return { open: false, tab: 'html' };
+    const p = JSON.parse(raw);
+    return { open: !!p.open, tab: (p.tab as PublishTab) || 'meeel' };
+  } catch {
+    return { open: false, tab: 'html' };
+  }
+}
+
+function buildReadme(meeelCode: string, pages: PageOutput[]): string {
+  const date = new Date().toISOString().split('T')[0];
+  const pagesTable = pages
+    .map((p) => `| \`${p.filename}\` | ${p.label} |`)
+    .join('\n');
+
+  return `# meeEL
+
+**A language through which you can create and build everything you need.**
+
+---
+
+## About this output
+
+This project was generated with **meeEL** — a simple, English-based
+language for building user interfaces. Instead of writing HTML, CSS,
+and JavaScript by hand, you write meeEL — and it becomes real code.
+
+## How to use
+
+1. Open \`index.html\` in any browser. (Or any of the other page files.)
+2. That's it. Everything is self-contained.
+
+No build tools. No dependencies. No setup.
+
+## Pages in this project
+
+| File | Page |
+| ---- | ---- |
+${pagesTable}
+
+## The meeEL source
+
+This output was generated from the following meeEL code:
+
+\`\`\`meeel
+${meeelCode}
+\`\`\`
+
+Edit this code in **meeEL Page** and it will regenerate instantly.
+
+## About meeEL
+
+- **Language:** meeEL
+- **Editor:** meeEL Page — the official code editor
+- **Philosophy:** Simple. Readable. For everyone.
+- **Made by:** mee Innovations
+
+---
+
+*Generated on ${date} · meeEL · mee Innovations*
+`;
+}
+
+function buildParts() {
+  if (allPages.length === 0) return null;
+  const currentPage = allPages[currentPageIndex];
+  const readme = buildReadme(editor.value, allPages);
+  return {
+    meeel: editor.value,
+    html: currentPage.htmlFile,
+    css: currentPage.css,
+    js: currentPage.js || '/* No interactivity in this page. */',
+    readme,
+    pages: allPages,
+  };
+}
+
+function updateDownloadButtons() {
+  if (currentTab === 'meeel') {
+    downloadFileLabel.textContent = 'Download .meeel';
+  } else if (currentTab === 'html') {
+    downloadFileLabel.textContent = 'Download .html';
+  } else if (currentTab === 'css') {
+    downloadFileLabel.textContent = 'Download .css';
+  } else if (currentTab === 'js') {
+    downloadFileLabel.textContent = 'Download .js';
+  } else {
+    downloadFileLabel.textContent = 'Download .md';
+  }
+}
+
+function switchTab(tab: PublishTab) {
+  currentTab = tab;
+  modalTabs.forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
+  if (!cachedParts) return;
+  if (tab === 'meeel') modalCode.textContent = cachedParts.meeel;
+  else if (tab === 'html') modalCode.textContent = cachedParts.html;
+  else if (tab === 'css') modalCode.textContent = cachedParts.css;
+  else if (tab === 'js') modalCode.textContent = cachedParts.js;
+  else modalCode.textContent = cachedParts.readme;
+  updateDownloadButtons();
+  savePublishState(true, tab);
+}
+
+function openPublish() {
+  cachedParts = buildParts();
+  if (!cachedParts) return;
+  publishModal.hidden = false;
+  switchTab(currentTab);
+}
+
+function closePublish() {
+  publishModal.hidden = true;
+  savePublishState(false, currentTab);
+}
+
+publishBtn.addEventListener('click', openPublish);
+publishClose.addEventListener('click', closePublish);
+publishModal.addEventListener('click', (e) => {
+  if (e.target === publishModal) closePublish();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !publishModal.hidden) closePublish();
+});
+
+modalTabs.forEach((t) => {
+  t.addEventListener('click', () => {
+    switchTab((t.dataset.tab as PublishTab) || 'html');
+  });
+});
+
+copyBtn.addEventListener('click', async () => {
+  const text = modalCode.textContent || '';
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  copyBtn.classList.add('copied');
+  const label = copyBtn.querySelector('span');
+  if (label) label.textContent = 'Copied';
+  setTimeout(() => {
+    copyBtn.classList.remove('copied');
+    if (label) label.textContent = 'Copy';
+  }, 1500);
+});
+
+function download(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+downloadFile.addEventListener('click', () => {
+  if (!cachedParts) return;
+  const currentPage = allPages[currentPageIndex];
+  if (currentTab === 'meeel') {
+    const filename = currentPage.filename.replace(/\.html$/, '.meeel');
+    download(filename, cachedParts.meeel, 'application/octet-stream');
+  } else if (currentTab === 'html') {
+    download(currentPage.filename, currentPage.htmlFile, 'text/html');
+  } else if (currentTab === 'css') {
+    download(currentPage.cssFilename, currentPage.css, 'text/css');
+  } else if (currentTab === 'js') {
+    download(currentPage.jsFilename, currentPage.js || '/* No interactivity */', 'application/octet-stream');
+  } else {
+    download('README.md', cachedParts.readme, 'text/markdown');
+  }
+});
+
+downloadAll.addEventListener('click', async () => {
+  if (!cachedParts) return;
+
+  const label = downloadAll.querySelector('span');
+  const originalText = label ? label.textContent : '';
+  if (label) label.textContent = 'Zipping...';
+  downloadAll.disabled = true;
+
+  try {
+    const JSZip = (await import('jszip')).default;
+    const zip = new JSZip();
+
+    // Each page → its own HTML + its own CSS
+    for (const page of cachedParts.pages) {
+      zip.file(page.filename, page.htmlFile);
+      zip.file(page.cssFilename, page.css);
+      if (page.js && page.js.trim().length > 0) {
+        zip.file(page.jsFilename, page.js);
+      }
+    }
+    // meeEL source
+    const firstPage = cachedParts.pages[0];
+    const meeelFilename = firstPage
+      ? firstPage.filename.replace(/\.html$/, '.meeel')
+      : 'source.meeel';
+    zip.file(meeelFilename, cachedParts.meeel);
+    zip.file('README.md', cachedParts.readme);
+
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'meeel-site.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    console.error('ZIP failed:', err);
+    alert('Could not create ZIP. Try downloading files individually.');
+  } finally {
+    if (label) label.textContent = originalText;
+    downloadAll.disabled = false;
+  }
+});
+
+const initialPublishState = loadPublishState();
+if (initialPublishState.tab) {
+  currentTab = initialPublishState.tab;
+  modalTabs.forEach((t) =>
+    t.classList.toggle('active', t.dataset.tab === currentTab)
+  );
+}
+if (initialPublishState.open) {
+  setTimeout(() => openPublish(), 100);
+}
+
+/* ============ IMPORT ============ */
+
+const importBtn = document.getElementById('import-btn') as HTMLButtonElement | null;
+const importInput = document.getElementById('import-input') as HTMLInputElement | null;
+
+function loadMeeelFile(file: File): void {
+  // Size check: 1 MB max
+  if (file.size > 1024 * 1024) {
+    alert(`File too large (${(file.size / 1024).toFixed(0)} KB). Max size is 1 MB.`);
+    return;
+  }
+
+  // Extension check
+  const okExt = /\.(meeel|me|txt)$/i.test(file.name);
+  if (!okExt) {
+    const proceed = confirm(
+      `"${file.name}" doesn't have a .meeel extension.\n\nTry to load it anyway?`
+    );
+    if (!proceed) return;
+  }
+
+  // Warn if editor has content (avoid accidental overwrite)
+  const currentCode = editor.value.trim();
+  const isDefault = currentCode === DEFAULT_CODE.trim() || currentCode.length === 0;
+  if (!isDefault) {
+    const proceed = confirm(
+      `Loading "${file.name}" will replace your current code.\n\nContinue?`
+    );
+    if (!proceed) return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = (e.target?.result as string) || '';
+    editor.value = text;
+    syncHighlight();
+    syncGutter();
+    render();
+    saveCode();
+    editor.focus();
+  };
+  reader.onerror = () => {
+    alert('Could not read the file.');
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+if (importBtn && importInput) {
+  importBtn.addEventListener('click', () => {
+    importInput.value = ''; // reset so same file can be re-selected
+    importInput.click();
+  });
+
+  importInput.addEventListener('change', () => {
+    const file = importInput.files?.[0];
+    if (file) loadMeeelFile(file);
+  });
+}
+
+/* ---- Drag & drop on editor area ---- */
+const editorContainer = document.querySelector('.editor-container') as HTMLElement | null;
+
+if (editorContainer) {
+  // Create overlay element
+  const overlay = document.createElement('div');
+  overlay.className = 'drop-overlay';
+  overlay.innerHTML = `
+    <div class="drop-overlay-icon">↓</div>
+    <div class="drop-overlay-text">Drop .meeel file to load</div>
+  `;
+  editorContainer.appendChild(overlay);
+
+  let dragDepth = 0;
+
+  editorContainer.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth++;
+    overlay.classList.add('active');
+  });
+
+  editorContainer.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  editorContainer.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth--;
+    if (dragDepth <= 0) {
+      dragDepth = 0;
+      overlay.classList.remove('active');
+    }
+  });
+
+  editorContainer.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepth = 0;
+    overlay.classList.remove('active');
+
+    const file = e.dataTransfer?.files?.[0];
+    if (file) loadMeeelFile(file);
+  });
+}
+
+/* Also allow drop anywhere on the page */
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+  // Only handle if not already handled by editorContainer
+  if (e.defaultPrevented) return;
+  e.preventDefault();
+  const file = e.dataTransfer?.files?.[0];
+  if (file) loadMeeelFile(file);
+});
+
+/* ============ PREVIEW FULLSCREEN ============ */
+
+const fullscreenBtn = document.getElementById('preview-fullscreen') as HTMLButtonElement | null;
+const previewPane = document.querySelector('.preview-pane') as HTMLElement | null;
+
+if (fullscreenBtn && previewPane) {
+  fullscreenBtn.addEventListener('click', async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (previewPane.requestFullscreen) {
+        await previewPane.requestFullscreen();
+      } else if ((previewPane as any).webkitRequestFullscreen) {
+        (previewPane as any).webkitRequestFullscreen();
+      } else {
+        // Fallback: CSS-based fullscreen overlay
+        toggleFallbackFullscreen();
+      }
+    } catch (err) {
+      // If native fullscreen fails, use CSS fallback
+      toggleFallbackFullscreen();
+    }
+  });
+
+  // Listen for fullscreen change to update the icon
+  const updateIcon = () => {
+    const isFull = !!(document.fullscreenElement || previewPane.classList.contains('fallback-fullscreen'));
+    const svg = fullscreenBtn.querySelector('svg');
+    if (!svg) return;
+    if (isFull) {
+      svg.innerHTML = `
+        <path d="M8 3v3a2 2 0 0 1-2 2H3"/>
+        <path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
+        <path d="M3 16h3a2 2 0 0 1 2 2v3"/>
+        <path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
+      `;
+    } else {
+      svg.innerHTML = `
+        <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+        <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+        <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+        <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+      `;
+    }
+  };
+
+  document.addEventListener('fullscreenchange', updateIcon);
+  document.addEventListener('webkitfullscreenchange', updateIcon);
+
+  function toggleFallbackFullscreen() {
+    previewPane.classList.toggle('fallback-fullscreen');
+    document.body.style.overflow = previewPane.classList.contains('fallback-fullscreen')
+      ? 'hidden'
+      : '';
+    updateIcon();
+  }
+
+  // ESC key to exit fallback
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && previewPane.classList.contains('fallback-fullscreen')) {
+      toggleFallbackFullscreen();
+    }
+  });
+}
+
+/* ============ PWA — SERVICE WORKER + INSTALL ============ */
+
+const installBtn = document.getElementById('install-btn') as HTMLButtonElement | null;
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .then((reg) => {
+        // Optional: log for debugging
+        // console.log('SW registered:', reg.scope);
+      })
+      .catch((err) => {
+        // console.warn('SW registration failed:', err);
+      });
+  });
+}
+
+// Capture install prompt
+let deferredInstallPrompt: any = null;
+
+window.addEventListener('beforeinstallprompt', (e: Event) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if (installBtn) installBtn.hidden = false;
+});
+
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) {
+      // Fallback — show instructions
+      alert(
+        'To install:\n\n' +
+          'Android (Chrome): tap ⋮ menu → "Install app"\n' +
+          'iOS (Safari): tap Share → "Add to Home Screen"'
+      );
+      return;
+    }
+    deferredInstallPrompt.prompt();
+    const result = await deferredInstallPrompt.userChoice;
+    if (result.outcome === 'accepted') {
+      installBtn.hidden = true;
+    }
+    deferredInstallPrompt = null;
+  });
+}
+
+// Hide button once installed
+window.addEventListener('appinstalled', () => {
+  if (installBtn) installBtn.hidden = true;
+  deferredInstallPrompt = null;
+});
+
+/* ============ BOOT ============ */
+
+syncHighlight();
+syncGutter();
+render();
+
+/* ============================================================
+   Tools Drawer — open / close
+   ============================================================ */
+
+const toolsBtn = document.getElementById('tools-btn') as HTMLButtonElement | null;
+const toolsDrawer = document.getElementById('tools-drawer') as HTMLElement | null;
+const toolsClose = document.getElementById('tools-close') as HTMLButtonElement | null;
+const toolsBackdrop = document.getElementById('tools-backdrop') as HTMLElement | null;
+
+function openToolsDrawer() {
+  if (!toolsDrawer || !toolsBackdrop) return;
+  toolsDrawer.classList.add('open');
+  toolsBackdrop.hidden = false;
+}
+
+function closeToolsDrawer() {
+  if (!toolsDrawer || !toolsBackdrop) return;
+  toolsDrawer.classList.remove('open');
+  toolsBackdrop.hidden = true;
+}
+
+toolsBtn?.addEventListener('click', openToolsDrawer);
+toolsClose?.addEventListener('click', closeToolsDrawer);
+toolsBackdrop?.addEventListener('click', closeToolsDrawer);
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && toolsDrawer?.classList.contains('open')) {
+    closeToolsDrawer();
+  }
+});
+
+// Tool card clicks — placeholder for future library pages
+document.querySelectorAll('.tools-card').forEach((card) => {
+  card.addEventListener('click', () => {
+    const tool = (card as HTMLElement).dataset.tool;
+    console.log('[meeEL] Tool clicked:', tool);
+    // Future: open respective library page
+    closeToolsDrawer();
+  });
+});
+
+/* ============================================================
+   Icons Library Page
+   ============================================================ */
+
+import { ICONS } from '../engine/registry';
+
+const iconsPage = document.getElementById('icons-page') as HTMLElement | null;
+const iconsBack = document.getElementById('icons-back') as HTMLButtonElement | null;
+const iconsClose = document.getElementById('icons-close') as HTMLButtonElement | null;
+const iconsSearch = document.getElementById('icons-search') as HTMLInputElement | null;
+const iconsGrid = document.getElementById('icons-grid') as HTMLElement | null;
+
+let iconsRendered = false;
+
+function escapeIconHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function iconToSvg(raw: string): string {
+  // If it's a data URL, decode it back to raw SVG
+  const prefix = 'data:image/svg+xml;utf8,';
+  if (raw.startsWith(prefix)) {
+    try {
+      return decodeURIComponent(raw.slice(prefix.length));
+    } catch {
+      return raw;
+    }
+  }
+  // If it's already raw SVG
+  if (raw.trim().startsWith('<svg')) return raw;
+  // Otherwise, return as-is
+  return raw;
+}
+
+function renderIconsPage(filter: string) {
+  if (!iconsGrid) return;
+
+  const query = filter.trim().toLowerCase();
+  const entries = Object.entries(ICONS).filter(([name]) =>
+    query === '' || name.toLowerCase().includes(query)
+  );
+
+  if (entries.length === 0) {
+    iconsGrid.innerHTML = '<div class="icons-empty">No icons found for "' + escapeIconHtml(filter) + '"</div>';
+    return;
+  }
+
+  iconsGrid.innerHTML = entries.map(([name, def]) => {
+    const code = 'icon-[' + name + ']';
+    return (
+      '<div class="icon-card">' +
+        '<div class="icon-card-visual">' + iconToSvg(def) + '</div>' +
+        '<div class="icon-card-name">' + escapeIconHtml(name) + '</div>' +
+        '<div class="icon-card-code">' + escapeIconHtml(code) + '</div>' +
+        '<button class="icon-card-copy" data-copy-code="' + escapeIconHtml(code) + '" type="button">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>' +
+            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+          '</svg>' +
+          '<span>Copy</span>' +
+        '</button>' +
+      '</div>'
+    );
+  }).join('');
+
+  // Attach copy handlers
+  iconsGrid.querySelectorAll('.icon-card-copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const code = (btn as HTMLElement).dataset.copyCode || '';
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      const el = btn as HTMLElement;
+      el.classList.add('copied');
+      const label = el.querySelector('span');
+      if (label) label.textContent = 'Copied';
+      setTimeout(() => {
+        el.classList.remove('copied');
+        if (label) label.textContent = 'Copy';
+      }, 1500);
+    });
+  });
+
+  iconsRendered = true;
+}
+
+function openIconsPage() {
+  if (!iconsPage) return;
+  closeToolsDrawer();
+  iconsPage.hidden = false;
+  renderIconsPage('');
+  if (iconsSearch) {
+    iconsSearch.value = '';
+    setTimeout(() => iconsSearch.focus(), 100);
+  }
+}
+
+function closeIconsPage() {
+  if (!iconsPage) return;
+  iconsPage.hidden = true;
+}
+
+iconsBack?.addEventListener('click', closeIconsPage);
+iconsClose?.addEventListener('click', closeIconsPage);
+
+iconsSearch?.addEventListener('input', () => {
+  renderIconsPage(iconsSearch.value);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && iconsPage && !iconsPage.hidden) {
+    closeIconsPage();
+  }
+});
+
+// Hook up the Icons card in the tools drawer
+document.querySelectorAll('.tools-card').forEach((card) => {
+  const tool = (card as HTMLElement).dataset.tool;
+  if (tool === 'icons') {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openIconsPage();
+    });
+  }
+});
+
+/* ============================================================
+   Fonts Library Page
+   ============================================================ */
+
+interface FontDef {
+  name: string;
+  stack: string;
+  tag: 'safe' | 'web' | 'style';
+}
+
+const FONTS: FontDef[] = [
+  // ── Sans-serif (22) ──
+  { name: 'Inter',           stack: 'Inter, sans-serif',                     tag: 'web' },
+  { name: 'Roboto',          stack: 'Roboto, sans-serif',                    tag: 'web' },
+  { name: 'Open Sans',       stack: '"Open Sans", sans-serif',               tag: 'web' },
+  { name: 'Lato',            stack: 'Lato, sans-serif',                      tag: 'web' },
+  { name: 'Montserrat',      stack: 'Montserrat, sans-serif',                tag: 'web' },
+  { name: 'Poppins',         stack: 'Poppins, sans-serif',                   tag: 'web' },
+  { name: 'Raleway',         stack: 'Raleway, sans-serif',                   tag: 'web' },
+  { name: 'Nunito',          stack: 'Nunito, sans-serif',                    tag: 'web' },
+  { name: 'Work Sans',       stack: '"Work Sans", sans-serif',               tag: 'web' },
+  { name: 'Source Sans 3',   stack: '"Source Sans 3", sans-serif',           tag: 'web' },
+  { name: 'Oswald',          stack: 'Oswald, sans-serif',                    tag: 'web' },
+  { name: 'Ubuntu',          stack: 'Ubuntu, sans-serif',                    tag: 'web' },
+  { name: 'Rubik',           stack: 'Rubik, sans-serif',                     tag: 'web' },
+  { name: 'Karla',           stack: 'Karla, sans-serif',                     tag: 'web' },
+  { name: 'Manrope',         stack: 'Manrope, sans-serif',                   tag: 'web' },
+  { name: 'Barlow',          stack: 'Barlow, sans-serif',                    tag: 'web' },
+  { name: 'DM Sans',         stack: '"DM Sans", sans-serif',                 tag: 'web' },
+  { name: 'Fira Sans',       stack: '"Fira Sans", sans-serif',               tag: 'web' },
+  { name: 'PT Sans',         stack: '"PT Sans", sans-serif',                 tag: 'web' },
+  { name: 'Mulish',          stack: 'Mulish, sans-serif',                    tag: 'web' },
+  { name: 'Outfit',          stack: 'Outfit, sans-serif',                    tag: 'web' },
+  { name: 'Figtree',         stack: 'Figtree, sans-serif',                   tag: 'web' },
+  // ── Serif (16) ──
+  { name: 'Playfair Display', stack: '"Playfair Display", serif',            tag: 'web' },
+  { name: 'Merriweather',    stack: 'Merriweather, serif',                   tag: 'web' },
+  { name: 'Lora',            stack: 'Lora, serif',                           tag: 'web' },
+  { name: 'PT Serif',        stack: '"PT Serif", serif',                     tag: 'web' },
+  { name: 'Noto Serif',      stack: '"Noto Serif", serif',                   tag: 'web' },
+  { name: 'Libre Baskerville', stack: '"Libre Baskerville", serif',          tag: 'web' },
+  { name: 'EB Garamond',     stack: '"EB Garamond", serif',                  tag: 'web' },
+  { name: 'Crimson Text',    stack: '"Crimson Text", serif',                 tag: 'web' },
+  { name: 'Cormorant Garamond', stack: '"Cormorant Garamond", serif',        tag: 'web' },
+  { name: 'Spectral',        stack: 'Spectral, serif',                       tag: 'web' },
+  { name: 'Tinos',           stack: 'Tinos, serif',                          tag: 'web' },
+  { name: 'Domine',          stack: 'Domine, serif',                         tag: 'web' },
+  { name: 'Bitter',          stack: 'Bitter, serif',                         tag: 'web' },
+  { name: 'Crimson Pro',     stack: '"Crimson Pro", serif',                  tag: 'web' },
+  { name: 'Alegreya',        stack: 'Alegreya, serif',                       tag: 'web' },
+  { name: 'Frank Ruhl Libre', stack: '"Frank Ruhl Libre", serif',            tag: 'web' },
+  // ── Monospace (8) ──
+  { name: 'JetBrains Mono',  stack: '"JetBrains Mono", monospace',           tag: 'web' },
+  { name: 'Fira Code',       stack: '"Fira Code", monospace',                tag: 'web' },
+  { name: 'Roboto Mono',     stack: '"Roboto Mono", monospace',              tag: 'web' },
+  { name: 'Source Code Pro', stack: '"Source Code Pro", monospace',          tag: 'web' },
+  { name: 'IBM Plex Mono',   stack: '"IBM Plex Mono", monospace',            tag: 'web' },
+  { name: 'Space Mono',      stack: '"Space Mono", monospace',               tag: 'web' },
+  { name: 'Courier Prime',   stack: '"Courier Prime", monospace',            tag: 'web' },
+  { name: 'Inconsolata',     stack: 'Inconsolata, monospace',                tag: 'web' },
+  // ── Display (12) ──
+  { name: 'Anton',           stack: 'Anton, sans-serif',                     tag: 'style' },
+  { name: 'Bebas Neue',      stack: '"Bebas Neue", sans-serif',              tag: 'style' },
+  { name: 'Righteous',       stack: 'Righteous, sans-serif',                 tag: 'style' },
+  { name: 'Archivo Black',   stack: '"Archivo Black", sans-serif',           tag: 'style' },
+  { name: 'Alfa Slab One',   stack: '"Alfa Slab One", serif',                tag: 'style' },
+  { name: 'Bungee',          stack: 'Bungee, sans-serif',                    tag: 'style' },
+  { name: 'Fugaz One',       stack: '"Fugaz One", sans-serif',               tag: 'style' },
+  { name: 'Monoton',         stack: 'Monoton, sans-serif',                   tag: 'style' },
+  { name: 'Abril Fatface',   stack: '"Abril Fatface", serif',                tag: 'style' },
+  { name: 'Lobster',         stack: 'Lobster, cursive',                      tag: 'style' },
+  { name: 'Titan One',       stack: '"Titan One", sans-serif',               tag: 'style' },
+  { name: 'Bowlby One',      stack: '"Bowlby One", sans-serif',              tag: 'style' },
+  // ── Handwriting / Script (10) ──
+  { name: 'Dancing Script',  stack: '"Dancing Script", cursive',             tag: 'style' },
+  { name: 'Pacifico',        stack: 'Pacifico, cursive',                     tag: 'style' },
+  { name: 'Caveat',          stack: 'Caveat, cursive',                       tag: 'style' },
+  { name: 'Satisfy',         stack: 'Satisfy, cursive',                      tag: 'style' },
+  { name: 'Kalam',           stack: 'Kalam, cursive',                        tag: 'style' },
+  { name: 'Indie Flower',    stack: '"Indie Flower", cursive',               tag: 'style' },
+  { name: 'Shadows Into Light', stack: '"Shadows Into Light", cursive',      tag: 'style' },
+  { name: 'Great Vibes',     stack: '"Great Vibes", cursive',                tag: 'style' },
+  { name: 'Allura',          stack: 'Allura, cursive',                       tag: 'style' },
+  { name: 'Parisienne',      stack: 'Parisienne, cursive',                   tag: 'style' },
+];
+
+const fontsPage = document.getElementById('fonts-page') as HTMLElement | null;
+const fontsBack = document.getElementById('fonts-back') as HTMLButtonElement | null;
+const fontsClose = document.getElementById('fonts-close') as HTMLButtonElement | null;
+const fontsSearch = document.getElementById('fonts-search') as HTMLInputElement | null;
+const fontsGrid = document.getElementById('fonts-grid') as HTMLElement | null;
+
+function renderFontsPage(filter: string) {
+  if (!fontsGrid) return;
+
+  const query = filter.trim().toLowerCase();
+  const results = FONTS.filter((f) =>
+    query === '' || f.name.toLowerCase().includes(query)
+  );
+
+  if (results.length === 0) {
+    fontsGrid.innerHTML = '<div class="icons-empty">No fonts found for "' + escapeIconHtml(filter) + '"</div>';
+    return;
+  }
+
+  fontsGrid.innerHTML = results.map((font, idx) => {
+    const code = 'font-[' + font.name + ']';
+    const tagLabel = font.tag === 'safe' ? 'Safe' : font.tag === 'web' ? 'Web' : 'Style';
+    return (
+      '<div class="font-card">' +
+        "<div class=\"font-card-preview\" style='font-family: " + font.stack + "'>The quick brown fox</div>" +
+        '<div class="font-card-meta">' +
+          '<div class="font-card-name">' + escapeIconHtml(font.name) + '</div>' +
+          '<span class="font-card-tag tag-' + font.tag + '">' + tagLabel + '</span>' +
+        '</div>' +
+        '<div class="font-card-code">' + escapeIconHtml(code) + '</div>' +
+        '<button class="font-card-copy" data-copy-code="' + escapeIconHtml(code) + '" type="button">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>' +
+            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+          '</svg>' +
+          '<span>Copy</span>' +
+        '</button>' +
+      '</div>'
+    );
+  }).join('');
+
+  // Attach copy handlers
+  fontsGrid.querySelectorAll('.font-card-copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const code = (btn as HTMLElement).dataset.copyCode || '';
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      const el = btn as HTMLElement;
+      el.classList.add('copied');
+      const label = el.querySelector('span');
+      if (label) label.textContent = 'Copied';
+      setTimeout(() => {
+        el.classList.remove('copied');
+        if (label) label.textContent = 'Copy';
+      }, 1500);
+    });
+  });
+}
+
+function openFontsPage() {
+  if (!fontsPage) return;
+  closeToolsDrawer();
+  fontsPage.hidden = false;
+  renderFontsPage('');
+  if (fontsSearch) {
+    fontsSearch.value = '';
+    setTimeout(() => fontsSearch.focus(), 100);
+  }
+}
+
+function closeFontsPage() {
+  if (!fontsPage) return;
+  fontsPage.hidden = true;
+}
+
+fontsBack?.addEventListener('click', closeFontsPage);
+fontsClose?.addEventListener('click', closeFontsPage);
+
+fontsSearch?.addEventListener('input', () => {
+  renderFontsPage(fontsSearch.value);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && fontsPage && !fontsPage.hidden) {
+    closeFontsPage();
+  }
+});
+
+// Hook up the Fonts card in the tools drawer
+document.querySelectorAll('.tools-card').forEach((card) => {
+  const tool = (card as HTMLElement).dataset.tool;
+  if (tool === 'font') {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openFontsPage();
+    });
+  }
+});
+
+/* ============================================================
+   Color Library Page
+   ============================================================ */
+
+interface NamedColor {
+  name: string;
+  hex: string;
+  meel: string;
+}
+
+const NAMED_COLORS: NamedColor[] = [
+  // ── Basics ──
+  { name: 'Red',         hex: '#EF4444', meel: 'red' },
+  { name: 'Orange',      hex: '#F97316', meel: 'orange' },
+  { name: 'Yellow',      hex: '#EAB308', meel: 'yellow' },
+  { name: 'Green',       hex: '#22C55E', meel: 'green' },
+  { name: 'Blue',        hex: '#3B82F6', meel: 'blue' },
+  { name: 'Purple',      hex: '#A855F7', meel: 'purple' },
+  { name: 'Pink',        hex: '#EC4899', meel: 'pink' },
+  { name: 'Brown',       hex: '#92400E', meel: 'brown' },
+  { name: 'Black',       hex: '#000000', meel: 'black' },
+  { name: 'White',       hex: '#FFFFFF', meel: 'white' },
+  { name: 'Gray',        hex: '#6B7280', meel: 'gray' },
+  // ── Light shades ──
+  { name: 'Light Gray',  hex: '#F3F4F6', meel: 'light-gray' },
+  { name: 'Light Blue',  hex: '#DBEAFE', meel: 'light-blue' },
+  { name: 'Light Green', hex: '#DCFCE7', meel: 'light-green' },
+  { name: 'Light Red',   hex: '#FEE2E2', meel: 'light-red' },
+  // ── Dark shades ──
+  { name: 'Dark Gray',   hex: '#374151', meel: 'dark-gray' },
+  { name: 'Dark Blue',   hex: '#1E3A5F', meel: 'dark-blue' },
+  // ── Sky / brand ──
+  { name: 'Sky Blue',    hex: '#38BDF8', meel: 'sky-blue' },
+  { name: 'Off White',   hex: '#FAFAFA', meel: 'off-white' },
+  { name: 'Soft Red',    hex: '#EF4444', meel: 'soft-red' },
+  { name: 'Soft Green',  hex: '#22C55E', meel: 'soft-green' },
+  // ── Bright ──
+  { name: 'Lime',        hex: '#84CC16', meel: '#84CC16' },
+  { name: 'Cyan',        hex: '#06B6D4', meel: '#06B6D4' },
+  { name: 'Indigo',      hex: '#6366F1', meel: '#6366F1' },
+  { name: 'Violet',      hex: '#8B5CF6', meel: '#8B5CF6' },
+  { name: 'Fuchsia',     hex: '#D946EF', meel: '#D946EF' },
+  { name: 'Rose',        hex: '#F43F5E', meel: '#F43F5E' },
+  { name: 'Amber',       hex: '#F59E0B', meel: '#F59E0B' },
+  { name: 'Emerald',     hex: '#10B981', meel: '#10B981' },
+  { name: 'Teal',        hex: '#14B8A6', meel: '#14B8A6' },
+];
+
+const colorPage = document.getElementById('color-page') as HTMLElement | null;
+const colorBack = document.getElementById('color-back') as HTMLButtonElement | null;
+const colorClose = document.getElementById('color-close') as HTMLButtonElement | null;
+const colorSearch = document.getElementById('color-search') as HTMLInputElement | null;
+const colorsGrid = document.getElementById('colors-grid') as HTMLElement | null;
+const colorPickerTrack = document.getElementById('color-picker-track') as HTMLElement | null;
+const colorPickerIndicator = document.getElementById('color-picker-indicator') as HTMLElement | null;
+const colorPickerSwatch = document.getElementById('color-picker-swatch') as HTMLElement | null;
+const colorPickerHex = document.getElementById('color-picker-hex') as HTMLElement | null;
+const colorPickerName = document.getElementById('color-picker-name') as HTMLElement | null;
+const colorPickerCopy = document.getElementById('color-picker-copy') as HTMLButtonElement | null;
+
+let currentHex = '#3DF5B0';
+let currentHue = 160;
+
+function hueToHex(hue: number): string {
+  const h = hue / 60;
+  const c = 1;
+  const x = c * (1 - Math.abs((h % 2) - 1));
+  let r = 0, g = 0, b = 0;
+  if (h >= 0 && h < 1) { r = c; g = x; b = 0; }
+  else if (h < 2) { r = x; g = c; b = 0; }
+  else if (h < 3) { r = 0; g = c; b = x; }
+  else if (h < 4) { r = 0; g = x; b = c; }
+  else if (h < 5) { r = x; g = 0; b = c; }
+  else { r = c; g = 0; b = x; }
+  const toHex = (n: number) => Math.round(n * 255).toString(16).padStart(2, '0').toUpperCase();
+  return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+
+function colorNameForHue(hue: number): string {
+  const names: Array<[number, string]> = [
+    [0, 'Red'], [30, 'Orange'], [60, 'Yellow'], [90, 'Lime'],
+    [120, 'Green'], [150, 'Spring Green'], [180, 'Cyan'], [210, 'Sky Blue'],
+    [240, 'Blue'], [270, 'Violet'], [300, 'Magenta'], [330, 'Pink'], [360, 'Red'],
+  ];
+  let best = names[0];
+  let bestDist = Infinity;
+  for (const [h, n] of names) {
+    const d = Math.abs(h - hue);
+    if (d < bestDist) { bestDist = d; best = [h, n]; }
+  }
+  return best[1];
+}
+
+function updateColorFromHue(hue: number) {
+  currentHue = Math.max(0, Math.min(360, hue));
+  currentHex = hueToHex(currentHue);
+  const pct = (currentHue / 360) * 100;
+
+  if (colorPickerIndicator) colorPickerIndicator.style.left = pct + '%';
+  if (colorPickerSwatch) {
+    colorPickerSwatch.style.background = currentHex;
+    colorPickerSwatch.style.boxShadow = '0 0 16px 2px ' + currentHex + '80';
+  }
+  if (colorPickerHex) colorPickerHex.textContent = currentHex;
+  if (colorPickerName) colorPickerName.textContent = colorNameForHue(currentHue);
+}
+
+function handlePickerPointer(clientX: number) {
+  if (!colorPickerTrack) return;
+  const rect = colorPickerTrack.getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+  const ratio = rect.width > 0 ? x / rect.width : 0;
+  updateColorFromHue(ratio * 360);
+}
+
+function renderColorsGrid(filter: string) {
+  if (!colorsGrid) return;
+
+  const query = filter.trim().toLowerCase();
+  const results = NAMED_COLORS.filter((c) =>
+    query === '' ||
+    c.name.toLowerCase().includes(query) ||
+    c.hex.toLowerCase().includes(query) ||
+    c.meel.toLowerCase().includes(query)
+  );
+
+  if (results.length === 0) {
+    colorsGrid.innerHTML = '<div class="icons-empty">No colors found for "' + escapeIconHtml(filter) + '"</div>';
+    return;
+  }
+
+  colorsGrid.innerHTML = results.map((c) => {
+    const code = 'color-[' + c.meel + ']';
+    return (
+      '<div class="color-card">' +
+        '<div class="color-card-top">' +
+          '<div class="color-card-swatch" style="background: ' + c.hex + '"></div>' +
+          '<div class="color-card-info">' +
+            '<div class="color-card-name">' + escapeIconHtml(c.name) + '</div>' +
+            '<div class="color-card-hex">' + escapeIconHtml(c.hex) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="color-card-code">' + escapeIconHtml(code) + '</div>' +
+        '<button class="color-card-copy" data-copy-code="' + escapeIconHtml(code) + '" type="button">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>' +
+            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+          '</svg>' +
+          '<span>Copy</span>' +
+        '</button>' +
+      '</div>'
+    );
+  }).join('');
+
+  colorsGrid.querySelectorAll('.color-card-copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const code = (btn as HTMLElement).dataset.copyCode || '';
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      const el = btn as HTMLElement;
+      el.classList.add('copied');
+      const label = el.querySelector('span');
+      if (label) label.textContent = 'Copied';
+      setTimeout(() => {
+        el.classList.remove('copied');
+        if (label) label.textContent = 'Copy';
+      }, 1500);
+    });
+  });
+}
+
+function openColorPage() {
+  if (!colorPage) return;
+  closeToolsDrawer();
+  colorPage.hidden = false;
+  updateColorFromHue(160);
+  renderColorsGrid('');
+  if (colorSearch) {
+    colorSearch.value = '';
+    setTimeout(() => colorSearch.focus(), 100);
+  }
+}
+
+function closeColorPage() {
+  if (!colorPage) return;
+  colorPage.hidden = true;
+}
+
+colorBack?.addEventListener('click', closeColorPage);
+colorClose?.addEventListener('click', closeColorPage);
+
+colorSearch?.addEventListener('input', () => {
+  renderColorsGrid(colorSearch.value);
+});
+
+// Color picker pointer events
+colorPickerTrack?.addEventListener('pointerdown', (e) => {
+  handlePickerPointer(e.clientX);
+  (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+});
+colorPickerTrack?.addEventListener('pointermove', (e) => {
+  if (e.buttons > 0) handlePickerPointer(e.clientX);
+});
+
+// Copy button on the big picker
+colorPickerCopy?.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(currentHex);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = currentHex;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  colorPickerCopy.classList.add('copied');
+  const label = colorPickerCopy.querySelector('span');
+  if (label) label.textContent = 'Copied';
+  setTimeout(() => {
+    colorPickerCopy.classList.remove('copied');
+    if (label) label.textContent = 'Copy';
+  }, 1500);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && colorPage && !colorPage.hidden) {
+    closeColorPage();
+  }
+});
+
+// Hook up the Color card in the tools drawer
+document.querySelectorAll('.tools-card').forEach((card) => {
+  const tool = (card as HTMLElement).dataset.tool;
+  if (tool === 'color') {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openColorPage();
+    });
+  }
+});
+
+/* ============================================================
+   Actions Library Page
+   ============================================================ */
+
+interface ActionEntry {
+  name: string;
+  group: string;
+  description: string;
+  code: string;
+  icon: string;
+}
+
+const ACTIONS_LIST: ActionEntry[] = [
+  // ── Show / Hide ──
+  { name: 'show', group: 'visibility', description: 'Show hidden thing',
+    code: 'on-click-[show menu]',
+    icon: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' },
+  { name: 'hide', group: 'visibility', description: 'Hide thing',
+    code: 'on-click-[hide menu]',
+    icon: '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>' },
+  { name: 'toggle', group: 'visibility', description: 'Flip show/hide',
+    code: 'on-click-[toggle popup]',
+    icon: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>' },
+
+  // ── Numbers ──
+  { name: 'increase', group: 'numbers', description: 'Add 1',
+    code: 'on-click-[increase counter]',
+    icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' },
+  { name: 'decrease', group: 'numbers', description: 'Subtract 1',
+    code: 'on-click-[decrease counter]',
+    icon: '<line x1="5" y1="12" x2="19" y2="12"/>' },
+  { name: 'add', group: 'numbers', description: 'Add specific number',
+    code: 'on-click-[add counter 5]',
+    icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' },
+  { name: 'subtract', group: 'numbers', description: 'Subtract specific',
+    code: 'on-click-[subtract counter 3]',
+    icon: '<line x1="5" y1="12" x2="19" y2="12"/>' },
+  { name: 'multiply', group: 'numbers', description: 'Multiply by number',
+    code: 'on-click-[multiply counter 2]',
+    icon: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' },
+
+  // ── Text & Color ──
+  { name: 'write', group: 'text', description: 'Change text',
+    code: 'on-click-[write greeting Hello!]',
+    icon: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>' },
+  { name: 'make', group: 'text', description: 'Set specific value',
+    code: 'on-click-[make counter 100]',
+    icon: '<polyline points="20 6 9 17 4 12"/>' },
+  { name: 'paint', group: 'color', description: 'Change text color',
+    code: 'on-click-[paint title red]',
+    icon: '<circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.48-9-10-9z"/>' },
+  { name: 'fill', group: 'color', description: 'Change background',
+    code: 'on-click-[fill page black]',
+    icon: '<path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>' },
+
+  // ── Copy ──
+  { name: 'copy-from', group: 'copy', description: 'Copy value b to a',
+    code: 'on-click-[copy-from result source]',
+    icon: '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' },
+
+  // ── Fetch ──
+  { name: 'bring', group: 'fetch', description: 'GET text from URL',
+    code: 'on-click-[bring https://api.com save-to result]',
+    icon: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>' },
+  { name: 'bring-json', group: 'fetch', description: 'GET JSON from URL',
+    code: 'on-click-[bring-json https://api.com/data.json save-to result]',
+    icon: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>' },
+
+  // ── Memory ──
+  { name: 'remember', group: 'memory', description: 'Save to localStorage',
+    code: 'on-click-[remember username from input-name]',
+    icon: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>' },
+  { name: 'recall', group: 'memory', description: 'Load from localStorage',
+    code: 'on-click-[recall username into greeting-text]',
+    icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' },
+  { name: 'forget', group: 'memory', description: 'Remove from localStorage',
+    code: 'on-click-[forget username]',
+    icon: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
+
+  // ── Random & Time ──
+  { name: 'roll', group: 'random', description: 'Random number',
+    code: 'on-click-[roll dice 1-6]',
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.5" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.5" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.5" fill="currentColor"/>' },
+  { name: 'show-as-time', group: 'time', description: 'Seconds to HH:MM:SS',
+    code: 'on-click-[show-as-time clock total-seconds]',
+    icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
+  { name: 'total-time', group: 'time', description: 'Add time together',
+    code: 'on-click-[total-time sum from hours mins seconds]',
+    icon: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' },
+
+  // ── Device ──
+  { name: 'beep', group: 'device', description: 'Make sound',
+    code: 'on-click-[beep]',
+    icon: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>' },
+  { name: 'vibrate', group: 'device', description: 'Vibrate phone',
+    code: 'on-click-[vibrate]',
+    icon: '<path d="M22 17h-2a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/><path d="M2 17h2a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H2"/>' },
+  { name: 'notify', group: 'device', description: 'Show notification',
+    code: 'on-click-[notify Time is up]',
+    icon: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>' },
+
+  // ── Video ──
+  { name: 'load-video', group: 'video', description: 'Load video from URL',
+    code: 'on-click-[load-video player from input-url]',
+    icon: '<polygon points="5 3 19 12 5 21 5 3"/>' },
+
+  // ── Conditional ──
+  { name: 'if', group: 'logic', description: 'Conditional action',
+    code: 'on-click-[if counter is-5 write result You win!]',
+    icon: '<path d="M6 3h12l4 6-10 12L2 9z"/>' },
+];
+
+const actionsPage = document.getElementById('actions-page') as HTMLElement | null;
+const actionsBack = document.getElementById('actions-back') as HTMLButtonElement | null;
+const actionsClose = document.getElementById('actions-close') as HTMLButtonElement | null;
+const actionsSearch = document.getElementById('actions-search') as HTMLInputElement | null;
+const actionsGrid = document.getElementById('actions-grid') as HTMLElement | null;
+
+function renderActionsPage(filter: string) {
+  if (!actionsGrid) return;
+
+  const query = filter.trim().toLowerCase();
+  const results = ACTIONS_LIST.filter((a) =>
+    query === '' ||
+    a.name.toLowerCase().includes(query) ||
+    a.description.toLowerCase().includes(query) ||
+    a.group.toLowerCase().includes(query)
+  );
+
+  if (results.length === 0) {
+    actionsGrid.innerHTML = '<div class="icons-empty">No actions found for "' + escapeIconHtml(filter) + '"</div>';
+    return;
+  }
+
+  actionsGrid.innerHTML = results.map((a) => {
+    return (
+      '<div class="action-card">' +
+        '<div class="action-card-head">' +
+          '<div class="action-card-icon">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+              a.icon +
+            '</svg>' +
+          '</div>' +
+          '<div class="action-card-title">' +
+            '<div class="action-card-name">' + escapeIconHtml(a.name) + '</div>' +
+            '<div class="action-card-desc">' + escapeIconHtml(a.description) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="action-card-code">' + escapeIconHtml(a.code) + '</div>' +
+        '<button class="action-card-copy" data-copy-code="' + escapeIconHtml(a.code) + '" type="button">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>' +
+            '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+          '</svg>' +
+          '<span>Copy</span>' +
+        '</button>' +
+      '</div>'
+    );
+  }).join('');
+
+  // Attach copy handlers
+  actionsGrid.querySelectorAll('.action-card-copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const code = (btn as HTMLElement).dataset.copyCode || '';
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      const el = btn as HTMLElement;
+      el.classList.add('copied');
+      const label = el.querySelector('span');
+      if (label) label.textContent = 'Copied';
+      setTimeout(() => {
+        el.classList.remove('copied');
+        if (label) label.textContent = 'Copy';
+      }, 1500);
+    });
+  });
+}
+
+function openActionsPage() {
+  if (!actionsPage) return;
+  closeToolsDrawer();
+  actionsPage.hidden = false;
+  renderActionsPage('');
+  if (actionsSearch) {
+    actionsSearch.value = '';
+    setTimeout(() => actionsSearch.focus(), 100);
+  }
+}
+
+function closeActionsPage() {
+  if (!actionsPage) return;
+  actionsPage.hidden = true;
+}
+
+actionsBack?.addEventListener('click', closeActionsPage);
+actionsClose?.addEventListener('click', closeActionsPage);
+
+actionsSearch?.addEventListener('input', () => {
+  renderActionsPage(actionsSearch.value);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && actionsPage && !actionsPage.hidden) {
+    closeActionsPage();
+  }
+});
+
+// Hook up the Actions card in the tools drawer
+document.querySelectorAll('.tools-card').forEach((card) => {
+  const tool = (card as HTMLElement).dataset.tool;
+  if (tool === 'actions') {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openActionsPage();
+    });
+  }
+});
+
+/* ============================================================
+   Properties Library Page
+   ============================================================ */
+
+interface PropEntry {
+  name: string;
+  group: string;
+  description: string;
+  code: string;
+}
+
+const PROPERTIES_LIST: PropEntry[] = [
+  // ── Color & Font ──
+  { group: 'Color & Font', name: 'background-color', description: 'Back color',
+    code: 'background-color-[#0a84ff]' },
+  { group: 'Color & Font', name: 'color', description: 'Text color',
+    code: 'color-[white]' },
+  { group: 'Color & Font', name: 'font-family', description: 'Font',
+    code: 'font-family-[Arial]' },
+  { group: 'Color & Font', name: 'font', description: 'Synonym of font-family',
+    code: 'font-[Georgia]' },
+  { group: 'Color & Font', name: 'font-size', description: 'Text size',
+    code: 'font-size-[24px]' },
+  { group: 'Color & Font', name: 'font-weight', description: 'Thick/thin',
+    code: 'font-weight-[bold]' },
+  { group: 'Color & Font', name: 'font-style', description: 'Straight or italic',
+    code: 'font-style-[italic]' },
+  { group: 'Color & Font', name: 'letter-spacing', description: 'Space between letters',
+    code: 'letter-spacing-[2px]' },
+  { group: 'Color & Font', name: 'line-height', description: 'Space between lines',
+    code: 'line-height-[1.5]' },
+  { group: 'Color & Font', name: 'text-align', description: 'Text direction',
+    code: 'text-align-[center]' },
+
+  // ── Size & Space ──
+  { group: 'Size & Space', name: 'width', description: 'Width',
+    code: 'width-[200px]' },
+  { group: 'Size & Space', name: 'height', description: 'Height',
+    code: 'height-[100px]' },
+  { group: 'Size & Space', name: 'size', description: 'Width preset — tiny to huge',
+    code: 'size-[medium]' },
+  { group: 'Size & Space', name: 'padding', description: 'Inner space',
+    code: 'padding-[20px]' },
+  { group: 'Size & Space', name: 'padding-top', description: 'Inner top',
+    code: 'padding-top-[10px]' },
+  { group: 'Size & Space', name: 'padding-bottom', description: 'Inner bottom',
+    code: 'padding-bottom-[10px]' },
+  { group: 'Size & Space', name: 'padding-left', description: 'Inner left',
+    code: 'padding-left-[10px]' },
+  { group: 'Size & Space', name: 'padding-right', description: 'Inner right',
+    code: 'padding-right-[10px]' },
+  { group: 'Size & Space', name: 'margin', description: 'Outer space',
+    code: 'margin-[20px]' },
+  { group: 'Size & Space', name: 'margin-top', description: 'Outer top',
+    code: 'margin-top-[10px]' },
+  { group: 'Size & Space', name: 'margin-bottom', description: 'Outer bottom',
+    code: 'margin-bottom-[10px]' },
+  { group: 'Size & Space', name: 'margin-left', description: 'Outer left',
+    code: 'margin-left-[10px]' },
+  { group: 'Size & Space', name: 'margin-right', description: 'Outer right',
+    code: 'margin-right-[10px]' },
+  { group: 'Size & Space', name: 'border', description: 'Border — thin, thick, none',
+    code: 'border-[thin]' },
+  { group: 'Size & Space', name: 'border-radius', description: 'Rounded corners — round, pill, circle',
+    code: 'border-radius-[round]' },
+  { group: 'Size & Space', name: 'box-shadow', description: 'Shadow — soft, hard, glow',
+    code: 'box-shadow-[soft]' },
+  { group: 'Size & Space', name: 'opacity', description: 'Transparency',
+    code: 'opacity-[0.5]' },
+  { group: 'Size & Space', name: 'gap', description: 'Space between',
+    code: 'gap-[16px]' },
+
+  // ── Content ──
+  { group: 'Content', name: 'content', description: 'Text inside',
+    code: 'content-[Hello]' },
+  { group: 'Content', name: 'url', description: 'Image or icon source',
+    code: 'url-[photo.png]' },
+  { group: 'Content', name: 'href', description: 'Link URL',
+    code: 'href-[https://example.com]' },
+  { group: 'Content', name: 'input-type', description: 'Input type',
+    code: 'input-type-[email]' },
+  { group: 'Content', name: 'placeholder-text', description: 'Placeholder text',
+    code: 'placeholder-text-[Search]' },
+  { group: 'Content', name: 'label-text', description: 'Side label',
+    code: 'label-text-[Dark mode]' },
+  { group: 'Content', name: 'title-text', description: 'Modal title',
+    code: 'title-text-[Settings]' },
+  { group: 'Content', name: 'trigger-text', description: 'Modal trigger button',
+    code: 'trigger-text-[Open]' },
+  { group: 'Content', name: 'close-text', description: 'Modal close button',
+    code: 'close-text-[Close]' },
+  { group: 'Content', name: 'tooltip-text', description: 'Tooltip text',
+    code: 'tooltip-text-[Help]' },
+
+  // ── Interactive ──
+  { group: 'Interactive', name: 'on-click', description: 'Click actions',
+    code: 'on-click-[show menu]' },
+  { group: 'Interactive', name: 'open', description: 'Opens another page',
+    code: 'open-[home-page]' },
+  { group: 'Interactive', name: 'call-id', description: 'Page identifier',
+    code: 'call-id-[111111]' },
+  { group: 'Interactive', name: 'from-toggle', description: 'Which toggle drives this',
+    code: 'from-toggle-[dark-toggle]' },
+  { group: 'Interactive', name: 'min', description: 'Slider minimum',
+    code: 'min-[0]' },
+  { group: 'Interactive', name: 'max', description: 'Slider maximum',
+    code: 'max-[100]' },
+  { group: 'Interactive', name: 'value', description: 'Slider / chart value',
+    code: 'value-[50]' },
+  { group: 'Interactive', name: 'step', description: 'Slider step size',
+    code: 'step-[5]' },
+  { group: 'Interactive', name: 'on-color', description: 'Toggle ON color',
+    code: 'on-color-[#0a84ff]' },
+  { group: 'Interactive', name: 'off-color', description: 'Toggle OFF color',
+    code: 'off-color-[#cccccc]' },
+  { group: 'Interactive', name: 'default-state', description: 'Toggle starts on or off',
+    code: 'default-state-[off]' },
+  { group: 'Interactive', name: 'check-color', description: 'Checkmark color',
+    code: 'check-color-[#16a34a]' },
+  { group: 'Interactive', name: 'group-name', description: 'Group name for radios',
+    code: 'group-name-[size]' },
+  { group: 'Interactive', name: 'fill-color', description: 'Fill color for slider / chart',
+    code: 'fill-color-[#0a84ff]' },
+  { group: 'Interactive', name: 'track-color', description: 'Track color for slider',
+    code: 'track-color-[#eeeeee]' },
+
+  // ── Chart & Data ──
+  { group: 'Chart & Data', name: 'data', description: 'Chart numbers',
+    code: 'data-[10 25 40 30 55]' },
+  { group: 'Chart & Data', name: 'labels', description: 'Chart labels',
+    code: 'labels-[Jan Feb Mar Apr]' },
+  { group: 'Chart & Data', name: 'max-value', description: 'Chart maximum',
+    code: 'max-value-[100]' },
+  { group: 'Chart & Data', name: 'show-value', description: 'Show slider value',
+    code: 'show-value-[yes]' },
+
+  // ── Color Bar ──
+  { group: 'Color Bar', name: 'hint-text', description: 'Text above color bar',
+    code: 'hint-text-[Pick a color]' },
+  { group: 'Color Bar', name: 'default-color', description: 'Starting color',
+    code: 'default-color-[#0a84ff]' },
+  { group: 'Color Bar', name: 'bar-radius', description: 'Bar corner radius',
+    code: 'bar-radius-[12px]' },
+  { group: 'Color Bar', name: 'bar-padding', description: 'Bar padding',
+    code: 'bar-padding-[20px]' },
+
+  // ── Badge ──
+  { group: 'Badge', name: 'badge-color', description: 'Badge text color',
+    code: 'badge-color-[white]' },
+  { group: 'Badge', name: 'badge-bg', description: 'Badge background',
+    code: 'badge-bg-[#16a34a]' },
+
+  // ── Video ──
+  { group: 'Video', name: 'youtube', description: 'YouTube embed',
+    code: 'youtube-[https://youtube.com/watch?v=ABC]' },
+
+  // ── Position ──
+  { group: 'Position', name: 'content-position', description: 'Content alignment inside box',
+    code: 'content-position-[center]' },
+
+  // ── Connections ──
+  { group: 'Connections', name: 'supabase-url', description: 'Supabase project URL',
+    code: 'supabase-url-[https://xxx.supabase.co]' },
+  { group: 'Connections', name: 'supabase-publishable-key', description: 'Supabase publishable key',
+    code: 'supabase-publishable-key-[eyJ...]' },
+  { group: 'Connections', name: 'firebase-api-key', description: 'Firebase API key',
+    code: 'firebase-api-key-[AIza...]' },
+  { group: 'Connections', name: 'firebase-project-id', description: 'Firebase project ID',
+    code: 'firebase-project-id-[my-app]' },
+  { group: 'Connections', name: 'custom-api-url', description: 'Custom API URL',
+    code: 'custom-api-url-[https://api.com]' },
+  { group: 'Connections', name: 'custom-api-key', description: 'Custom API key',
+    code: 'custom-api-key-[...]' },
+];
+
+const propsPage = document.getElementById('props-page') as HTMLElement | null;
+const propsBack = document.getElementById('props-back') as HTMLButtonElement | null;
+const propsClose = document.getElementById('props-close') as HTMLButtonElement | null;
+const propsSearch = document.getElementById('props-search') as HTMLInputElement | null;
+const propsGroup = document.getElementById('props-group') as HTMLElement | null;
+
+function renderPropsPage(filter: string) {
+  if (!propsGroup) return;
+
+  const query = filter.trim().toLowerCase();
+  const results = PROPERTIES_LIST.filter((p) =>
+    query === '' ||
+    p.name.toLowerCase().includes(query) ||
+    p.description.toLowerCase().includes(query) ||
+    p.group.toLowerCase().includes(query)
+  );
+
+  if (results.length === 0) {
+    propsGroup.innerHTML = '<div class="icons-empty">No properties found for "' + escapeIconHtml(filter) + '"</div>';
+    return;
+  }
+
+  // Group by category
+  const grouped: Record<string, PropEntry[]> = {};
+  const order: string[] = [];
+  for (const p of results) {
+    if (!grouped[p.group]) {
+      grouped[p.group] = [];
+      order.push(p.group);
+    }
+    grouped[p.group].push(p);
+  }
+
+  let html = '';
+  for (const groupName of order) {
+    html += '<div class="props-group-title">' + escapeIconHtml(groupName) + '</div>';
+    for (const p of grouped[groupName]) {
+      html +=
+        '<div class="prop-card">' +
+          '<div class="prop-card-name">' + escapeIconHtml(p.name) + '</div>' +
+          '<div class="prop-card-desc">' + escapeIconHtml(p.description) + '</div>' +
+          '<div class="prop-card-code">' + escapeIconHtml(p.code) + '</div>' +
+          '<button class="prop-card-copy" data-copy-code="' + escapeIconHtml(p.code) + '" type="button">' +
+            '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+              '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>' +
+              '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+            '</svg>' +
+            '<span>Copy</span>' +
+          '</button>' +
+        '</div>';
+    }
+  }
+  propsGroup.innerHTML = html;
+
+  propsGroup.querySelectorAll('.prop-card-copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const code = (btn as HTMLElement).dataset.copyCode || '';
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      const el = btn as HTMLElement;
+      el.classList.add('copied');
+      const label = el.querySelector('span');
+      if (label) label.textContent = 'Copied';
+      setTimeout(() => {
+        el.classList.remove('copied');
+        if (label) label.textContent = 'Copy';
+      }, 1500);
+    });
+  });
+}
+
+function openPropsPage() {
+  if (!propsPage) return;
+  closeToolsDrawer();
+  propsPage.hidden = false;
+  renderPropsPage('');
+  if (propsSearch) {
+    propsSearch.value = '';
+    setTimeout(() => propsSearch.focus(), 100);
+  }
+}
+
+function closePropsPage() {
+  if (!propsPage) return;
+  propsPage.hidden = true;
+}
+
+propsBack?.addEventListener('click', closePropsPage);
+propsClose?.addEventListener('click', closePropsPage);
+
+propsSearch?.addEventListener('input', () => {
+  renderPropsPage(propsSearch.value);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && propsPage && !propsPage.hidden) {
+    closePropsPage();
+  }
+});
+
+// Hook up the Properties card in the tools drawer
+document.querySelectorAll('.tools-card').forEach((card) => {
+  const tool = (card as HTMLElement).dataset.tool;
+  if (tool === 'properties') {
+    card.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openPropsPage();
+    });
+  }
+});
