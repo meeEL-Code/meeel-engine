@@ -1,6 +1,15 @@
+# dependencies
 node_modules/
 dist/
-*.log
-.DS_Store
+
+# meeEL editor backups
+*.bak
+*.bak.*
+
+# env
 .env
+.env.local
+
+# OS
+.DS_Store
 output.html
