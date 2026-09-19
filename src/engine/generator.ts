@@ -1880,8 +1880,14 @@ function generateBlock(
 
       let val = propDef.transform ? propDef.transform(child.value) : child.value;
 
-      if (propDef.special === 'src' && ALL_ICONS[val]) {
-        val = ALL_ICONS[val];
+      if (propDef.special === 'src' && val) {
+        if (ALL_ICONS[val]) {
+          val = ALL_ICONS[val];
+        } else if (/^[a-z][a-z0-9-]*$/.test(val) && !val.includes('/')) {
+          // Looks like an icon name but not in library — hide gracefully
+          attrs['src'] = 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%221%22 height=%221%22></svg>';
+          continue;
+        }
       }
 
       if (propDef.special === 'content') textParts.push(val);
