@@ -635,6 +635,16 @@
           <li><code>[ ]</code> holds a value</li>
           <li><code>#</code> marks a note (meeEL will not read it)</li>
         </ul>
+
+        <p style="margin-top:14px;color:#9ca3af;font-size:13px;">Example:</p>
+        <pre style="background:#1a1a1a;padding:12px;border-radius:8px;font-family:ui-monospace,monospace;font-size:12.5px;color:#c0c0c0;line-height:1.7;overflow-x:auto;"><span style="color:#7dd3fc;">page-</span>[
+  <span style="color:#fbbf24;">background-</span>[<span style="color:#86efac;">white</span>]  <span style="color:#64748b;"># make the page white</span>
+  <span style="color:#fbbf24;">title-</span>[
+    <span style="color:#fbbf24;">content-</span>[<span style="color:#86efac;">Hello!</span>]  <span style="color:#64748b;"># the greeting text</span>
+  ]
+]</pre>
+        <ul style="display:none;">
+        </ul>
         <p>Nothing else. No semicolons. No brackets outside of values.</p>
 
         <h2>Why we built it</h2>
@@ -1088,29 +1098,6 @@
     </div>
     <div class="lib-page-body">
       <div class="settings-group">
-
-        <div class="settings-section">
-          <div class="settings-section-title">Notifications</div>
-
-          <label class="settings-row">
-            <div class="settings-row-text">
-              <div class="settings-row-label">Daily reminder</div>
-              <div class="settings-row-desc">One notification a day to keep building</div>
-            </div>
-            <div class="settings-toggle">
-              <input type="checkbox" id="toggle-daily" />
-              <span class="settings-toggle-slider"></span>
-            </div>
-          </label>
-
-          <div class="settings-row settings-row-static">
-            <div class="settings-row-text">
-              <div class="settings-row-label">Permission status</div>
-              <div class="settings-row-desc" id="notif-permission-status">Checking…</div>
-            </div>
-            <button class="settings-btn" id="notif-permission-btn" type="button">Ask</button>
-          </div>
-        </div>
 
         <div class="settings-section">
           <div class="settings-section-title">Your data</div>

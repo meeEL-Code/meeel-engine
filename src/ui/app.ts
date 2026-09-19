@@ -1682,7 +1682,7 @@ function renderIconsPage(filter: string) {
   }
 
   iconsGrid.innerHTML = entries.map(([name, def]) => {
-    const code = 'icon-[' + name + ']';
+    const code = 'icon-1-[\n  url-[' + name + ']\n  width-[32px]\n  height-[32px]\n]';
     return (
       '<div class="icon-card">' +
         '<div class="icon-card-visual">' + iconToSvg(def) + '</div>' +
@@ -4920,8 +4920,6 @@ const STARTER_TEMPLATES: Record<string, string> = {
 const FIRST_VISIT_KEY    = 'meeEL-first-visit-done-v1';
 const NOTIFY_CHOICE_KEY  = 'meeEL-notify-choice-v1';
 const COOKIES_ACK_KEY    = 'meeEL-cookies-ack-v1';
-const DAILY_ENABLED_KEY  = 'meeEL-daily-enabled-v1';
-const DAILY_LAST_KEY     = 'meeEL-daily-last-fired-v1';
 
 function lsGet(k: string): string | null {
   try { return localStorage.getItem(k); } catch { return null; }
@@ -4978,9 +4976,6 @@ function lsDel(k: string): void {
   const settingsPage = document.getElementById('settings-page') as HTMLElement | null;
   const back = document.getElementById('settings-back') as HTMLButtonElement | null;
   const close = document.getElementById('settings-close') as HTMLButtonElement | null;
-  const dailyToggle = document.getElementById('toggle-daily') as HTMLInputElement | null;
-  const permStatus = document.getElementById('notif-permission-status') as HTMLElement | null;
-  const permBtn = document.getElementById('notif-permission-btn') as HTMLButtonElement | null;
   const clearBtn = document.getElementById('clear-storage-btn') as HTMLButtonElement | null;
   const storageSize = document.getElementById('storage-size') as HTMLElement | null;
   const replayBtn = document.getElementById('replay-welcome-btn') as HTMLButtonElement | null;
@@ -4997,30 +4992,7 @@ function lsDel(k: string): void {
   }
 
   function refreshSettings() {
-    // Daily toggle
-    if (dailyToggle) {
-      const enabled = lsGet(DAILY_ENABLED_KEY) === 'yes';
-      dailyToggle.checked = enabled;
-      // Disable if permission not granted
-      const granted = ('Notification' in window) && Notification.permission === 'granted';
-      dailyToggle.disabled = !granted;
-    }
-    // Permission status
-    if (permStatus) {
-      if (!('Notification' in window)) {
-        permStatus.textContent = 'Not supported in this browser';
-        if (permBtn) permBtn.disabled = true;
-      } else if (Notification.permission === 'granted') {
-        permStatus.textContent = 'Allowed ✅';
-        if (permBtn) permBtn.disabled = true;
-      } else if (Notification.permission === 'denied') {
-        permStatus.textContent = 'Blocked — enable in browser settings';
-        if (permBtn) permBtn.disabled = true;
-      } else {
-        permStatus.textContent = 'Not asked yet';
-        if (permBtn) permBtn.disabled = false;
-      }
-    }
+    // (Permission status shown by toggle state — no text needed)
     // Storage size
     if (storageSize) {
       let total = 0;
@@ -5041,28 +5013,6 @@ function lsDel(k: string): void {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && settingsPage && !settingsPage.hidden) closeSettings();
-  });
-
-  // Daily toggle
-  dailyToggle?.addEventListener('change', () => {
-    if (dailyToggle.checked) {
-      lsSet(DAILY_ENABLED_KEY, 'yes');
-    } else {
-      lsSet(DAILY_ENABLED_KEY, 'no');
-    }
-  });
-
-  // Ask permission button
-  permBtn?.addEventListener('click', async () => {
-    if (!('Notification' in window)) return;
-    try {
-      const res = await Notification.requestPermission();
-      if (res === 'granted') {
-        lsSet(DAILY_ENABLED_KEY, 'yes');
-        if (dailyToggle) dailyToggle.checked = true;
-      }
-      refreshSettings();
-    } catch {}
   });
 
   // Clear all storage
@@ -5184,51 +5134,6 @@ function isRealWork(code: string): boolean {
     if (banner) banner.hidden = false;
   }, 800);
 
-  // Ask for notification permission (contextual) — only when there is real pending work
-  if (
-    'Notification' in window &&
-    Notification.permission === 'default' &&
-    !lsGet('meeEL-notif-asked-v1')
-  ) {
-    lsSet('meeEL-notif-asked-v1', '1');
-    // Ask after a short pause, so user sees the banner first
-    setTimeout(() => {
-      try {
-        Notification.requestPermission().then((perm) => {
-          if (perm === 'granted') {
-            try {
-              new Notification('meeEL', {
-                body: 'Great — I will tell you when your work is not saved.',
-                icon: '/favicon.svg',
-              });
-            } catch {}
-          }
-        });
-      } catch {}
-    }, 2500);
-  }
-
-  // Send a notification if permission granted + not too recent
-  const lastNotified = lsGet(NOTIFIED_AT_KEY);
-  const lastNotifiedTs = lastNotified ? parseInt(lastNotified, 10) : 0;
-  const ONE_DAY = 24 * 60 * 60 * 1000;
-  const hoursSinceEdit = (Date.now() - unsavedTs) / (1000 * 60 * 60);
-
-  if (
-    'Notification' in window &&
-    Notification.permission === 'granted' &&
-    hoursSinceEdit >= 1 &&                        // at least 1 hour since last edit
-    (Date.now() - lastNotifiedTs) >= ONE_DAY      // not more than once a day
-  ) {
-    try {
-      new Notification('meeEL', {
-        body: 'You wrote code but didn\'t download it. Tap to open meeEL and save your work.',
-        icon: '/favicon.svg',
-        tag: 'meeel-unsaved',
-      });
-      lsSet(NOTIFIED_AT_KEY, String(Date.now()));
-    } catch {}
-  }
 })();
 
 /* ── Banner interactions ── */
