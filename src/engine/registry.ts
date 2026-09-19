@@ -600,6 +600,16 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   'fade-in': { 'animation': 'meeel-fade-in 0.5s ease-out' },
   'fade-out': { 'animation': 'meeel-fade-out 0.5s ease-out' },
   'flip': { 'animation': 'meeel-flip 0.6s ease-in-out' },
+  'fade-up': { 'animation': 'meeel-fade-up 0.5s ease-out' },
+  'fade-down': { 'animation': 'meeel-fade-down 0.5s ease-out' },
+  'slide-left': { 'animation': 'meeel-slide-left 0.4s ease-out' },
+  'slide-right': { 'animation': 'meeel-slide-right 0.4s ease-out' },
+  'swing': { 'animation': 'meeel-swing 0.6s ease-in-out' },
+  'fade-up': { 'animation': 'meeel-fade-up 0.5s ease-out' },
+  'fade-down': { 'animation': 'meeel-fade-down 0.5s ease-out' },
+  'slide-left': { 'animation': 'meeel-slide-left 0.4s ease-out' },
+  'slide-right': { 'animation': 'meeel-slide-right 0.4s ease-out' },
+  'swing': { 'animation': 'meeel-swing 0.6s ease-in-out' },
 };
 
 export function isParametricKeyword(name: string): boolean {

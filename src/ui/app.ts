@@ -4303,6 +4303,11 @@ const TOKENS_LIST: TokenEntry[] = [
   { group: 'Effects', name: 'slide-in', description: 'Slide in from side', value: 'slide-in' },
   { group: 'Effects', name: 'zoom-in', description: 'Zoom in animation', value: 'zoom-in' },
   { group: 'Effects', name: 'flip', description: 'Flip animation', value: 'flip' },
+  { group: 'Effects', name: 'fade-up', description: 'Fade up animation', value: 'fade-up' },
+  { group: 'Effects', name: 'fade-down', description: 'Fade down animation', value: 'fade-down' },
+  { group: 'Effects', name: 'slide-left', description: 'Slide from right', value: 'slide-left' },
+  { group: 'Effects', name: 'slide-right', description: 'Slide from left', value: 'slide-right' },
+  { group: 'Effects', name: 'swing', description: 'Swing animation', value: 'swing' },
 ];
 
 const tokensPage = document.getElementById('tokens-page') as HTMLElement | null;
