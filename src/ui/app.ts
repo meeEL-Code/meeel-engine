@@ -1387,6 +1387,112 @@ document.addEventListener('drop', (e) => {
 /* ============ PREVIEW FULLSCREEN ============ */
 
 const fullscreenBtn = document.getElementById('preview-fullscreen') as HTMLButtonElement | null;
+
+// ── Play Mode toggle ──
+const previewPlay = document.getElementById('preview-play') as HTMLButtonElement | null;
+
+// Helper: forward a key to the iframe as a synthetic event
+function forwardKeyToPreview(key: string) {
+  try {
+    const doc = preview.contentDocument;
+    if (!doc) return;
+    // Dispatch synthetic keydown on iframe's document
+    const ev = new KeyboardEvent('keydown', {
+      key: key,
+      code: key.length === 1 ? 'Key' + key.toUpperCase() : key,
+      bubbles: true,
+      cancelable: true,
+    });
+    doc.dispatchEvent(ev);
+    // Also on body (some listeners bind there)
+    if (doc.body) doc.body.dispatchEvent(ev);
+  } catch (e) { /* cross-origin, ignore */ }
+}
+
+function handleKeyInput(value: string) {
+  if (!value) return;
+  for (const ch of value) {
+    forwardKeyToPreview(ch);
+  }
+}
+
+function setPlayMode(on: boolean) {
+  document.body.classList.toggle('play-mode', on);
+  previewPlay?.classList.toggle('playing', on);
+
+  const keyCapture = document.getElementById('meeel-key-capture') as HTMLInputElement | null;
+
+  if (on) {
+    if (keyCapture) {
+      keyCapture.value = '';
+      keyCapture.style.pointerEvents = 'auto';
+      setTimeout(() => {
+        try { keyCapture.focus(); } catch {}
+      }, 50);
+    }
+    try { localStorage.setItem('meeel-play-mode', 'yes'); } catch {}
+  } else {
+    if (keyCapture) {
+      keyCapture.blur();
+      keyCapture.style.pointerEvents = 'none';
+    }
+    try { localStorage.setItem('meeel-play-mode', 'no'); } catch {}
+    try { cm.focus(); } catch {}
+  }
+}
+
+// Hidden input listeners — capture all input methods (mobile + desktop)
+const keyCaptureEl = document.getElementById('meeel-key-capture') as HTMLInputElement | null;
+
+// 1. input event — mobile reliable
+keyCaptureEl?.addEventListener('input', () => {
+  if (!document.body.classList.contains('play-mode')) return;
+  const v = keyCaptureEl.value;
+  if (v) {
+    handleKeyInput(v);
+    keyCaptureEl.value = ''; // reset for next input
+  }
+});
+
+// 2. keydown event — desktop (also handle special keys like Space, Arrow)
+keyCaptureEl?.addEventListener('keydown', (e) => {
+  if (!document.body.classList.contains('play-mode')) return;
+  // Special keys that input event misses
+  const special = ['Space', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Escape'];
+  if (special.includes(e.key)) {
+    e.preventDefault();
+    forwardKeyToPreview(e.key === 'Space' ? ' ' : e.key);
+  }
+});
+
+// Re-focus hidden input on tap in preview area
+document.querySelector('.preview-pane')?.addEventListener('click', () => {
+  if (document.body.classList.contains('play-mode')) {
+    if (keyCaptureEl) {
+      keyCaptureEl.value = '';
+      try { keyCaptureEl.focus(); } catch {}
+    }
+  }
+});
+
+previewPlay?.addEventListener('click', () => {
+  const currentlyOn = document.body.classList.contains('play-mode');
+  setPlayMode(!currentlyOn);
+});
+
+// Escape exits play mode
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.body.classList.contains('play-mode')) {
+    setPlayMode(false);
+  }
+});
+
+// Restore play mode on load
+try {
+  if (localStorage.getItem('meeel-play-mode') === 'yes') {
+    setPlayMode(true);
+  }
+} catch {}
 const previewPane = document.querySelector('.preview-pane') as HTMLElement | null;
 
 // ── Preview view switch (TV / Desktop / Mobile) ──
@@ -2964,6 +3070,9 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'focus-next', group: 'Form', description: 'Jump to next input',
     code: 'on-click-[focus-next name-input]',
     icon: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="15 8 19 12 15 16"/>' },
+  { name: 'on-key', group: 'Interactive', description: 'Run action when key pressed',
+    code: 'on-key-[Space] show secret-box',
+    icon: '<rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="14" y2="10"/><line x1="18" y1="10" x2="18" y2="10"/><line x1="7" y1="14" x2="17" y2="14"/>' },
   { name: 'blur-all', group: 'Form', description: 'Close keyboard / unfocus',
     code: 'on-click-[blur-all]',
     icon: '<circle cx="12" cy="12" r="8" stroke-dasharray="2 2"/>' },

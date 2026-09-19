@@ -1143,6 +1143,7 @@ type ModeKind = 'mobile' | 'tablet' | 'desktop';
 
 // Collect on-click handlers during block generation
 let collectedHandlers: Array<{ elementId: string; actions: string[] }> = [];
+let collectedKeyHandlers: Array<{ key: string; actions: string[] }> = [];
 let collectedTimers: Array<{ period: number; actions: string[] }> = [];
 
 function getModeKind(name: string): ModeKind | null {
@@ -1242,6 +1243,7 @@ export function generateParts(
   jsFilename = 'script.js'
 ): GenerateParts {
   collectedHandlers = [];
+  collectedKeyHandlers = [];
   collectedTimers = [];
   const page = root.children.find((c) => c.kind === 'block') as BlockNode | undefined;
   if (!page) {
@@ -1434,7 +1436,7 @@ export function generateParts(
   const fullHtml = wrapHtml(finalHtml, css);
   const htmlFile = wrapHtmlExternal(finalHtml, cssFilename);
 
-  const js = generateJavaScript(collectedHandlers, collectedTimers);
+  const js = generateJavaScript(collectedHandlers, collectedTimers, collectedKeyHandlers);
   const fullHtmlWithJs = wrapHtml(finalHtml, css, js);
   const htmlFileWithJs = wrapHtmlExternal(finalHtml, cssFilename, jsFilename);
 
@@ -1900,6 +1902,24 @@ function generateBlock(
         const actions = val.split(/[\n;]/).map((s) => s.trim()).filter(Boolean);
         if (actions.length > 0) {
           collectedHandlers.push({ elementId: id, actions });
+        }
+      }
+      else if (propDef.special === 'on-key') {
+        // Syntax: on-key-[a show secret-box]
+        // Or: on-key-[Space write msg Hello]
+        // Or multi-line:
+        //   on-key-[a
+        //     show secret-box
+        //     hide other-box
+        //   ]
+        const parts = val.split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+          const key = parts[0];
+          const rest = val.slice(key.length).trim();
+          const actions = rest.split(/[\n;]/).map((s) => s.trim()).filter(Boolean);
+          if (actions.length > 0) {
+            collectedKeyHandlers.push({ key, actions });
+          }
         }
       }
       else if (propDef.special === 'open') {
@@ -4454,9 +4474,10 @@ ${indent}</label>`;
 
 function generateJavaScript(
   handlers: Array<{ elementId: string; actions: string[] }>,
-  timers: Array<{ period: number; actions: string[] }> = []
+  timers: Array<{ period: number; actions: string[] }> = [],
+  keyHandlers: Array<{ key: string; actions: string[] }> = []
 ): string {
-  if (handlers.length === 0 && timers.length === 0) return '';
+  if (handlers.length === 0 && timers.length === 0 && keyHandlers.length === 0) return '';
 
   const lines: string[] = [];
   lines.push('/* App script */');
@@ -4517,6 +4538,25 @@ function generateJavaScript(
       if (code) lines.push('    ' + code);
     }
     lines.push('  });');
+  }
+
+  // Key handlers — attach on BOTH iframe and parent (mobile-friendly)
+  if (keyHandlers.length > 0) {
+    lines.push('');
+    lines.push('  function __meeel_keyHandler(__e) {');
+    for (const kh of keyHandlers) {
+      const keyq = JSON.stringify(kh.key);
+      lines.push(`    if (__e.key === ${keyq} || __e.code === ${keyq} || __e.key.toLowerCase() === ${JSON.stringify(kh.key.toLowerCase())}) {`);
+      for (const act of kh.actions) {
+        const code = actionToJs(act);
+        if (code) lines.push('      ' + code);
+      }
+      lines.push('    }');
+    }
+    lines.push('  }');
+    lines.push('  document.addEventListener(\'keydown\', __meeel_keyHandler, true);');
+    lines.push('  try { if (window.parent && window.parent !== window) window.parent.addEventListener(\'keydown\', __meeel_keyHandler, true); } catch(e) {}');
+    lines.push('  // Also listen on body (capture) — helps when editor is focused');
   }
 
   for (const t of timers) {

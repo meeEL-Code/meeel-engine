@@ -4080,3 +4080,56 @@ button, a, input, textarea {
 .editor-host .CodeMirror-line.cm-error-wrap {
   background: rgba(239, 68, 68, 0.10) !important;
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PLAY MODE — preview takes over, editor hidden
+   ══════════════════════════════════════════════════════════════ */
+
+body.play-mode .editor-pane,
+body.play-mode header .pane-header:first-child,
+body.play-mode .app-header .code-only {
+  display: none !important;
+}
+
+body.play-mode .layout {
+  display: block !important;
+  grid-template-columns: 1fr !important;
+}
+
+body.play-mode .pane.preview-pane {
+  height: 100vh !important;
+  width: 100vw !important;
+  border: 0 !important;
+}
+
+body.play-mode .pane.preview-pane .pane-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #181818;
+}
+
+body.play-mode .btn-play {
+  background: #16a34a !important;
+  color: #fff !important;
+}
+
+/* Make preview responsive to parent width in play mode */
+body.play-mode .preview-pane iframe#preview {
+  max-width: 100% !important;
+  width: 100% !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  height: calc(100vh - 44px) !important;
+}
+
+/* Stop button label */
+.btn-play.playing svg {
+  display: none;
+}
+.btn-play.playing::after {
+  content: '■';
+  font-size: 14px;
+  color: #fff;
+}

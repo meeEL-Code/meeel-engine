@@ -4,7 +4,7 @@ export interface BlockDef {
 
 export interface PropertyDef {
   css: string;
-  special?: 'content' | 'src' | 'type' | 'placeholder' | 'href' | 'value' | 'alt';
+  special?: 'content' | 'src' | 'type' | 'placeholder' | 'href' | 'value' | 'alt' | 'on-key';
   transform?: (v: string) => string;
 }
 
@@ -541,6 +541,7 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'alt-text': { css: '', special: 'alt' },
   'href': { css: '', special: 'href' },
   'on-click': { css: '', special: 'on-click' },
+  'on-key': { css: '', special: 'on-key' },
   'open': { css: '', special: 'open' },
   'from-toggle': { css: '', special: 'from-toggle' },
   'check-color': { css: '', special: 'input-check-color' },

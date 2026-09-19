@@ -120,6 +120,9 @@
             </button>
           </div>
           <select id="page-selector" class="page-selector" hidden></select>
+          <button id="preview-play" class="btn-icon btn-play" title="Play mode" aria-label="Play mode" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
           <button id="preview-fullscreen" class="btn-icon" title="Full screen" aria-label="Full screen">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
@@ -133,6 +136,10 @@
       <iframe id="preview"></iframe>
     </section>
   </main>
+
+  <!-- Hidden input — used only for keyboard capture in Play Mode -->
+  <input id="meeel-key-capture" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+         style="position:fixed;top:50%;left:50%;width:1px;height:1px;opacity:0;border:0;padding:0;pointer-events:none;z-index:-1;" />
 
   <!-- Publish Modal -->
   <div class="modal-backdrop" id="publish-modal" hidden>
