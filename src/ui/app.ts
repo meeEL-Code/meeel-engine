@@ -1865,58 +1865,21 @@ const FONTS: FontDef[] = [
   { name: 'Italianno',       stack: 'Italianno, cursive',                    tag: 'style' },
 
   // ── Modern Sans-serif (15) ──
-  { name: 'Poppins',            stack: 'Poppins, sans-serif',                 tag: 'web' },
-  { name: 'Montserrat',         stack: 'Montserrat, sans-serif',              tag: 'web' },
-  { name: 'Work Sans',          stack: '"Work Sans", sans-serif',             tag: 'web' },
-  { name: 'DM Sans',            stack: '"DM Sans", sans-serif',               tag: 'web' },
-  { name: 'Rubik',              stack: 'Rubik, sans-serif',                   tag: 'web' },
-  { name: 'Manrope',            stack: 'Manrope, sans-serif',                 tag: 'web' },
-  { name: 'Karla',              stack: 'Karla, sans-serif',                   tag: 'web' },
-  { name: 'Outfit',             stack: 'Outfit, sans-serif',                  tag: 'web' },
   { name: 'Sora',               stack: 'Sora, sans-serif',                    tag: 'web' },
   { name: 'Space Grotesk',      stack: '"Space Grotesk", sans-serif',         tag: 'web' },
   { name: 'Plus Jakarta Sans',  stack: '"Plus Jakarta Sans", sans-serif',     tag: 'web' },
-  { name: 'Figtree',            stack: 'Figtree, sans-serif',                 tag: 'web' },
   { name: 'Urbanist',           stack: 'Urbanist, sans-serif',                tag: 'web' },
   { name: 'Lexend',             stack: 'Lexend, sans-serif',                  tag: 'web' },
-  { name: 'Cabin',              stack: 'Cabin, sans-serif',                   tag: 'web' },
 
   // ── Serif (10) ──
-  { name: 'Playfair Display',   stack: '"Playfair Display", serif',           tag: 'web' },
-  { name: 'Merriweather',       stack: 'Merriweather, serif',                 tag: 'web' },
-  { name: 'Lora',               stack: 'Lora, serif',                         tag: 'web' },
   { name: 'Source Serif',       stack: '"Source Serif", serif',               tag: 'web' },
-  { name: 'Crimson Pro',        stack: '"Crimson Pro", serif',                tag: 'web' },
-  { name: 'Libre Baskerville',  stack: '"Libre Baskerville", serif',          tag: 'web' },
-  { name: 'EB Garamond',        stack: '"EB Garamond", serif',                tag: 'web' },
   { name: 'Cormorant',          stack: 'Cormorant, serif',                    tag: 'web' },
-  { name: 'Bitter',             stack: 'Bitter, serif',                       tag: 'web' },
-  { name: 'Spectral',           stack: 'Spectral, serif',                     tag: 'web' },
 
   // ── Display (8) ──
-  { name: 'Bebas Neue',         stack: '"Bebas Neue", sans-serif',            tag: 'style' },
-  { name: 'Anton',              stack: 'Anton, sans-serif',                   tag: 'style' },
-  { name: 'Oswald',             stack: 'Oswald, sans-serif',                  tag: 'style' },
-  { name: 'Archivo Black',      stack: '"Archivo Black", sans-serif',         tag: 'style' },
-  { name: 'Righteous',          stack: 'Righteous, cursive',                  tag: 'style' },
-  { name: 'Lobster',            stack: 'Lobster, cursive',                    tag: 'style' },
-  { name: 'Pacifico',           stack: 'Pacifico, cursive',                   tag: 'style' },
-  { name: 'Permanent Marker',   stack: '"Permanent Marker", cursive',         tag: 'style' },
 
   // ── Handwriting (6) ──
-  { name: 'Caveat',             stack: 'Caveat, cursive',                     tag: 'style' },
-  { name: 'Dancing Script',     stack: '"Dancing Script", cursive',           tag: 'style' },
-  { name: 'Great Vibes',        stack: '"Great Vibes", cursive',              tag: 'style' },
-  { name: 'Satisfy',            stack: 'Satisfy, cursive',                    tag: 'style' },
-  { name: 'Kalam',              stack: 'Kalam, cursive',                      tag: 'style' },
-  { name: 'Indie Flower',       stack: '"Indie Flower", cursive',             tag: 'style' },
 
   // ── Monospace (5) ──
-  { name: 'JetBrains Mono',     stack: '"JetBrains Mono", monospace',         tag: 'web' },
-  { name: 'Fira Code',          stack: '"Fira Code", monospace',              tag: 'web' },
-  { name: 'Source Code Pro',    stack: '"Source Code Pro", monospace',        tag: 'web' },
-  { name: 'IBM Plex Mono',      stack: '"IBM Plex Mono", monospace',          tag: 'web' },
-  { name: 'Space Mono',         stack: '"Space Mono", monospace',             tag: 'web' },
 ];
 
 const fontsPage = document.getElementById('fonts-page') as HTMLElement | null;
@@ -2191,11 +2154,9 @@ const NAMED_COLORS: NamedColor[] = [
 
   // ═══ More Shades (23) ═══
   { name: 'Ruby',         hex: '#E0115F', meel: 'ruby' },
-  { name: 'Emerald',      hex: '#50C878', meel: 'emerald' },
   { name: 'Sapphire',     hex: '#0F52BA', meel: 'sapphire' },
   { name: 'Amethyst',     hex: '#9966CC', meel: 'amethyst' },
   { name: 'Topaz',        hex: '#FFC87C', meel: 'topaz' },
-  { name: 'Pearl',        hex: '#EAE0C8', meel: 'pearl' },
   { name: 'Opal',         hex: '#A8C3BC', meel: 'opal' },
   { name: 'Onyx',         hex: '#353839', meel: 'onyx' },
   { name: 'Jade',         hex: '#00A86B', meel: 'jade' },
@@ -2207,7 +2168,6 @@ const NAMED_COLORS: NamedColor[] = [
   { name: 'Vermillion',   hex: '#E34234', meel: 'vermillion' },
   { name: 'Scarlet',      hex: '#FF2400', meel: 'scarlet' },
   { name: 'Chartreuse',   hex: '#DFFF00', meel: 'chartreuse' },
-  { name: 'Fuchsia',      hex: '#FF77FF', meel: 'fuchsia' },
   { name: 'Mauve',        hex: '#E0B0FF', meel: 'mauve' },
   { name: 'Sepia',        hex: '#704214', meel: 'sepia' },
   { name: 'Ochre',        hex: '#CC7722', meel: 'ochre' },
