@@ -1,3 +1,5 @@
+import CodeMirror from 'codemirror';
+import 'codemirror/lib/codemirror.css';
 import { lex } from '../engine/lexer';
 import { parse } from '../engine/parser';
 import { resolve, ResolveError } from '../engine/resolver';
@@ -25,14 +27,43 @@ const DEFAULT_CODE = `home-page-[
 ]
 `;
 
-const editor = document.getElementById('editor') as HTMLTextAreaElement;
-const highlightOut = document.getElementById('highlight-output') as HTMLElement;
+const editorHost = document.getElementById('editor-host') as HTMLElement;
+const cm = (CodeMirror as any)(editorHost, {
+  value: DEFAULT_CODE,
+  lineNumbers: true,
+  lineWrapping: true,
+  indentUnit: 2,
+  tabSize: 2,
+  viewportMargin: Infinity,
+  autofocus: false,
+});
+
+// Proxy — existing editor.value / selectionStart / addEventListener keep working
+const editor: any = {
+  get value() { return cm.getValue(); },
+  set value(v: string) { cm.setValue(v); },
+  get selectionStart() { return cm.indexFromPos(cm.getCursor('from')); },
+  get selectionEnd() { return cm.indexFromPos(cm.getCursor('to')); },
+  set selectionStart(n: number) { cm.setCursor(cm.posFromIndex(n)); },
+  set selectionEnd(n: number) { cm.setCursor(cm.posFromIndex(n)); },
+  focus() { cm.focus(); },
+  blur() { cm.getInputField().blur(); },
+  addEventListener(ev: string, cb: any) {
+    if (ev === 'input') cm.on('change', () => cb());
+    else if (ev === 'keydown') cm.on('keydown', (_c: any, e: any) => { cb(e); });
+    else if (ev === 'click') cm.on('cursorActivity', () => cb());
+    else if (ev === 'blur') cm.on('blur', () => cb());
+  },
+  get scrollTop() { return cm.getScrollInfo().top; },
+  get scrollLeft() { return cm.getScrollInfo().left; },
+  style: {} as any,
+};
+const highlightOut: any = { parentElement: { scrollTop: 0, scrollLeft: 0 }, innerHTML: '' };
+const gutter: any = { innerHTML: '', scrollTop: 0 };
+
 const preview = document.getElementById('preview') as HTMLIFrameElement;
-const gutter = document.getElementById('gutter') as HTMLElement;
 const suggestionBar = document.getElementById('suggestion-bar') as HTMLElement;
 const pageSelector = document.getElementById('page-selector') as HTMLSelectElement;
-
-editor.value = DEFAULT_CODE;
 
 let debounceTimer: number | undefined;
 let errorMap = new Map<number, string | undefined>();
@@ -174,51 +205,10 @@ function highlight(source: string): string {
 }
 
 /* ============ SYNC ============ */
+// CodeMirror handles gutter, highlight, and scroll natively
 
-function syncGutter() {
-  const lines = editor.value.split('\n');
-  const html = lines
-    .map((_, i) => {
-      const n = i + 1;
-      const cls = errorMap.has(n) ? 'ln has-error' : 'ln';
-      return `<span class="${cls}">${n}</span>`;
-    })
-    .join('');
-  gutter.innerHTML = html;
-  gutter.scrollTop = editor.scrollTop;
-}
-
-let __lastHighlightedText: string | null = null;
-
-function syncHighlight(force = false) {
-  const currentText = editor.value;
-  if (!force && currentText === __lastHighlightedText) {
-    // Nothing changed — just sync scroll
-    const pre = highlightOut.parentElement as HTMLPreElement;
-    pre.scrollTop = editor.scrollTop;
-    pre.scrollLeft = editor.scrollLeft;
-    return;
-  }
-  __lastHighlightedText = currentText;
-
-  const t0 = performance.now();
-  highlightOut.innerHTML = highlight(currentText) + '\n';
-  const pre = highlightOut.parentElement as HTMLPreElement;
-  pre.scrollTop = editor.scrollTop;
-  pre.scrollLeft = editor.scrollLeft;
-  const t1 = performance.now();
-  if (t1 - t0 > 50) {
-    // Only log slow highlights for debugging
-    console.debug(`Highlight took ${Math.round(t1 - t0)}ms for ${currentText.length} chars`);
-  }
-}
-
-editor.addEventListener('scroll', () => {
-  const pre = highlightOut.parentElement as HTMLPreElement;
-  pre.scrollTop = editor.scrollTop;
-  pre.scrollLeft = editor.scrollLeft;
-  gutter.scrollTop = editor.scrollTop;
-});
+function syncGutter() { /* no-op */ }
+function syncHighlight(_force = false) { /* no-op */ }
 
 /* ============ AUTOCOMPLETE ============ */
 

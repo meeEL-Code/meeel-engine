@@ -3693,3 +3693,95 @@ button, a, input, textarea {
     animation: meeel-fade-in 80ms linear both;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   CODEMIRROR THEME
+   ══════════════════════════════════════════════════════════════ */
+
+.editor-host {
+  flex: 1;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.editor-host .CodeMirror {
+  height: 100% !important;
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  background: #1e1e1e !important;
+  color: #f0f0f0 !important;
+  padding: 0 !important;
+  font-variant-ligatures: none !important;
+}
+
+.editor-host .CodeMirror-gutters {
+  background: #1a1a1a !important;
+  border-right: 1px solid #262626 !important;
+  min-width: 42px;
+}
+
+.editor-host .CodeMirror-linenumber {
+  color: #555 !important;
+  padding: 0 10px 0 6px !important;
+  font-size: 12px !important;
+}
+
+.editor-host .CodeMirror-lines {
+  padding: 14px 0 !important;
+}
+
+.editor-host .CodeMirror-line {
+  padding: 0 16px !important;
+}
+
+.editor-host .CodeMirror-cursor {
+  border-left: 2px solid #4fc1ff !important;
+  border-right: none !important;
+}
+
+.editor-host .CodeMirror-selected {
+  background: rgba(74, 158, 255, 0.3) !important;
+}
+
+.editor-host .CodeMirror-focused .CodeMirror-selected {
+  background: rgba(74, 158, 255, 0.35) !important;
+}
+
+.editor-host .CodeMirror-activeline-background {
+  background: rgba(255,255,255,0.02) !important;
+}
+
+/* Scrollbar */
+.editor-host .CodeMirror-vscrollbar,
+.editor-host .CodeMirror-hscrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120,120,120,0.5) transparent;
+}
+.editor-host .CodeMirror-vscrollbar::-webkit-scrollbar,
+.editor-host .CodeMirror-hscrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.editor-host .CodeMirror-vscrollbar::-webkit-scrollbar-thumb,
+.editor-host .CodeMirror-hscrollbar::-webkit-scrollbar-thumb {
+  background: rgba(120,120,120,0.4);
+  border-radius: 5px;
+}
+.editor-host .CodeMirror-vscrollbar::-webkit-scrollbar-track,
+.editor-host .CodeMirror-hscrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Error line */
+.editor-host .cm-error-line {
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+
+.editor-host .CodeMirror-linenumber.cm-error-linenum {
+  color: #ef4444 !important;
+  font-weight: 600;
+}
