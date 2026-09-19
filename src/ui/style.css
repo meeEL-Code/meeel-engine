@@ -5342,3 +5342,133 @@ header .btn-download.icon-only {
     font-size: 12px;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PREVIEW BOTTOM BAR + CONSOLE
+   ══════════════════════════════════════════════════════════════ */
+
+.preview-pane {
+  display: flex !important;
+  flex-direction: column;
+  position: relative;
+}
+
+.preview-pane iframe#preview {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #fff;
+}
+
+/* Bottom action bar */
+.preview-bottom-bar {
+  display: flex;
+  flex-shrink: 0;
+  background: #0f1524;
+  border-top: 1px solid #262626;
+  padding: 4px 6px;
+  gap: 4px;
+  min-height: 48px;
+  align-items: stretch;
+}
+
+.pbb-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #b0b0b0;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 40px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pbb-btn:hover {
+  background: #1a2336;
+  color: #ffffff;
+}
+
+.pbb-btn:active {
+  transform: scale(0.96);
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.pbb-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+/* Console panel */
+.preview-console {
+  flex-shrink: 0;
+  background: #0a0f17;
+  border-top: 1px solid #262626;
+  color: #86efac;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 12px 14px;
+  max-height: 40vh;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-overflow-scrolling: touch;
+}
+
+.preview-console .line {
+  padding: 3px 0;
+  border-bottom: 1px solid #1a2332;
+  color: #94a3b8;
+}
+
+.preview-console .line.error {
+  color: #f87171;
+}
+
+.preview-console .line.log {
+  color: #86efac;
+}
+
+.preview-console .line.info {
+  color: #60a5fa;
+}
+
+.preview-console .empty {
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Remove old preview header styles */
+.preview-pane .pane-header,
+.preview-pane .preview-controls,
+.preview-pane .view-switch {
+  display: none !important;
+}
+
+
+/* ── Force preview full width (view switcher removed) ── */
+.preview-pane iframe#preview,
+.preview-pane[data-view] iframe#preview {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  transition: none !important;
+}

@@ -1389,6 +1389,79 @@ document.addEventListener('drop', (e) => {
 
 const fullscreenBtn = document.getElementById('preview-fullscreen') as HTMLButtonElement | null;
 
+// ── Preview bottom bar actions ──
+const previewConsole = document.getElementById('preview-console') as HTMLElement | null;
+const previewConsoleBtn = document.getElementById('preview-console-btn') as HTMLButtonElement | null;
+const previewRefreshBtn = document.getElementById('preview-refresh') as HTMLButtonElement | null;
+
+function appendConsoleLine(kind: 'log' | 'error' | 'info', text: string) {
+  if (!previewConsole) return;
+  const line = document.createElement('div');
+  line.className = 'line ' + kind;
+  line.textContent = (kind === 'error' ? '✗ ' : kind === 'info' ? 'ℹ ' : '› ') + text;
+  previewConsole.appendChild(line);
+  previewConsole.scrollTop = previewConsole.scrollHeight;
+  // Keep max 200 lines
+  while (previewConsole.children.length > 200) {
+    previewConsole.removeChild(previewConsole.firstChild as ChildNode);
+  }
+}
+
+function clearConsole() {
+  if (previewConsole) previewConsole.innerHTML = '';
+}
+
+// Capture console from preview iframe
+try {
+  preview.addEventListener('load', () => {
+    clearConsole();
+    try {
+      const w = preview.contentWindow as any;
+      if (!w) return;
+      // Hook console methods
+      (['log', 'warn', 'info', 'error'] as const).forEach((method) => {
+        const orig = w.console[method];
+        w.console[method] = function (...args: any[]) {
+          try {
+            const txt = args.map((a) => {
+              try { return typeof a === 'string' ? a : JSON.stringify(a); }
+              catch { return String(a); }
+            }).join(' ');
+            appendConsoleLine(method === 'error' ? 'error' : method === 'warn' ? 'error' : method === 'info' ? 'info' : 'log', txt);
+          } catch {}
+          try { orig.apply(w.console, args); } catch {}
+        };
+      });
+      // Hook window.onerror
+      w.addEventListener('error', (e: any) => {
+        appendConsoleLine('error', (e && e.message) || 'Unknown error');
+      });
+      appendConsoleLine('info', 'Preview loaded');
+    } catch (e) { /* cross-origin, ok */ }
+  });
+} catch {}
+
+previewConsoleBtn?.addEventListener('click', () => {
+  if (!previewConsole) return;
+  const willShow = previewConsole.hidden;
+  previewConsole.hidden = !willShow;
+  previewConsoleBtn.classList.toggle('active', willShow);
+  if (willShow) {
+    previewConsole.scrollTop = previewConsole.scrollHeight;
+  }
+});
+
+previewRefreshBtn?.addEventListener('click', () => {
+  // Trigger re-render by re-running generator
+  try {
+    // Simplest: just reload the iframe by reassigning srcdoc
+    // (Our code already sets preview.srcdoc elsewhere; find the last set)
+    render();
+    appendConsoleLine('info', 'Preview refreshed');
+  } catch {}
+  if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
+});
+
 // ── View tabs (mobile: switch between editor/preview) ──
 function setActiveTab(tab: 'code' | 'preview') {
   document.body.dataset.tab = tab;
@@ -1639,34 +1712,15 @@ try {
 const previewPane = document.querySelector('.preview-pane') as HTMLElement | null;
 
 // ── Preview view switch (TV / Desktop / Mobile) ──
-function setPreviewView(view: 'tablet' | 'desktop' | 'mobile') {
-  if (!previewPane) return;
-  previewPane.dataset.view = view;
-  document.querySelectorAll('.view-btn').forEach((btn) => {
-    const el = btn as HTMLElement;
-    el.classList.toggle('active', el.dataset.view === view);
-  });
-  try { localStorage.setItem('meeel-preview-view', view); } catch {}
-}
 
-document.querySelectorAll('.view-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const view = (btn as HTMLElement).dataset.view as 'tablet' | 'desktop' | 'mobile';
-    if (view) setPreviewView(view);
-  });
-});
 
 // Restore saved view on load
+// Clear any stale preview view state
 try {
-  const savedView = localStorage.getItem('meeel-preview-view');
-  if (savedView === 'tablet' || savedView === 'desktop' || savedView === 'mobile') {
-    setPreviewView(savedView);
-  } else {
-    previewPane.dataset.view = 'desktop';
-  }
-} catch {
-  previewPane.dataset.view = 'desktop';
-}
+  const pp = document.querySelector('.preview-pane') as HTMLElement | null;
+  if (pp) pp.removeAttribute('data-view');
+  localStorage.removeItem('meeel-preview-view');
+} catch {}
 
 if (fullscreenBtn && previewPane) {
   fullscreenBtn.addEventListener('click', async () => {
