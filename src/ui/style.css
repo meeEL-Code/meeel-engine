@@ -5912,3 +5912,405 @@ header .btn-download.icon-only {
     margin-right: 0 !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   MASTER RESPONSIVE — TV, touch, D-pad focus, all devices
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Global focus ring for D-pad / keyboard nav (TV remotes) ── */
+*:focus-visible {
+  outline: 3px solid #2563eb !important;
+  outline-offset: 2px !important;
+  border-radius: 6px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #2563eb !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* Remove ugly default focus in mouse context */
+*:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOUCH DEVICES — bigger targets, no hover ghost
+   ══════════════════════════════════════════════════════════════ */
+
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"],
+  .btn,
+  .pbb-btn,
+  .view-tab,
+  .tools-card,
+  input,
+  select {
+    min-height: 48px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:hover:not(:active),
+  .btn:hover:not(:active),
+  .pbb-btn:hover:not(:active) {
+    transform: none !important;
+  }
+
+  button:active,
+  .btn:active,
+  .pbb-btn:active,
+  .view-tab:active,
+  .tools-card:active {
+    transform: scale(0.95) !important;
+  }
+
+  /* Scrollbar minimal on touch */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TV / BIG SCREENS (1920px+) — large, focus-driven, remote-friendly
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1920px) {
+  html, body { font-size: 17px; }
+
+  /* Top bar — bigger */
+  .app-header,
+  header {
+    min-height: 84px !important;
+    padding: 14px 40px !important;
+  }
+
+  .app-header .btn-icon,
+  header .btn-icon,
+  header button {
+    min-height: 60px !important;
+    min-width: 60px !important;
+    padding: 12px 22px !important;
+    font-size: 16px !important;
+    border-radius: 12px !important;
+  }
+
+  .app-header .btn-icon svg,
+  header .btn-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  /* Tab switch */
+  .view-tab {
+    min-height: 64px !important;
+    font-size: 18px !important;
+    padding: 16px 28px !important;
+  }
+
+  .view-tab svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Side/bottom bar buttons — large */
+  .editor-bottom-bar,
+  .preview-bottom-bar {
+    min-height: 88px !important;
+    padding: 10px 8px !important;
+    gap: 10px !important;
+  }
+
+  .pbb-btn {
+    min-height: 76px !important;
+    font-size: 15px !important;
+    padding: 14px 12px !important;
+    gap: 8px !important;
+  }
+
+  .pbb-btn svg {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  /* Sidebar width on TV */
+  @media (min-width: 768px) {
+    .editor-bottom-bar,
+    .preview-bottom-bar {
+      flex: 0 0 96px !important;
+      width: 96px !important;
+      min-width: 96px !important;
+      max-width: 96px !important;
+    }
+  }
+
+  /* Editor — larger text */
+  .CodeMirror {
+    font-size: 18px !important;
+    line-height: 1.8 !important;
+  }
+
+  .CodeMirror-linenumber {
+    font-size: 15px !important;
+  }
+
+  .CodeMirror-gutters {
+    min-width: 64px !important;
+  }
+
+  /* Tools drawer — spacious */
+  .tools-drawer {
+    padding: 32px !important;
+    max-width: 620px !important;
+  }
+
+  .tools-card {
+    min-height: 104px !important;
+    padding: 24px 28px !important;
+    border-radius: 18px !important;
+  }
+
+  .tools-card-title {
+    font-size: 22px !important;
+  }
+
+  .tools-card-desc {
+    font-size: 16px !important;
+  }
+
+  .tools-card-icon svg {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* Modal — full-screen comfort on TV */
+  .modal {
+    max-width: 1400px !important;
+    border-radius: 20px !important;
+  }
+
+  .modal-header {
+    padding: 22px 32px !important;
+  }
+
+  .modal-brand {
+    font-size: 22px !important;
+  }
+
+  .modal-tab {
+    min-height: 52px !important;
+    font-size: 17px !important;
+    padding: 12px 24px !important;
+  }
+
+  .modal-body pre,
+  #modal-code {
+    font-size: 16px !important;
+    padding: 32px 40px !important;
+  }
+
+  .modal-footer > button {
+    min-height: 60px !important;
+    padding: 16px 32px !important;
+    font-size: 17px !important;
+  }
+
+  /* Autocomplete / suggestions */
+  .suggestion-bar {
+    padding: 14px 20px !important;
+  }
+
+  .sugg-item {
+    font-size: 16px !important;
+    padding: 12px 18px !important;
+  }
+
+  /* D-pad on TV — bigger */
+  .virtual-dpad {
+    grid-template-columns: repeat(3, 72px) !important;
+    grid-template-rows: repeat(3, 72px) !important;
+    gap: 10px !important;
+    bottom: 40px !important;
+    right: 40px !important;
+  }
+
+  .dpad-btn {
+    width: 72px !important;
+    height: 72px !important;
+    font-size: 24px !important;
+    border-radius: 18px !important;
+  }
+
+  .dpad-exit {
+    width: 48px !important;
+    height: 48px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ULTRA-WIDE TV (2560px+)
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 2560px) {
+  html, body { font-size: 20px; }
+
+  .app-header,
+  header {
+    min-height: 100px !important;
+    padding: 18px 60px !important;
+  }
+
+  .app-header .btn-icon,
+  header .btn-icon,
+  header button {
+    min-height: 72px !important;
+    min-width: 72px !important;
+    padding: 16px 28px !important;
+    font-size: 19px !important;
+  }
+
+  .CodeMirror {
+    font-size: 21px !important;
+    line-height: 1.85 !important;
+  }
+
+  .editor-bottom-bar,
+  .preview-bottom-bar {
+    flex: 0 0 120px !important;
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+  }
+
+  .pbb-btn {
+    min-height: 96px !important;
+    font-size: 17px !important;
+  }
+
+  .pbb-btn svg {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .virtual-dpad {
+    grid-template-columns: repeat(3, 88px) !important;
+    grid-template-rows: repeat(3, 88px) !important;
+  }
+
+  .dpad-btn {
+    width: 88px !important;
+    height: 88px !important;
+    font-size: 30px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LANDSCAPE PHONE / TABLET — compact but touch-friendly
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .app-header,
+  header {
+    min-height: 44px !important;
+    padding: 4px 12px !important;
+  }
+
+  .view-tabs {
+    min-height: 40px !important;
+    padding: 3px !important;
+  }
+
+  .view-tab {
+    min-height: 34px !important;
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+
+  .editor-bottom-bar,
+  .preview-bottom-bar {
+    min-height: 42px !important;
+    padding: 3px 6px !important;
+  }
+
+  .pbb-btn {
+    min-height: 36px !important;
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+  }
+
+  .pbb-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .virtual-dpad {
+    grid-template-columns: repeat(3, 44px) !important;
+    grid-template-rows: repeat(3, 44px) !important;
+    bottom: 12px !important;
+    right: 12px !important;
+  }
+
+  .dpad-btn {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 16px !important;
+    border-radius: 12px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TABLET LANDSCAPE — split with sidebars
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) and (max-width: 1400px) {
+  .editor-bottom-bar,
+  .preview-bottom-bar {
+    flex: 0 0 60px !important;
+    width: 60px !important;
+    min-width: 60px !important;
+    max-width: 60px !important;
+  }
+
+  .pbb-btn {
+    min-height: 56px !important;
+    font-size: 10px !important;
+  }
+
+  .pbb-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FOCUS NAV HELPER — D-pad skips hidden elements
+   ══════════════════════════════════════════════════════════════ */
+
+[hidden] {
+  display: none !important;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  pointer-events: none !important;
+  opacity: 0.5 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SMOOTH ZOOM + TEXT SIZING across all devices
+   ══════════════════════════════════════════════════════════════ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
