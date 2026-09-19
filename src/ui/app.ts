@@ -207,7 +207,31 @@ function highlight(source: string): string {
 /* ============ SYNC ============ */
 // CodeMirror handles gutter, highlight, and scroll natively
 
-function syncGutter() { /* no-op */ }
+let __cmErrorLines: number[] = [];
+
+function syncGutter() {
+  // Clear old error markers
+  for (const ln of __cmErrorLines) {
+    try {
+      cm.removeLineClass(ln, 'background', 'cm-error-line');
+      cm.removeLineClass(ln, 'gutter', 'cm-error-linenum');
+      cm.removeLineClass(ln, 'wrap', 'cm-error-wrap');
+    } catch {}
+  }
+  __cmErrorLines = [];
+
+  // Apply new error markers
+  for (const [lineNum, token] of errorMap.entries()) {
+    if (token === undefined) continue;
+    const cmLine = lineNum - 1;  // errorMap is 1-based, CM is 0-based
+    if (cmLine < 0) continue;
+    try {
+      cm.addLineClass(cmLine, 'background', 'cm-error-line');
+      cm.addLineClass(cmLine, 'gutter', 'cm-error-linenum');
+      __cmErrorLines.push(cmLine);
+    } catch {}
+  }
+}
 function syncHighlight(_force = false) { /* no-op */ }
 
 /* ============ AUTOCOMPLETE ============ */

@@ -3785,3 +3785,18 @@ button, a, input, textarea {
   color: #ef4444 !important;
   font-weight: 600;
 }
+
+/* ── CodeMirror error line highlight ── */
+.editor-host .CodeMirror-linebackground.cm-error-line {
+  background: rgba(239, 68, 68, 0.14) !important;
+  border-left: 2px solid #ef4444;
+}
+
+.editor-host .CodeMirror-linenumber.cm-error-linenum {
+  color: #ef4444 !important;
+  font-weight: 700;
+}
+
+.editor-host .CodeMirror-gutter-elt.cm-error-linenum {
+  color: #ef4444 !important;
+}
