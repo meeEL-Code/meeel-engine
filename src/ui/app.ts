@@ -1606,6 +1606,32 @@ const EXTRA_ICONS: Record<string, string> = {
   // ── Misc ──
   key: svg24('<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>'),
 
+  // ── Final Additions (24) ──
+  'book-open': svg24('<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'),
+  'bookmark-plus': svg24('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="9" y1="10" x2="15" y2="10"/>'),
+  'calendar': svg24('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'),
+  'clock': svg24('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),
+  'filter': svg24('<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>'),
+  'sliders': svg24('<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>'),
+  'list': svg24('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>'),
+  'grid': svg24('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'),
+  'eye-off': svg24('<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'),
+  'user': svg24('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+  'user-minus': svg24('<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/>'),
+  'thumbs-up': svg24('<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>'),
+  'thumbs-down': svg24('<path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>'),
+  'bookmark-check': svg24('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><polyline points="9 11 11 13 15 9"/>'),
+  'bell-off': svg24('<path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/>'),
+  'cloud-off': svg24('<path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3"/><line x1="1" y1="1" x2="23" y2="23"/>'),
+  'download': svg24('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'),
+  'upload': svg24('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'),
+  'link-2': svg24('<path d="M15 7h3a5 5 0 0 1 0 10h-3m-6 0H6a5 5 0 0 1 0-10h3"/><line x1="8" y1="12" x2="16" y2="12"/>'),
+  'paperclip': svg24('<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>'),
+  'shopping-cart': svg24('<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>'),
+  'shopping-bag': svg24('<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
+  'credit-card': svg24('<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>'),
+  'banknote': svg24('<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>'),
+
 };
 
 const iconsPage = document.getElementById('icons-page') as HTMLElement | null;
@@ -1880,6 +1906,45 @@ const FONTS: FontDef[] = [
   // ── Handwriting (6) ──
 
   // ── Monospace (5) ──
+  // ═══ Modern Additions (37) ═══
+  { name: 'Geist',              stack: 'Geist, sans-serif',                  tag: 'web' },
+  { name: 'Geist Mono',         stack: '"Geist Mono", monospace',            tag: 'web' },
+  { name: 'Fraunces',           stack: 'Fraunces, serif',                    tag: 'web' },
+  { name: 'Unbounded',          stack: 'Unbounded, sans-serif',              tag: 'web' },
+  { name: 'Red Hat Display',    stack: '"Red Hat Display", sans-serif',      tag: 'web' },
+  { name: 'Red Hat Text',       stack: '"Red Hat Text", sans-serif',         tag: 'web' },
+  { name: 'Red Hat Mono',       stack: '"Red Hat Mono", monospace',          tag: 'web' },
+  { name: 'Bricolage Grotesque', stack: '"Bricolage Grotesque", sans-serif', tag: 'web' },
+  { name: 'Instrument Serif',   stack: '"Instrument Serif", serif',          tag: 'web' },
+  { name: 'Instrument Sans',    stack: '"Instrument Sans", sans-serif',      tag: 'web' },
+  { name: 'Epilogue',           stack: 'Epilogue, sans-serif',               tag: 'web' },
+  { name: 'Syne',               stack: 'Syne, sans-serif',                   tag: 'web' },
+  { name: 'DM Serif Display',   stack: '"DM Serif Display", serif',          tag: 'web' },
+  { name: 'DM Mono',            stack: '"DM Mono", monospace',               tag: 'web' },
+  { name: 'Chivo',              stack: 'Chivo, sans-serif',                  tag: 'web' },
+  { name: 'Public Sans',        stack: '"Public Sans", sans-serif',          tag: 'web' },
+  { name: 'Libre Franklin',     stack: '"Libre Franklin", sans-serif',       tag: 'web' },
+  { name: 'Libre Bodoni',       stack: '"Libre Bodoni", serif',              tag: 'web' },
+  { name: 'Newsreader',         stack: 'Newsreader, serif',                  tag: 'web' },
+  { name: 'Literata',           stack: 'Literata, serif',                    tag: 'web' },
+  { name: 'Victor Mono',        stack: '"Victor Mono", monospace',           tag: 'web' },
+  { name: 'Aleo',               stack: 'Aleo, serif',                        tag: 'web' },
+  { name: 'Yeseva One',         stack: '"Yeseva One", cursive',              tag: 'style' },
+  { name: 'Be Vietnam Pro',     stack: '"Be Vietnam Pro", sans-serif',       tag: 'web' },
+  { name: 'Familjen Grotesk',   stack: '"Familjen Grotesk", sans-serif',     tag: 'web' },
+  { name: 'Schibsted Grotesk',  stack: '"Schibsted Grotesk", sans-serif',    tag: 'web' },
+  { name: 'Spline Sans',        stack: '"Spline Sans", sans-serif',          tag: 'web' },
+  { name: 'Spline Sans Mono',   stack: '"Spline Sans Mono", monospace',      tag: 'web' },
+  { name: 'Lilex',              stack: 'Lilex, monospace',                   tag: 'web' },
+  { name: 'STIX Two Text',      stack: '"STIX Two Text", serif',             tag: 'web' },
+  { name: 'Noto Sans',          stack: '"Noto Sans", sans-serif',            tag: 'web' },
+  { name: 'Noto Serif Display', stack: '"Noto Serif Display", serif',        tag: 'web' },
+  { name: 'IBM Plex Sans',      stack: '"IBM Plex Sans", sans-serif',        tag: 'web' },
+  { name: 'IBM Plex Serif',     stack: '"IBM Plex Serif", serif',            tag: 'web' },
+  { name: 'BioRhyme',           stack: 'BioRhyme, serif',                    tag: 'web' },
+  { name: 'Syne Mono',          stack: '"Syne Mono", monospace',             tag: 'web' },
+  { name: 'Sixtyfour',          stack: 'Sixtyfour, monospace',               tag: 'style' },
+
 ];
 
 const fontsPage = document.getElementById('fonts-page') as HTMLElement | null;
@@ -2173,6 +2238,11 @@ const NAMED_COLORS: NamedColor[] = [
   { name: 'Ochre',        hex: '#CC7722', meel: 'ochre' },
   { name: 'Sienna',       hex: '#A0522D', meel: 'sienna' },
   { name: 'Umber',        hex: '#635147', meel: 'umber' },
+
+  // ═══ Final Additions (3) ═══
+  { name: 'Flamingo',    hex: '#FC8EAC', meel: 'flamingo' },
+  { name: 'Peacock',     hex: '#0A7E8C', meel: 'peacock' },
+  { name: 'Mustard',     hex: '#FFDB58', meel: 'mustard' },
 
 ];
 
