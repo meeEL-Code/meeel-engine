@@ -2035,6 +2035,66 @@ const NAMED_COLORS: NamedColor[] = [
   { name: 'Pearl',       hex: '#F0EAD6', meel: '#F0EAD6' },
   { name: 'Ash',         hex: '#B2BEB5', meel: '#B2BEB5' },
   { name: 'Graphite',    hex: '#383838', meel: '#383838' },
+  // ═══ Warm Reds (10) ═══
+  { name: 'Coral',       hex: '#FF7F50', meel: 'coral' },
+  { name: 'Salmon',      hex: '#FA8072', meel: 'salmon' },
+  { name: 'Crimson',     hex: '#DC143C', meel: 'crimson' },
+  { name: 'Tomato',      hex: '#FF6347', meel: 'tomato' },
+  { name: 'Cherry',      hex: '#D2042D', meel: 'cherry' },
+  { name: 'Rose',        hex: '#FF007F', meel: 'rose' },
+  { name: 'Wine',        hex: '#722F37', meel: 'wine' },
+  { name: 'Burgundy',    hex: '#800020', meel: 'burgundy' },
+  { name: 'Maroon',      hex: '#800000', meel: 'maroon' },
+  { name: 'Brick',       hex: '#B22222', meel: 'brick' },
+
+  // ═══ Warm Oranges & Yellows (10) ═══
+  { name: 'Gold',        hex: '#FFD700', meel: 'gold' },
+  { name: 'Amber',       hex: '#FFBF00', meel: 'amber' },
+  { name: 'Honey',       hex: '#F0C040', meel: 'honey' },
+  { name: 'Peach',       hex: '#FFCBA4', meel: 'peach' },
+  { name: 'Apricot',     hex: '#FBCEB1', meel: 'apricot' },
+  { name: 'Bronze',      hex: '#CD7F32', meel: 'bronze' },
+  { name: 'Copper',      hex: '#B87333', meel: 'copper' },
+  { name: 'Tan',         hex: '#D2B48C', meel: 'tan' },
+  { name: 'Cream',       hex: '#FFFDD0', meel: 'cream' },
+  { name: 'Ivory',       hex: '#FFFFF0', meel: 'ivory' },
+
+  // ═══ Cool Greens (10) ═══
+  { name: 'Mint',        hex: '#98FF98', meel: 'mint' },
+  { name: 'Lime',        hex: '#32CD32', meel: 'lime' },
+  { name: 'Olive',       hex: '#808000', meel: 'olive' },
+  { name: 'Leaf',        hex: '#4CAF50', meel: 'leaf' },
+  { name: 'Grass',       hex: '#7CFC00', meel: 'grass' },
+  { name: 'Forest',      hex: '#228B22', meel: 'forest' },
+  { name: 'Moss',        hex: '#8A9A5B', meel: 'moss' },
+  { name: 'Teal',        hex: '#008080', meel: 'teal' },
+  { name: 'Turquoise',   hex: '#40E0D0', meel: 'turquoise' },
+  { name: 'Aqua',        hex: '#00FFFF', meel: 'aqua' },
+
+  // ═══ Cool Blues (10) ═══
+  { name: 'Sky',         hex: '#87CEEB', meel: 'sky' },
+  { name: 'Ocean',       hex: '#0077BE', meel: 'ocean' },
+  { name: 'Navy',        hex: '#000080', meel: 'navy' },
+  { name: 'Indigo',      hex: '#4B0082', meel: 'indigo' },
+  { name: 'Cobalt',      hex: '#0047AB', meel: 'cobalt' },
+  { name: 'Azure',       hex: '#007FFF', meel: 'azure' },
+  { name: 'Denim',       hex: '#1560BD', meel: 'denim' },
+  { name: 'Steel',       hex: '#4682B4', meel: 'steel' },
+  { name: 'Slate',       hex: '#708090', meel: 'slate' },
+  { name: 'Ice',         hex: '#D6F1FF', meel: 'ice' },
+
+  // ═══ Purples & Neutrals (10) ═══
+  { name: 'Lavender',    hex: '#E6E6FA', meel: 'lavender' },
+  { name: 'Plum',        hex: '#8E4585', meel: 'plum' },
+  { name: 'Violet',      hex: '#8F00FF', meel: 'violet' },
+  { name: 'Orchid',      hex: '#DA70D6', meel: 'orchid' },
+  { name: 'Magenta',     hex: '#FF00FF', meel: 'magenta' },
+  { name: 'Charcoal',    hex: '#36454F', meel: 'charcoal' },
+  { name: 'Ash',         hex: '#B2BEB5', meel: 'ash' },
+  { name: 'Silver',      hex: '#C0C0C0', meel: 'silver' },
+  { name: 'Cloud',       hex: '#F0F0F0', meel: 'cloud' },
+  { name: 'Mist',        hex: '#E5E5E5', meel: 'mist' },
+
 ];
 
 const colorPage = document.getElementById('color-page') as HTMLElement | null;
