@@ -443,6 +443,8 @@ export const PROPERTIES: Record<string, PropertyDef> = {
 
 export const POSITION_KEYWORDS = new Set([
   'top', 'bottom', 'left', 'right', 'center', 'middle',
+  'top-left', 'top-right', 'bottom-left', 'bottom-right',
+  'in-the-center', 'in-the-top', 'in-the-bottom', 'in-the-center-of-page',
 ]);
 
 export const KEYWORD_CSS: Record<string, Record<string, string>> = {
@@ -530,6 +532,74 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   'muted': { 'opacity': '0.6' },
   'gap-tiny': { 'gap': '4px' },
   'gap-none': { 'gap': '0' },
+
+  // ═══ Sizing ═══
+  'tiny-size': { 'font-size': '10px', 'padding': '2px 6px' },
+  'small-size': { 'font-size': '13px', 'padding': '4px 10px' },
+  'medium-size': { 'font-size': '16px', 'padding': '8px 16px' },
+  'large-size': { 'font-size': '20px', 'padding': '12px 22px' },
+  'auto-size': { 'width': 'auto', 'height': 'auto' },
+  'screen-size': { 'width': '100vw', 'height': '100vh' },
+  'half-width': { 'width': '50%' },
+  'third-width': { 'width': '33.33%' },
+  'full': { 'width': '100%' },
+  'wide': { 'width': '120%', 'max-width': '100%' },
+  'tall': { 'min-height': '200px' },
+
+  // ═══ Gaps and Padding ═══
+  'gap-huge': { 'gap': '40px' },
+  'padding-small': { 'padding': '8px' },
+  'padding-medium': { 'padding': '16px' },
+
+  // ═══ Fonts ═══
+  'text-tiny': { 'font-size': '12px' },
+  'text-small': { 'font-size': '14px' },
+  'text-medium': { 'font-size': '18px' },
+  'text-large': { 'font-size': '24px' },
+
+  // ═══ Alignment ═══
+  'align-baseline': { 'vertical-align': 'baseline' },
+  'vertical-top': { 'vertical-align': 'top' },
+  'vertical-middle': { 'vertical-align': 'middle' },
+  'vertical-bottom': { 'vertical-align': 'bottom' },
+  'text-justify': { 'text-align': 'justify' },
+
+  // ═══ Screen mode ═══
+  'row': { 'flex-direction': 'row' },
+  'column': { 'flex-direction': 'column' },
+  'side-by-side': { 'display': 'flex', 'flex-direction': 'row' },
+  'stacked': { 'display': 'flex', 'flex-direction': 'column' },
+  'hide-on-mobile': { '@mobile': 'hide' },
+  'show-on-mobile': { '@desktop': 'hide' },
+  'hide-on-desktop': { '@desktop': 'hide' },
+  'show-on-desktop': { '@mobile': 'hide' },
+
+  // ═══ State ═══
+  'loading': { 'opacity': '0.6', 'pointer-events': 'none' },
+  'error': { 'border': '1px solid #ef4444', 'color': '#ef4444' },
+  'opened': {},
+  'closed': {},
+  'active': { 'font-weight': 'bold' },
+  'inactive': { 'opacity': '0.5' },
+
+  // ═══ Style ═══
+  'accent': { 'color': '#2563eb' },
+  'bold-border': { 'border': '2px solid currentColor' },
+  'filled': { 'background-color': 'currentColor', 'color': 'white' },
+  'inset': { 'box-shadow': 'inset 0 2px 6px rgba(0,0,0,0.15)' },
+  'neumorph': { 'box-shadow': '6px 6px 12px rgba(0,0,0,0.10), -6px -6px 12px rgba(255,255,255,0.8)' },
+  'glow': { 'box-shadow': '0 0 20px rgba(37,99,235,0.5)' },
+
+  // ═══ Effects / Animations ═══
+  'pulse': { 'animation': 'meeel-pulse 1.2s ease-in-out infinite' },
+  'bounce': { 'animation': 'meeel-bounce 0.6s ease-in-out' },
+  'shake': { 'animation': 'meeel-shake 0.5s ease-in-out' },
+  'spin': { 'animation': 'meeel-spin 1s linear infinite' },
+  'slide-in': { 'animation': 'meeel-slide-in 0.4s ease-out' },
+  'zoom-in': { 'animation': 'meeel-zoom-in 0.4s ease-out' },
+  'fade-in': { 'animation': 'meeel-fade-in 0.5s ease-out' },
+  'fade-out': { 'animation': 'meeel-fade-out 0.5s ease-out' },
+  'flip': { 'animation': 'meeel-flip 0.6s ease-in-out' },
 };
 
 export function isParametricKeyword(name: string): boolean {
