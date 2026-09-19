@@ -562,7 +562,6 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   'vertical-top': { 'vertical-align': 'top' },
   'vertical-middle': { 'vertical-align': 'middle' },
   'vertical-bottom': { 'vertical-align': 'bottom' },
-  'text-justify': { 'text-align': 'justify' },
 
   // ═══ Screen mode ═══
   'row': { 'flex-direction': 'row' },
@@ -575,12 +574,8 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   'show-on-desktop': { '@mobile': 'hide' },
 
   // ═══ State ═══
-  'loading': { 'opacity': '0.6', 'pointer-events': 'none' },
-  'error': { 'border': '1px solid #ef4444', 'color': '#ef4444' },
   'opened': {},
   'closed': {},
-  'active': { 'font-weight': 'bold' },
-  'inactive': { 'opacity': '0.5' },
 
   // ═══ Style ═══
   'accent': { 'color': '#2563eb' },
@@ -600,11 +595,6 @@ export const KEYWORD_CSS: Record<string, Record<string, string>> = {
   'fade-in': { 'animation': 'meeel-fade-in 0.5s ease-out' },
   'fade-out': { 'animation': 'meeel-fade-out 0.5s ease-out' },
   'flip': { 'animation': 'meeel-flip 0.6s ease-in-out' },
-  'fade-up': { 'animation': 'meeel-fade-up 0.5s ease-out' },
-  'fade-down': { 'animation': 'meeel-fade-down 0.5s ease-out' },
-  'slide-left': { 'animation': 'meeel-slide-left 0.4s ease-out' },
-  'slide-right': { 'animation': 'meeel-slide-right 0.4s ease-out' },
-  'swing': { 'animation': 'meeel-swing 0.6s ease-in-out' },
   'fade-up': { 'animation': 'meeel-fade-up 0.5s ease-out' },
   'fade-down': { 'animation': 'meeel-fade-down 0.5s ease-out' },
   'slide-left': { 'animation': 'meeel-slide-left 0.4s ease-out' },
