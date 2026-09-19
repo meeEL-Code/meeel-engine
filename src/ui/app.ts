@@ -2126,6 +2126,31 @@ const NAMED_COLORS: NamedColor[] = [
   { name: 'Cloud',       hex: '#F0F0F0', meel: 'cloud' },
   { name: 'Mist',        hex: '#E5E5E5', meel: 'mist' },
 
+  // ═══ More Shades (23) ═══
+  { name: 'Ruby',         hex: '#E0115F', meel: 'ruby' },
+  { name: 'Emerald',      hex: '#50C878', meel: 'emerald' },
+  { name: 'Sapphire',     hex: '#0F52BA', meel: 'sapphire' },
+  { name: 'Amethyst',     hex: '#9966CC', meel: 'amethyst' },
+  { name: 'Topaz',        hex: '#FFC87C', meel: 'topaz' },
+  { name: 'Pearl',        hex: '#EAE0C8', meel: 'pearl' },
+  { name: 'Opal',         hex: '#A8C3BC', meel: 'opal' },
+  { name: 'Onyx',         hex: '#353839', meel: 'onyx' },
+  { name: 'Jade',         hex: '#00A86B', meel: 'jade' },
+  { name: 'Citrine',      hex: '#E4D00A', meel: 'citrine' },
+  { name: 'Blush',        hex: '#DE5D83', meel: 'blush' },
+  { name: 'Carnation',    hex: '#FFA6C9', meel: 'carnation' },
+  { name: 'Periwinkle',   hex: '#CCCCFF', meel: 'periwinkle' },
+  { name: 'Cerulean',     hex: '#007BA7', meel: 'cerulean' },
+  { name: 'Vermillion',   hex: '#E34234', meel: 'vermillion' },
+  { name: 'Scarlet',      hex: '#FF2400', meel: 'scarlet' },
+  { name: 'Chartreuse',   hex: '#DFFF00', meel: 'chartreuse' },
+  { name: 'Fuchsia',      hex: '#FF77FF', meel: 'fuchsia' },
+  { name: 'Mauve',        hex: '#E0B0FF', meel: 'mauve' },
+  { name: 'Sepia',        hex: '#704214', meel: 'sepia' },
+  { name: 'Ochre',        hex: '#CC7722', meel: 'ochre' },
+  { name: 'Sienna',       hex: '#A0522D', meel: 'sienna' },
+  { name: 'Umber',        hex: '#635147', meel: 'umber' },
+
 ];
 
 const colorPage = document.getElementById('color-page') as HTMLElement | null;
