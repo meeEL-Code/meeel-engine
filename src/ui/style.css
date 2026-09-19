@@ -3800,3 +3800,88 @@ button, a, input, textarea {
 .editor-host .CodeMirror-gutter-elt.cm-error-linenum {
   color: #ef4444 !important;
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PREVIEW VIEW SWITCH (TV / Desktop / Mobile)
+   ══════════════════════════════════════════════════════════════ */
+
+.view-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+}
+
+.view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #808080;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-btn:hover {
+  background: #2a2a2a;
+  color: #b0b0b0;
+}
+
+.view-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.3);
+}
+
+/* ── Preview iframe wrapper — support device widths ── */
+.preview-pane {
+  position: relative;
+}
+
+.preview-pane iframe#preview {
+  transition: max-width 0.3s ease, margin 0.3s ease;
+  margin: 0 auto;
+  display: block;
+}
+
+.preview-pane[data-view="desktop"] iframe#preview,
+.preview-pane[data-view="pc"] iframe#preview {
+  max-width: 100%;
+  width: 100%;
+}
+
+.preview-pane[data-view="tablet"] iframe#preview {
+  max-width: 768px;
+  width: 100%;
+  border-left: 1px solid #2a2a2a;
+  border-right: 1px solid #2a2a2a;
+  box-shadow: 0 0 20px rgba(0,0,0,0.35);
+}
+
+.preview-pane[data-view="mobile"] iframe#preview {
+  max-width: 375px;
+  width: 100%;
+  border-left: 1px solid #2a2a2a;
+  border-right: 1px solid #2a2a2a;
+  box-shadow: 0 0 24px rgba(0,0,0,0.4);
+}
+
+
+/* Mobile — 44px extra touch buttons */
+@media (max-width: 767px) {
+  .view-switch {
+    padding: 1px;
+  }
+  .view-btn {
+    width: 32px;
+    height: 28px;
+  }
+}

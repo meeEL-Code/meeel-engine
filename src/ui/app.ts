@@ -62,6 +62,7 @@ const highlightOut: any = { parentElement: { scrollTop: 0, scrollLeft: 0 }, inne
 const gutter: any = { innerHTML: '', scrollTop: 0 };
 
 const preview = document.getElementById('preview') as HTMLIFrameElement;
+
 const suggestionBar = document.getElementById('suggestion-bar') as HTMLElement;
 const pageSelector = document.getElementById('page-selector') as HTMLSelectElement;
 
@@ -1284,6 +1285,36 @@ document.addEventListener('drop', (e) => {
 
 const fullscreenBtn = document.getElementById('preview-fullscreen') as HTMLButtonElement | null;
 const previewPane = document.querySelector('.preview-pane') as HTMLElement | null;
+
+// ── Preview view switch (TV / Desktop / Mobile) ──
+function setPreviewView(view: 'tablet' | 'desktop' | 'mobile') {
+  if (!previewPane) return;
+  previewPane.dataset.view = view;
+  document.querySelectorAll('.view-btn').forEach((btn) => {
+    const el = btn as HTMLElement;
+    el.classList.toggle('active', el.dataset.view === view);
+  });
+  try { localStorage.setItem('meeel-preview-view', view); } catch {}
+}
+
+document.querySelectorAll('.view-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const view = (btn as HTMLElement).dataset.view as 'tablet' | 'desktop' | 'mobile';
+    if (view) setPreviewView(view);
+  });
+});
+
+// Restore saved view on load
+try {
+  const savedView = localStorage.getItem('meeel-preview-view');
+  if (savedView === 'tablet' || savedView === 'desktop' || savedView === 'mobile') {
+    setPreviewView(savedView);
+  } else {
+    previewPane.dataset.view = 'desktop';
+  }
+} catch {
+  previewPane.dataset.view = 'desktop';
+}
 
 if (fullscreenBtn && previewPane) {
   fullscreenBtn.addEventListener('click', async () => {
