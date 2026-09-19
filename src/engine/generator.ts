@@ -8,6 +8,7 @@ import {
   parseParametric,
   pageToFilename,
   ICONS,
+  ALL_ICONS,
 } from './registry';
 
 const VOID_TAGS = new Set(['img', 'input']);
@@ -1879,14 +1880,15 @@ function generateBlock(
 
       let val = propDef.transform ? propDef.transform(child.value) : child.value;
 
-      if (propDef.special === 'src' && ICONS[val]) {
-        val = ICONS[val];
+      if (propDef.special === 'src' && ALL_ICONS[val]) {
+        val = ALL_ICONS[val];
       }
 
       if (propDef.special === 'content') textParts.push(val);
       else if (propDef.special === 'src') attrs['src'] = val;
       else if (propDef.special === 'type') attrs['type'] = val;
       else if (propDef.special === 'placeholder') attrs['placeholder'] = val;
+      else if (propDef.special === 'alt') attrs['alt'] = val;
       else if (propDef.special === 'href') attrs['href'] = val;
       else if (propDef.special === 'on-click') {
         const actions = val.split(/[\n;]/).map((s) => s.trim()).filter(Boolean);
@@ -2086,6 +2088,24 @@ const CSS_NAMED_COLORS: Record<string, string> = {
   white: '#ffffff', gray: '#6b7280', grey: '#6b7280', brown: '#92400e',
   cyan: '#06b6d4', magenta: '#d946ef', lime: '#84cc16', indigo: '#4f46e5',
   teal: '#14b8a6', violet: '#8b5cf6', gold: '#fbbf24', navy: '#1e3a8a',
+  coral: '#FF7F50', salmon: '#FA8072', crimson: '#DC143C', tomato: '#FF6347',
+  cherry: '#D2042D', rose: '#FF007F', wine: '#722F37', burgundy: '#800020',
+  maroon: '#800000', brick: '#B22222', amber: '#FFBF00', honey: '#F0C040',
+  peach: '#FFCBA4', apricot: '#FBCEB1', bronze: '#CD7F32', copper: '#B87333',
+  tan: '#D2B48C', cream: '#FFFDD0', ivory: '#FFFFF0', mint: '#98FF98',
+  olive: '#808000', leaf: '#4CAF50', grass: '#7CFC00', forest: '#228B22',
+  moss: '#8A9A5B', turquoise: '#40E0D0', aqua: '#00FFFF', sky: '#87CEEB',
+  ocean: '#0077BE', cobalt: '#0047AB', azure: '#007FFF', denim: '#1560BD',
+  steel: '#4682B4', slate: '#708090', ice: '#D6F1FF', lavender: '#E6E6FA',
+  plum: '#8E4585', orchid: '#DA70D6', charcoal: '#36454F', ash: '#B2BEB5',
+  silver: '#C0C0C0', cloud: '#F0F0F0', mist: '#E5E5E5', ruby: '#E0115F',
+  emerald: '#50C878', sapphire: '#0F52BA', amethyst: '#9966CC', topaz: '#FFC87C',
+  pearl: '#EAE0C8', opal: '#A8C3BC', onyx: '#353839', jade: '#00A86B',
+  citrine: '#E4D00A', blush: '#DE5D83', carnation: '#FFA6C9', periwinkle: '#CCCCFF',
+  cerulean: '#007BA7', vermillion: '#E34234', scarlet: '#FF2400', chartreuse: '#DFFF00',
+  fuchsia: '#FF77FF', mauve: '#E0B0FF', sepia: '#704214', ochre: '#CC7722',
+  sienna: '#A0522D', umber: '#635147', flamingo: '#FC8EAC', peacock: '#0A7E8C',
+  mustard: '#FFDB58',
 };
 
 function hexToHue(hex: string): number {
@@ -2580,7 +2600,7 @@ function renderSidebar(
           const propDef = PROPERTIES[c.name];
           if (!propDef) continue;
           if (propDef.special === 'src') {
-            iconUrl = ICONS[c.value] || c.value;
+            iconUrl = ALL_ICONS[c.value] || c.value;
           } else if (propDef.special === 'toggle-label') {
             labelText = c.value;
           } else if (propDef.special === 'open') {
@@ -2590,10 +2610,10 @@ function renderSidebar(
           // Support natural `icon-[home]` syntax — first keyword becomes icon name
           for (const sub of c.children) {
             if (sub.kind === 'keyword') {
-              iconUrl = ICONS[sub.name] || sub.name;
+              iconUrl = ALL_ICONS[sub.name] || sub.name;
               break;
             } else if (sub.kind === 'property' && sub.name === 'url') {
-              iconUrl = ICONS[sub.value] || sub.value;
+              iconUrl = ALL_ICONS[sub.value] || sub.value;
               break;
             }
           }
