@@ -2994,3 +2994,488 @@ body {
   }
   .unsaved-desc { display: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE + UX POLISH — added 2026-09-19
+   Append-only, overrides previous rules where needed
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Spacing scale */
+  --meeel-space-xs: 4px;
+  --meeel-space-sm: 8px;
+  --meeel-space-md: 16px;
+  --meeel-space-lg: 24px;
+  --meeel-space-xl: 32px;
+
+  /* Font scale (base for phone, bumps up per device) */
+  --meeel-font-xs: 11px;
+  --meeel-font-sm: 13px;
+  --meeel-font-md: 15px;
+  --meeel-font-lg: 18px;
+  --meeel-font-xl: 22px;
+
+  /* Touch targets */
+  --meeel-touch: 44px;
+  --meeel-touch-sm: 36px;
+
+  /* Radius */
+  --meeel-radius-sm: 6px;
+  --meeel-radius-md: 10px;
+  --meeel-radius-lg: 14px;
+}
+
+/* ── Smooth scrolling everywhere ── */
+html, body, * {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  overscroll-behavior-y: none;
+}
+
+/* ── Touch-friendly buttons ── */
+button, .btn, .btn-icon, [role="button"] {
+  min-height: var(--meeel-touch);
+  min-width: var(--meeel-touch);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+
+button:active, .btn:active, .btn-icon:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+/* Prevent double-tap zoom on buttons */
+button, .btn, .btn-icon {
+  touch-action: manipulation;
+}
+
+/* ── Better scrollbars (desktop + tablet) ── */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(120, 120, 120, 0.35);
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 120, 120, 0.6);
+  }
+}
+
+/* ── Hide scrollbar on touch devices ── */
+@media (hover: none) and (pointer: coarse) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DEVICE BREAKPOINTS
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── TV / very large screens (1920px+) ── */
+@media (min-width: 1920px) {
+  :root {
+    --meeel-font-xs: 13px;
+    --meeel-font-sm: 15px;
+    --meeel-font-md: 17px;
+    --meeel-font-lg: 20px;
+    --meeel-font-xl: 26px;
+    --meeel-space-md: 20px;
+    --meeel-space-lg: 32px;
+  }
+  .editor-container, #editor, .editor-highlight {
+    font-size: 16px !important;
+    line-height: 1.7;
+  }
+  .gutter {
+    width: 52px;
+    font-size: 14px;
+    padding: 18px 12px 18px 8px;
+  }
+}
+
+/* ── Large desktop (1600-1919px) ── */
+@media (min-width: 1600px) and (max-width: 1919px) {
+  :root {
+    --meeel-font-md: 16px;
+    --meeel-space-lg: 28px;
+  }
+  .editor-container, #editor, .editor-highlight {
+    font-size: 15px !important;
+  }
+  .gutter {
+    width: 44px;
+    font-size: 13px;
+  }
+}
+
+/* ── Laptop (1024-1399px) — default behavior is fine ── */
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .editor-container, #editor, .editor-highlight {
+    font-size: 14px !important;
+  }
+}
+
+/* ── Tablet (768-1023px) — stacked view, larger touch ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --meeel-touch: 48px;
+  }
+  .editor-container, #editor, .editor-highlight {
+    font-size: 14px !important;
+    line-height: 1.65;
+  }
+  .gutter {
+    width: 40px;
+    font-size: 12px;
+  }
+}
+
+/* ── Small tablet / large phone (520-767px) ── */
+@media (min-width: 520px) and (max-width: 767px) {
+  :root {
+    --meeel-touch: 44px;
+  }
+  .editor-container, #editor, .editor-highlight {
+    font-size: 13px !important;
+  }
+}
+
+/* ── Phone (up to 519px) ── */
+@media (max-width: 519px) {
+  :root {
+    --meeel-touch: 42px;
+    --meeel-space-md: 12px;
+    --meeel-space-lg: 18px;
+  }
+  .editor-container, #editor, .editor-highlight {
+    font-size: 13px !important;
+    line-height: 1.6;
+  }
+  .gutter {
+    width: 32px;
+    font-size: 11px;
+    padding: 12px 6px 12px 3px;
+  }
+}
+
+/* ── Very small phone (360px and under) ── */
+@media (max-width: 380px) {
+  .editor-container, #editor, .editor-highlight {
+    font-size: 12px !important;
+  }
+  .gutter {
+    width: 28px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TYPOGRAPHY SMOOTHING
+   ══════════════════════════════════════════════════════════════ */
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Better tap highlight everywhere */
+* {
+  -webkit-tap-highlight-color: rgba(37, 99, 235, 0.15);
+}
+
+/* Prevent accidental text selection on UI chrome */
+.toolbar, .editor-toolbar, .preview-controls, .tools-card, button {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Always allow text selection in editor */
+#editor, .editor-highlight, input, textarea {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FOCUS VISIBLE — accessibility
+   ══════════════════════════════════════════════════════════════ */
+
+button:focus-visible,
+.btn:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LANDSCAPE PHONE — compact vertical space
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .toolbar, .preview-controls {
+    height: 40px;
+    padding: 4px 8px;
+  }
+  .editor-container, #editor, .editor-highlight {
+    font-size: 13px !important;
+    line-height: 1.5;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ══════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STAGE 2 — LAYOUT + TOOLBAR + DRAWER + MODAL POLISH
+   added 2026-09-19 — append-only
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Toolbar (header) adaptive spacing ── */
+header, .toolbar, .app-header {
+  padding: var(--meeel-space-sm) var(--meeel-space-md);
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--meeel-space-sm);
+  flex-wrap: nowrap;
+}
+
+header button, .toolbar button {
+  padding: 10px 14px;
+  border-radius: var(--meeel-radius-md);
+  font-size: var(--meeel-font-sm);
+}
+
+/* ── Pane headers (Code / Preview) ── */
+.pane-header {
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: var(--meeel-font-xs);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── Preview fullscreen button ── */
+.preview-controls .btn-icon {
+  width: var(--meeel-touch-sm);
+  height: var(--meeel-touch-sm);
+  min-width: var(--meeel-touch-sm);
+  min-height: var(--meeel-touch-sm);
+  border-radius: var(--meeel-radius-sm);
+}
+
+/* ── Tool drawer — responsive ── */
+.tools-drawer {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tools-card {
+  min-height: 68px;
+  padding: var(--meeel-space-md);
+  margin-bottom: var(--meeel-space-sm);
+  border-radius: var(--meeel-radius-md);
+}
+
+.tools-card-title {
+  font-size: var(--meeel-font-md);
+  font-weight: 600;
+}
+
+.tools-card-desc {
+  font-size: var(--meeel-font-xs);
+  opacity: 0.75;
+}
+
+/* ── Modals — responsive sizing ── */
+.modal-backdrop {
+  padding: var(--meeel-space-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  max-width: min(720px, 100%);
+  max-height: calc(100vh - 2 * var(--meeel-space-md));
+  border-radius: var(--meeel-radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+}
+
+.modal-header {
+  padding: var(--meeel-space-md) var(--meeel-space-lg);
+  flex-shrink: 0;
+}
+
+.modal-close {
+  min-width: var(--meeel-touch-sm);
+  min-height: var(--meeel-touch-sm);
+  border-radius: var(--meeel-radius-sm);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DEVICE-SPECIFIC LAYOUT
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── TV (1920px+) — extra breathing room ── */
+@media (min-width: 1920px) {
+  header, .toolbar, .app-header {
+    min-height: 72px;
+    padding: 14px 32px;
+    gap: 16px;
+  }
+  .tools-card {
+    min-height: 84px;
+    padding: 22px 26px;
+  }
+  .tools-card-title {
+    font-size: 18px;
+  }
+  .tools-card-desc {
+    font-size: 14px;
+  }
+  .modal {
+    max-width: 900px;
+  }
+}
+
+/* ── Desktop / Laptop (1024px+) — split view side by side ── */
+@media (min-width: 1024px) {
+  .layout {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+}
+
+/* ── Tablet (768-1023px) — allow side by side with tighter gutter ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .layout {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+  }
+  header, .toolbar, .app-header {
+    min-height: 52px;
+    padding: 8px 12px;
+  }
+}
+
+/* ── Phone portrait (max 767px) — stacked layout ── */
+@media (max-width: 767px) {
+  .layout {
+    display: flex !important;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .pane.editor-pane {
+    min-height: 55vh;
+    border-bottom: 1px solid #333;
+  }
+  .pane.preview-pane {
+    min-height: 45vh;
+  }
+  header, .toolbar, .app-header {
+    min-height: 48px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  header button, .toolbar button {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .tools-drawer {
+    padding: var(--meeel-space-md);
+  }
+  .modal {
+    max-width: 100%;
+    max-height: calc(100vh - 32px);
+    border-radius: var(--meeel-radius-md);
+  }
+  .modal-header {
+    padding: 12px 16px;
+  }
+  .modal-body {
+    padding: 14px 16px;
+  }
+}
+
+/* ── Very small phone (max 380px) ── */
+@media (max-width: 380px) {
+  header, .toolbar, .app-header {
+    min-height: 44px;
+    padding: 4px 8px;
+    gap: 4px;
+  }
+  .pane.editor-pane {
+    min-height: 50vh;
+  }
+  .pane.preview-pane {
+    min-height: 42vh;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RTL / LONG CONTENT SAFETY
+   ══════════════════════════════════════════════════════════════ */
+
+.pane, .modal-body, .tools-drawer {
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Prevent iframe overflow */
+.preview-pane iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #fff;
+}
+
+/* Safe area for notched phones */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  header, .toolbar {
+    padding-right: calc(var(--meeel-space-md) + env(safe-area-inset-right));
+    padding-left: calc(var(--meeel-space-md) + env(safe-area-inset-left));
+  }
+}
