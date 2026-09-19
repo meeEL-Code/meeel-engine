@@ -4,7 +4,7 @@ export interface BlockDef {
 
 export interface PropertyDef {
   css: string;
-  special?: 'content' | 'src' | 'type' | 'placeholder' | 'href' | 'value';
+  special?: 'content' | 'src' | 'type' | 'placeholder' | 'href' | 'value' | 'alt';
   transform?: (v: string) => string;
 }
 
@@ -318,6 +318,7 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'url': { css: '', special: 'src' },
   'input-type': { css: '', special: 'type' },
   'placeholder-text': { css: '', special: 'placeholder' },
+  'alt-text': { css: '', special: 'alt' },
   'href': { css: '', special: 'href' },
   'on-click': { css: '', special: 'on-click' },
   'open': { css: '', special: 'open' },
@@ -389,6 +390,55 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'animation-time': { css: 'animation-duration' },
   'text-size': { css: 'font-size' },
   'background': { css: 'background-color' },
+  'vertical-align': { css: 'vertical-align' },
+  'text-indent': { css: 'text-indent' },
+  'flex-direction': { css: 'flex-direction' },
+  'flex-wrap': { css: 'flex-wrap' },
+  'align-items': { css: 'align-items' },
+  'justify-content': { css: 'justify-content' },
+  'display': { css: 'display' },
+  'visibility': { css: 'visibility' },
+  'cursor': { css: 'cursor' },
+  'pointer-events': { css: 'pointer-events' },
+  'transition': { css: 'transition', transform: (v) => v.replace(/-/g, ' ') },
+  'transform': { css: 'transform', transform: (v) => v.replace(/-/g, ' ') },
+  'filter': { css: 'filter', transform: (v) => v.replace(/-/g, ' ') },
+  'object-fit': { css: 'object-fit' },
+  'aspect-ratio': { css: 'aspect-ratio' },
+  'grid-columns': { css: 'grid-template-columns' },
+  'grid-rows': { css: 'grid-template-rows' },
+  'grid-gap': { css: 'gap' },
+  'place-items': { css: 'place-items' },
+  'order': { css: 'order' },
+  'flex-grow': { css: 'flex-grow' },
+  'flex-shrink': { css: 'flex-shrink' },
+  'box-sizing': { css: 'box-sizing' },
+  'resize': { css: 'resize' },
+  'mix-blend': { css: 'mix-blend-mode' },
+  'clip-path': { css: 'clip-path', transform: (v) => v.replace(/-/g, ' ') },
+  'backdrop': { css: 'backdrop-filter', transform: (v) => v.replace(/-/g, ' ') },
+  'word-break': { css: 'word-break' },
+  'line-clamp': { css: '-webkit-line-clamp' },
+  'text-wrap': { css: 'text-wrap' },
+  'outline': { css: 'outline' },
+  'outline-color': { css: 'outline-color' },
+  'outline-width': { css: 'outline-width' },
+  'outline-offset': { css: 'outline-offset' },
+  'outline-style': { css: 'outline-style' },
+  'border-image': { css: 'border-image' },
+  'list-style': { css: 'list-style' },
+  'list-style-type': { css: 'list-style-type' },
+  'scroll-behavior': { css: 'scroll-behavior' },
+  'scroll-snap': { css: 'scroll-snap-type' },
+  'touch-action': { css: 'touch-action' },
+  'user-select': { css: 'user-select' },
+  'will-change': { css: 'will-change' },
+  'content-visibility': { css: 'content-visibility' },
+  'text-orientation': { css: 'text-orientation' },
+  'writing-mode': { css: 'writing-mode' },
+  'columns': { css: 'columns' },
+  'column-count': { css: 'column-count' },
+  'isolation': { css: 'isolation' },
 };
 
 export const POSITION_KEYWORDS = new Set([
