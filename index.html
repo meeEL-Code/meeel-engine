@@ -319,6 +319,19 @@
 
       <div class="tools-divider"></div>
 
+      <button class="tools-card" data-tool="playground" type="button">
+        <div class="tools-card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+        </div>
+        <div class="tools-card-text">
+          <div class="tools-card-title">Code Playground</div>
+          <div class="tools-card-desc">HTML • CSS • JS • Python — try real code</div>
+        </div>
+      </button>
+
       <button class="tools-card" data-tool="about" type="button">
         <div class="tools-card-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1111,6 +1124,44 @@
         </button>
 
 <!-- Settings Page -->
+  <!-- ═══════════ PLAYGROUND PAGE ═══════════ -->
+  <div class="lib-page pg-page" id="playground-page" hidden>
+    <div class="lib-page-header">
+      <button class="lib-page-back" id="pg-back" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      </button>
+      <span class="lib-page-title">Code Playground</span>
+      <button class="lib-page-close" id="pg-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="pg-tabs" role="tablist">
+      <button class="pg-tab active" data-lang="html" type="button">HTML</button>
+      <button class="pg-tab" data-lang="css" type="button">CSS</button>
+      <button class="pg-tab" data-lang="js" type="button">JS</button>
+      <button class="pg-tab" data-lang="python" type="button">Python</button>
+      <button class="pg-run" id="pg-run" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Run
+      </button>
+    </div>
+
+    <div class="pg-body">
+      <div class="pg-editor-wrap">
+        <div class="pg-editor" id="pg-editor-html"></div>
+        <div class="pg-editor" id="pg-editor-css" hidden></div>
+        <div class="pg-editor" id="pg-editor-js" hidden></div>
+        <div class="pg-editor" id="pg-editor-python" hidden></div>
+      </div>
+
+      <div class="pg-preview-wrap">
+        <div class="pg-preview-header">PREVIEW</div>
+        <iframe id="pg-preview" class="pg-preview"></iframe>
+      </div>
+    </div>
+  </div>
+
   <div class="lib-page" id="settings-page" hidden>
     <div class="lib-page-header">
       <button class="lib-page-back" id="settings-back" aria-label="Back">

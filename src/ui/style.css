@@ -4222,3 +4222,173 @@ body:not(.play-mode) .virtual-dpad {
     font-size: 16px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   CODE PLAYGROUND
+   ══════════════════════════════════════════════════════════════ */
+
+.pg-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.pg-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  background: #181818;
+  border-bottom: 1px solid #262626;
+  flex-wrap: wrap;
+}
+
+.pg-tab {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: ui-monospace, monospace;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 34px;
+}
+
+.pg-tab:hover {
+  background: #262626;
+  color: #e0e0e0;
+}
+
+.pg-tab.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.pg-run {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 34px;
+}
+
+.pg-run:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.pg-run:active {
+  transform: scale(0.96);
+}
+
+.pg-run.busy {
+  background: #f59e0b;
+  pointer-events: none;
+}
+
+.pg-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pg-editor-wrap {
+  background: #1e1e1e;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+
+.pg-editor {
+  position: absolute;
+  inset: 0;
+}
+
+.pg-editor[hidden] {
+  display: none !important;
+}
+
+.pg-preview-wrap {
+  background: #0f0f0f;
+  border-left: 1px solid #262626;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.pg-preview-header {
+  padding: 8px 14px;
+  background: #181818;
+  border-bottom: 1px solid #262626;
+  color: #888;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.pg-preview {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+/* CodeMirror 6 basic theme overrides */
+.pg-editor .cm-editor {
+  height: 100%;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 13px;
+}
+
+.pg-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.pg-editor .cm-scroller {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  line-height: 1.6;
+}
+
+/* Mobile — stacked */
+@media (max-width: 767px) {
+  .pg-tabs {
+    padding: 8px 12px;
+    gap: 4px;
+  }
+  .pg-tab {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 32px;
+  }
+  .pg-run {
+    padding: 6px 14px;
+    font-size: 12px;
+    min-height: 32px;
+  }
+  .pg-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  .pg-preview-wrap {
+    border-left: 0;
+    border-top: 1px solid #262626;
+  }
+}
