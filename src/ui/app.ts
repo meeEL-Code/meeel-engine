@@ -1,5 +1,6 @@
 import CodeMirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
+import 'codemirror/addon/mode/simple';
 import { lex } from '../engine/lexer';
 import { parse } from '../engine/parser';
 import { resolve, ResolveError } from '../engine/resolver';
@@ -28,14 +29,28 @@ const DEFAULT_CODE = `home-page-[
 `;
 
 const editorHost = document.getElementById('editor-host') as HTMLElement;
+// ── meeEL syntax mode ──
+(CodeMirror as any).defineSimpleMode('meeel', {
+  start: [
+    { regex: /#.*$/, token: 'comment' },
+    { regex: /[a-z][a-z0-9-]*(?=-\[)/, token: 'keyword' },
+    { regex: /-\[/, token: 'bracket' },
+    { regex: /\]/, token: 'bracket' },
+    { regex: /\[[^\]]*\]/, token: 'string' },
+    { regex: /\d+px|\d+%|\d+/, token: 'number' },
+  ],
+});
+
 const cm = (CodeMirror as any)(editorHost, {
   value: DEFAULT_CODE,
+  mode: 'meeel',
   lineNumbers: true,
   lineWrapping: true,
   indentUnit: 2,
   tabSize: 2,
   viewportMargin: Infinity,
   autofocus: false,
+  inputStyle: 'contenteditable',  // mobile long-press select works better
 });
 
 // Proxy — existing editor.value / selectionStart / addEventListener keep working
@@ -59,6 +74,91 @@ const editor: any = {
   style: {} as any,
 };
 const highlightOut: any = { parentElement: { scrollTop: 0, scrollLeft: 0 }, innerHTML: '' };
+
+// ── Robust clipboard helper (HTTP + HTTPS) ──
+// Preserves scroll position — no more auto-scroll on copy
+async function meeelCopy(text: string): Promise<boolean> {
+  // 1. Best: modern clipboard API
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch { /* fall through */ }
+  }
+
+  // 2. Fallback: hidden textarea + execCommand (scroll-safe)
+  const savedScrollX = window.scrollX;
+  const savedScrollY = window.scrollY;
+  const savedActive = document.activeElement as HTMLElement | null;
+
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    // Place inside current viewport, no scroll possible
+    ta.style.position = 'fixed';
+    ta.style.top = '50%';
+    ta.style.left = '50%';
+    ta.style.width = '1px';
+    ta.style.height = '1px';
+    ta.style.padding = '0';
+    ta.style.border = 'none';
+    ta.style.outline = 'none';
+    ta.style.boxShadow = 'none';
+    ta.style.background = 'transparent';
+    ta.style.color = 'transparent';
+    ta.style.opacity = '0';
+    ta.style.pointerEvents = 'none';
+    ta.style.zIndex = '-1';
+    document.body.appendChild(ta);
+
+    // Focus without scroll (Chrome/Edge/Firefox support)
+    try {
+      ta.focus({ preventScroll: true });
+    } catch {
+      ta.focus();
+    }
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+
+    // Restore focus and scroll position
+    if (savedActive && savedActive.focus) {
+      try { savedActive.focus({ preventScroll: true }); } catch { savedActive.focus(); }
+    }
+    window.scrollTo(savedScrollX, savedScrollY);
+    return ok;
+  } catch {
+    window.scrollTo(savedScrollX, savedScrollY);
+    return false;
+  }
+}
+
+// ── Copy All button handler ──
+const editorCopyAll = document.getElementById('editor-copy-all') as HTMLButtonElement | null;
+editorCopyAll?.addEventListener('click', async () => {
+  const sel = cm.getSelection();
+  const text = sel && sel.length > 0 ? sel : cm.getValue();
+
+  // Save both page scroll and CodeMirror internal scroll
+  const pageX = window.scrollX;
+  const pageY = window.scrollY;
+  const cmInfo = cm.getScrollInfo();
+
+  try {
+    await meeelCopy(text);
+  } catch {}
+
+  // Restore CodeMirror internal scroll (before copy operation)
+  try { cm.scrollTo(cmInfo.left, cmInfo.top); } catch {}
+  // Restore page scroll
+  window.scrollTo(pageX, pageY);
+
+  editorCopyAll.classList.add('copied');
+  setTimeout(() => editorCopyAll.classList.remove('copied'), 1200);
+});
 const gutter: any = { innerHTML: '', scrollTop: 0 };
 
 const preview = document.getElementById('preview') as HTMLIFrameElement;
@@ -222,8 +322,7 @@ function syncGutter() {
   __cmErrorLines = [];
 
   // Apply new error markers
-  for (const [lineNum, token] of errorMap.entries()) {
-    if (token === undefined) continue;
+  for (const [lineNum, _token] of errorMap.entries()) {
     const cmLine = lineNum - 1;  // errorMap is 1-based, CM is 0-based
     if (cmLine < 0) continue;
     try {

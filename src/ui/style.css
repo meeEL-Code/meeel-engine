@@ -3885,3 +3885,174 @@ button, a, input, textarea {
     height: 28px;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   FIX: editor copy + syntax highlighting
+   ══════════════════════════════════════════════════════════════ */
+
+/* Allow copy/paste/select in editor */
+.CodeMirror,
+.CodeMirror *,
+.CodeMirror-lines,
+.CodeMirror-line,
+.CodeMirror pre,
+.CodeMirror-code {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -webkit-touch-callout: default !important;
+  touch-action: auto !important;
+}
+
+/* ── meeEL syntax highlight tokens ── */
+.editor-host .cm-keyword,
+.editor-host .tok-block {
+  color: #7dd3fc !important;      /* light blue — block names */
+  font-weight: 600;
+}
+.editor-host .cm-property,
+.editor-host .tok-property {
+  color: #fbbf24 !important;      /* amber — properties */
+}
+.editor-host .cm-atom,
+.editor-host .cm-number {
+  color: #fdba74 !important;      /* orange — numbers */
+}
+.editor-host .cm-string,
+.editor-host .cm-string-2 {
+  color: #86efac !important;      /* green — values */
+}
+.editor-host .cm-bracket,
+.editor-host .cm-punctuation {
+  color: #94a3b8 !important;      /* gray — brackets */
+}
+.editor-host .cm-comment {
+  color: #64748b !important;      /* muted — comments */
+  font-style: italic;
+}
+.editor-host .cm-def,
+.editor-host .cm-variable {
+  color: #e0e0e0 !important;
+}
+.editor-host .cm-operator {
+  color: #f472b6 !important;
+}
+
+/* Ensure editor background stays dark, text bright */
+.editor-host .CodeMirror {
+  background: #1e1e1e !important;
+}
+.editor-host .CodeMirror-lines {
+  color: #e8e8e8 !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   FIX 2: force copy/select on editor + all parents
+   ══════════════════════════════════════════════════════════════ */
+
+.editor-container,
+.editor-wrap,
+.editor-host,
+.CodeMirror,
+.CodeMirror *,
+.CodeMirror-code,
+.CodeMirror-lines,
+.CodeMirror-line,
+.CodeMirror pre,
+.CodeMirror textarea,
+.CodeMirror-gutters,
+.CodeMirror-gutter {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  -webkit-touch-callout: default !important;
+  touch-action: auto !important;
+  -webkit-user-drag: auto !important;
+}
+
+/* Kill any inherited user-select:none */
+.editor-pane *,
+.editor-container * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* ── Transparent selection — text visible through highlight ── */
+.editor-host .CodeMirror-selected,
+.editor-host .CodeMirror-focused .CodeMirror-selected {
+  background: rgba(74, 158, 255, 0.22) !important;
+}
+
+/* Native browser selection fallback */
+.editor-host .CodeMirror ::selection {
+  background: rgba(74, 158, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.editor-host .CodeMirror ::-moz-selection {
+  background: rgba(74, 158, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+/* CodeMirror highlighted line via native selection API */
+.editor-host .CodeMirror-line::selection,
+.editor-host .CodeMirror-line > span::selection,
+.editor-host .CodeMirror-line > span > span::selection {
+  background: rgba(74, 158, 255, 0.25) !important;
+}
+
+/* Copy All button active state */
+#editor-copy-all.copied {
+  background: #16a34a !important;
+  color: #ffffff !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FIX: line numbers NOT selectable, text in editor IS selectable
+   ══════════════════════════════════════════════════════════════ */
+
+/* Line numbers — NEVER selectable */
+.editor-host .CodeMirror-gutters,
+.editor-host .CodeMirror-gutter,
+.editor-host .CodeMirror-linenumber,
+.editor-host .CodeMirror-gutter-wrapper,
+.editor-host .CodeMirror-gutter-elt {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -webkit-touch-callout: none !important;
+  pointer-events: none !important;
+}
+
+/* Code area — fully selectable */
+.editor-host .CodeMirror-lines,
+.editor-host .CodeMirror-line,
+.editor-host .CodeMirror-code,
+.editor-host .CodeMirror pre {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
+/* Kill any selection tint on gutter */
+.editor-host .CodeMirror-gutters,
+.editor-host .CodeMirror-gutters *,
+.editor-host .CodeMirror-linenumber,
+.editor-host .CodeMirror-gutter-elt,
+.editor-host .CodeMirror-gutter-wrapper {
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+.editor-host .CodeMirror-gutters {
+  background: #1a1a1a !important;
+}
+
+/* Force line number column never shows selection */
+.editor-host .CodeMirror-gutters ::selection,
+.editor-host .CodeMirror-gutters ::-moz-selection {
+  background: transparent !important;
+  color: inherit !important;
+}
