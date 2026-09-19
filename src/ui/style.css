@@ -3479,3 +3479,217 @@ header button, .toolbar button {
     padding-left: calc(var(--meeel-space-md) + env(safe-area-inset-left));
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   STAGE 3 — ANIMATION + TRANSITIONS + POLISH
+   added 2026-09-19 — append-only
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Global smooth transition curve ── */
+:root {
+  --meeel-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --meeel-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --meeel-dur-fast: 120ms;
+  --meeel-dur-base: 200ms;
+  --meeel-dur-slow: 320ms;
+}
+
+/* ── Button press polish ── */
+button, .btn, .btn-icon, [role="button"] {
+  transition:
+    background-color var(--meeel-dur-fast) var(--meeel-ease),
+    color var(--meeel-dur-fast) var(--meeel-ease),
+    transform var(--meeel-dur-fast) var(--meeel-ease-spring),
+    opacity var(--meeel-dur-fast) var(--meeel-ease),
+    box-shadow var(--meeel-dur-base) var(--meeel-ease);
+}
+
+button:hover:not(:disabled),
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+button:active:not(:disabled),
+.btn:active:not(:disabled),
+.btn-icon:active {
+  transform: scale(0.96) translateY(0);
+  box-shadow: none;
+  transition-duration: 60ms;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Modal open animation ── */
+.modal-backdrop:not([hidden]) {
+  animation: meeel-fade-in var(--meeel-dur-base) var(--meeel-ease) both;
+}
+
+.modal-backdrop:not([hidden]) .modal {
+  animation: meeel-modal-in var(--meeel-dur-slow) var(--meeel-ease-spring) both;
+}
+
+@keyframes meeel-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes meeel-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Drawer slide-in ── */
+.tools-drawer {
+  transition:
+    transform var(--meeel-dur-slow) var(--meeel-ease),
+    opacity var(--meeel-dur-base) var(--meeel-ease);
+}
+
+.tools-drawer:not(.open) {
+  pointer-events: none;
+}
+
+/* ── Tools card hover lift ── */
+.tools-card {
+  transition:
+    transform var(--meeel-dur-base) var(--meeel-ease-spring),
+    background-color var(--meeel-dur-fast) var(--meeel-ease),
+    box-shadow var(--meeel-dur-base) var(--meeel-ease);
+}
+
+.tools-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.tools-card:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 60ms;
+}
+
+/* ── Icon picker cell hover ── */
+.icon-cell, .icon-card {
+  transition:
+    transform var(--meeel-dur-fast) var(--meeel-ease-spring),
+    background-color var(--meeel-dur-fast) var(--meeel-ease);
+}
+
+.icon-cell:hover, .icon-card:hover {
+  transform: scale(1.05);
+}
+
+.icon-cell:active, .icon-card:active {
+  transform: scale(0.96);
+}
+
+/* ── Copy button feedback ── */
+.copy-btn, .tools-card button {
+  transition:
+    background-color var(--meeel-dur-fast) var(--meeel-ease),
+    color var(--meeel-dur-fast) var(--meeel-ease),
+    transform var(--meeel-dur-fast) var(--meeel-ease-spring);
+}
+
+.copy-btn:active, .tools-card button:active {
+  transform: scale(0.94);
+}
+
+/* ── Toast / notification polish ── */
+.toast, .notification, #__meeel_toast {
+  animation: meeel-toast-in var(--meeel-dur-slow) var(--meeel-ease-spring) both;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@keyframes meeel-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ── Save indicator pulse ── */
+.save-indicator, .save-dot {
+  transition:
+    opacity var(--meeel-dur-base) var(--meeel-ease),
+    color var(--meeel-dur-base) var(--meeel-ease);
+}
+
+/* ── Pane header subtle color shift on hover ── */
+.pane-header {
+  transition: background-color var(--meeel-dur-fast) var(--meeel-ease);
+}
+
+/* ── Suggestion bar slide in ── */
+.suggestion-bar:not([hidden]) {
+  animation: meeel-slide-up var(--meeel-dur-base) var(--meeel-ease-spring) both;
+}
+
+@keyframes meeel-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Error card fade in ── */
+.err-card, .error-card {
+  animation: meeel-fade-in var(--meeel-dur-base) var(--meeel-ease) both;
+}
+
+/* ── Focus ring smooth ── */
+button, a, input, textarea {
+  transition:
+    outline-color var(--meeel-dur-fast) var(--meeel-ease),
+    border-color var(--meeel-dur-fast) var(--meeel-ease),
+    box-shadow var(--meeel-dur-base) var(--meeel-ease);
+}
+
+/* ── Scrollbar smooth ── */
+::-webkit-scrollbar-thumb {
+  transition: background-color var(--meeel-dur-base) var(--meeel-ease);
+}
+
+/* ── Code editor cursor blink (subtle) ── */
+#editor {
+  caret-color: #2563eb;
+}
+
+/* ── Header download button pulse when unsaved ── */
+@keyframes meeel-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+}
+
+.btn-download.has-unsaved, #download-btn.has-unsaved {
+  animation: meeel-pulse-glow 2s var(--meeel-ease) infinite;
+}
+
+/* ── Reduced motion safety ── */
+@media (prefers-reduced-motion: reduce) {
+  button:hover, .btn:hover, .tools-card:hover {
+    transform: none !important;
+  }
+  .modal-backdrop:not([hidden]) .modal {
+    animation: meeel-fade-in 80ms linear both;
+  }
+}
