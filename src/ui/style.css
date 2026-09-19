@@ -5946,34 +5946,19 @@ textarea:focus-visible,
    ══════════════════════════════════════════════════════════════ */
 
 @media (hover: none) and (pointer: coarse) {
-  button,
-  [role="button"],
-  .btn,
-  .pbb-btn,
-  .view-tab,
-  .tools-card,
-  input,
-  select {
-    min-height: 48px;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  button:hover:not(:active),
-  .btn:hover:not(:active),
-  .pbb-btn:hover:not(:active) {
-    transform: none !important;
-  }
-
+  /* Only active feedback, no min-height forcing */
   button:active,
   .btn:active,
   .pbb-btn:active,
   .view-tab:active,
   .tools-card:active {
-    transform: scale(0.95) !important;
+    transform: scale(0.96) !important;
   }
 
-  /* Scrollbar minimal on touch */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  button:hover:not(:active),
+  .btn:hover:not(:active) {
+    transform: none !important;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
