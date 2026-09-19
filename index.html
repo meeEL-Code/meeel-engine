@@ -137,6 +137,16 @@
     </section>
   </main>
 
+  <!-- Virtual D-pad — shown only in Play Mode (mobile) -->
+  <div id="virtual-dpad" class="virtual-dpad" hidden>
+    <button class="dpad-btn dpad-up"    data-key="ArrowUp"    type="button" aria-label="Up">▲</button>
+    <button class="dpad-btn dpad-left"  data-key="ArrowLeft"  type="button" aria-label="Left">◀</button>
+    <button class="dpad-btn dpad-center" data-key="Space"     type="button" aria-label="Action">●</button>
+    <button class="dpad-btn dpad-right" data-key="ArrowRight" type="button" aria-label="Right">▶</button>
+    <button class="dpad-btn dpad-down"  data-key="ArrowDown"  type="button" aria-label="Down">▼</button>
+    <button class="dpad-btn dpad-exit"  data-key="__EXIT__"   type="button" aria-label="Exit">✕</button>
+  </div>
+
   <!-- Hidden input — used only for keyboard capture in Play Mode -->
   <input id="meeel-key-capture" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
          style="position:fixed;top:50%;left:50%;width:1px;height:1px;opacity:0;border:0;padding:0;pointer-events:none;z-index:-1;" />

@@ -1420,6 +1420,10 @@ function setPlayMode(on: boolean) {
   document.body.classList.toggle('play-mode', on);
   previewPlay?.classList.toggle('playing', on);
 
+  // Show/hide virtual D-pad
+  const dpad = document.getElementById('virtual-dpad') as HTMLElement | null;
+  if (dpad) dpad.hidden = !on;
+
   const keyCapture = document.getElementById('meeel-key-capture') as HTMLInputElement | null;
 
   if (on) {
@@ -1463,6 +1467,48 @@ keyCaptureEl?.addEventListener('keydown', (e) => {
     e.preventDefault();
     forwardKeyToPreview(e.key === 'Space' ? ' ' : e.key);
   }
+});
+
+// ── Virtual D-pad button handlers ──
+document.querySelectorAll('.dpad-btn').forEach((btn) => {
+  const el = btn as HTMLButtonElement;
+  const key = el.dataset.key || '';
+  if (!key) return;
+
+  let __touchedRecently = false;
+
+  const fire = () => {
+    if (key === '__EXIT__') {
+      setPlayMode(false);
+      return;
+    }
+    if (!document.body.classList.contains('play-mode')) return;
+    const k = key === 'Space' ? ' ' : key;
+    forwardKeyToPreview(k);
+    // Keep hidden input focused (keyboard stays up)
+    const kc = document.getElementById('meeel-key-capture') as HTMLInputElement | null;
+    if (kc && document.activeElement !== kc) {
+      try { kc.focus(); } catch {}
+    }
+    // Haptic
+    if (navigator.vibrate) { try { navigator.vibrate(8); } catch {} }
+  };
+
+  // Touchstart — immediate feedback + keep keyboard focused
+  el.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    __touchedRecently = true;
+    fire();
+    setTimeout(() => { __touchedRecently = false; }, 400);
+  }, { passive: false });
+
+  // Click — desktop fallback only
+  el.addEventListener('click', (e) => {
+    if (__touchedRecently) return;
+    e.preventDefault();
+    fire();
+  });
 });
 
 // Re-focus hidden input on tap in preview area
@@ -3070,6 +3116,18 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'focus-next', group: 'Form', description: 'Jump to next input',
     code: 'on-click-[focus-next name-input]',
     icon: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="15 8 19 12 15 16"/>' },
+  { name: 'move-by-x', group: 'Movement', description: 'Move left/right by pixels',
+    code: 'on-click-[move-by-x character 10]',
+    icon: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="15 8 19 12 15 16"/><polyline points="9 8 5 12 9 16"/>' },
+  { name: 'move-by-y', group: 'Movement', description: 'Move up/down by pixels',
+    code: 'on-click-[move-by-y character -10]',
+    icon: '<line x1="12" y1="5" x2="12" y2="19"/><polyline points="8 9 12 5 16 9"/><polyline points="8 15 12 19 16 15"/>' },
+  { name: 'move-to-x', group: 'Movement', description: 'Jump to horizontal position',
+    code: 'on-click-[move-to-x character 200]',
+    icon: '<line x1="3" y1="12" x2="21" y2="12"/><circle cx="12" cy="12" r="3" fill="currentColor"/><line x1="3" y1="8" x2="3" y2="16"/><line x1="21" y1="8" x2="21" y2="16"/>' },
+  { name: 'move-to-y', group: 'Movement', description: 'Jump to vertical position',
+    code: 'on-click-[move-to-y character 200]',
+    icon: '<line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="12" r="3" fill="currentColor"/><line x1="8" y1="3" x2="16" y2="3"/><line x1="8" y1="21" x2="16" y2="21"/>' },
   { name: 'on-key', group: 'Interactive', description: 'Run action when key pressed',
     code: 'on-key-[Space] show secret-box',
     icon: '<rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="14" y2="10"/><line x1="18" y1="10" x2="18" y2="10"/><line x1="7" y1="14" x2="17" y2="14"/>' },

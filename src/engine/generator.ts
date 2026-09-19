@@ -5446,6 +5446,23 @@ case 'beep': {
       return `document.body.style.filter = '';`;
     }
 
+    case 'move-by-x': {
+      const dx = parseFloat(parts[2]) || 0;
+      return `var el = __meeel_find(${tq}); if (el) { var __cur = parseFloat(el.style.left) || 0; el.style.left = (__cur + ${dx}) + 'px'; }`;
+    }
+    case 'move-by-y': {
+      const dy = parseFloat(parts[2]) || 0;
+      return `var el = __meeel_find(${tq}); if (el) { var __cur = parseFloat(el.style.top) || 0; el.style.top = (__cur + ${dy}) + 'px'; }`;
+    }
+    case 'move-to-x': {
+      const x = parseFloat(parts[2]) || 0;
+      return `var el = __meeel_find(${tq}); if (el) el.style.left = ${JSON.stringify(x + 'px')};`;
+    }
+    case 'move-to-y': {
+      const y = parseFloat(parts[2]) || 0;
+      return `var el = __meeel_find(${tq}); if (el) el.style.top = ${JSON.stringify(y + 'px')};`;
+    }
+
     default:
       return '';
   }
