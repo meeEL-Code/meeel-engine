@@ -311,26 +311,30 @@ function highlight(source: string): string {
 let __cmErrorLines: number[] = [];
 
 function syncGutter() {
-  // Clear old error markers
+  // Clear old
   for (const ln of __cmErrorLines) {
     try {
-      cm.removeLineClass(ln, 'background', 'cm-error-line');
-      cm.removeLineClass(ln, 'gutter', 'cm-error-linenum');
       cm.removeLineClass(ln, 'wrap', 'cm-error-wrap');
+      cm.removeLineClass(ln, 'background', 'cm-error-bg');
+      cm.removeLineClass(ln, 'gutter', 'cm-error-linenum');
     } catch {}
   }
   __cmErrorLines = [];
 
-  // Apply new error markers
+  // Apply new
   for (const [lineNum, _token] of errorMap.entries()) {
     const cmLine = lineNum - 1;  // errorMap is 1-based, CM is 0-based
     if (cmLine < 0) continue;
     try {
-      cm.addLineClass(cmLine, 'background', 'cm-error-line');
+      cm.addLineClass(cmLine, 'wrap', 'cm-error-wrap');
+      cm.addLineClass(cmLine, 'background', 'cm-error-bg');
       cm.addLineClass(cmLine, 'gutter', 'cm-error-linenum');
       __cmErrorLines.push(cmLine);
     } catch {}
   }
+
+  // Force CM to redraw
+  try { cm.refresh(); } catch {}
 }
 function syncHighlight(_force = false) { /* no-op */ }
 

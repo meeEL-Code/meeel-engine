@@ -3786,22 +3786,6 @@ button, a, input, textarea {
   font-weight: 600;
 }
 
-/* ── CodeMirror error line highlight ── */
-.editor-host .CodeMirror-linebackground.cm-error-line {
-  background: rgba(239, 68, 68, 0.14) !important;
-  border-left: 2px solid #ef4444;
-}
-
-.editor-host .CodeMirror-linenumber.cm-error-linenum {
-  color: #ef4444 !important;
-  font-weight: 700;
-}
-
-.editor-host .CodeMirror-gutter-elt.cm-error-linenum {
-  color: #ef4444 !important;
-}
-
-
 /* ══════════════════════════════════════════════════════════════
    PREVIEW VIEW SWITCH (TV / Desktop / Mobile)
    ══════════════════════════════════════════════════════════════ */
@@ -4055,4 +4039,44 @@ button, a, input, textarea {
 .editor-host .CodeMirror-gutters ::-moz-selection {
   background: transparent !important;
   color: inherit !important;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   ERROR LINE (working version)
+   ══════════════════════════════════════════════════════════════ */
+
+.editor-host .CodeMirror-linebackground.cm-error-bg {
+  background: rgba(239, 68, 68, 0.18) !important;
+  border-left: 3px solid #ef4444 !important;
+}
+
+.editor-host .CodeMirror-line.cm-error-wrap {
+  background: rgba(239, 68, 68, 0.18) !important;
+}
+
+.editor-host .CodeMirror-gutter-elt.cm-error-linenum,
+.editor-host .CodeMirror-linenumber.cm-error-linenum {
+  color: #ef4444 !important;
+  font-weight: 700 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ERROR LINE highlight (working version)
+   ══════════════════════════════════════════════════════════════ */
+
+.editor-host .CodeMirror-linebackground.cm-error-bg {
+  background: rgba(239, 68, 68, 0.18) !important;
+  border-left: 3px solid #ef4444 !important;
+}
+
+.editor-host .CodeMirror-gutter-elt.cm-error-linenum,
+.editor-host .CodeMirror-linenumber.cm-error-linenum {
+  color: #ef4444 !important;
+  font-weight: 700 !important;
+}
+
+/* Fallback — line wrapper background too */
+.editor-host .CodeMirror-line.cm-error-wrap {
+  background: rgba(239, 68, 68, 0.10) !important;
 }
