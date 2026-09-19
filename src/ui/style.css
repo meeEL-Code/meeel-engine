@@ -4763,3 +4763,395 @@ body:not(.play-mode) .virtual-dpad {
   color: #ffffff;
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   PHASE 2A — Header migration to design tokens
+   (append-only overrides; existing rules untouched)
+   ══════════════════════════════════════════════════════════════ */
+
+header, .toolbar, .app-header {
+  background: var(--meeel-bg);
+  border-bottom: 1px solid var(--meeel-border);
+  color: var(--meeel-text-primary);
+  padding: var(--meeel-space-sm) var(--meeel-space-md);
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--meeel-space-sm);
+}
+
+/* Logo / brand text */
+header .logo,
+header .brand,
+header .app-brand,
+header h1,
+header h2 {
+  color: var(--meeel-text-primary);
+  font-family: var(--meeel-font-ui);
+  font-weight: var(--meeel-weight-semibold);
+  font-size: 16px;
+}
+
+/* Saved indicator text */
+header .saved-text,
+header .save-indicator,
+header [id*="save"] {
+  color: var(--meeel-text-secondary);
+  font-family: var(--meeel-font-ui);
+  font-size: 12px;
+  font-weight: var(--meeel-weight-regular);
+}
+
+/* Icon buttons in header */
+header .btn-icon,
+header button.btn-icon {
+  background: transparent;
+  border: 1px solid var(--meeel-border);
+  color: var(--meeel-text-primary);
+  border-radius: var(--meeel-radius-md);
+  min-height: 40px;
+  min-width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--meeel-dur-fast) var(--meeel-ease),
+              border-color var(--meeel-dur-fast) var(--meeel-ease),
+              color var(--meeel-dur-fast) var(--meeel-ease);
+  cursor: pointer;
+  padding: 0;
+}
+
+header .btn-icon:hover,
+header button.btn-icon:hover {
+  background: var(--meeel-surface);
+  border-color: var(--meeel-text-tertiary);
+  color: var(--meeel-text-primary);
+}
+
+header .btn-icon:active,
+header button.btn-icon:active {
+  transform: scale(0.95);
+  background: var(--meeel-surface-2);
+}
+
+/* Download button — primary CTA */
+header .btn-download,
+header #download-btn,
+header button.btn-primary {
+  background: var(--meeel-accent);
+  border: 1px solid var(--meeel-accent);
+  color: #ffffff;
+  border-radius: var(--meeel-radius-md);
+  padding: 0 18px;
+  min-height: 40px;
+  font-family: var(--meeel-font-ui);
+  font-size: 14px;
+  font-weight: var(--meeel-weight-semibold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background var(--meeel-dur-fast) var(--meeel-ease),
+              transform var(--meeel-dur-fast) var(--meeel-ease-spring),
+              box-shadow var(--meeel-dur-base) var(--meeel-ease);
+  box-shadow: var(--meeel-shadow-accent);
+}
+
+header .btn-download:hover,
+header #download-btn:hover,
+header button.btn-primary:hover {
+  background: var(--meeel-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.45);
+}
+
+header .btn-download:active,
+header #download-btn:active,
+header button.btn-primary:active {
+  background: var(--meeel-accent-press);
+  transform: scale(0.97);
+  box-shadow: var(--meeel-shadow-sm);
+}
+
+/* If download button is icon-only (square) */
+header #download-btn:empty,
+header .btn-download.icon-only {
+  padding: 0;
+  min-width: 40px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   PHASE 2A — Header migration to design tokens
+   (append-only overrides; existing rules untouched)
+   ══════════════════════════════════════════════════════════════ */
+
+header, .toolbar, .app-header {
+  background: var(--meeel-bg);
+  border-bottom: 1px solid var(--meeel-border);
+  color: var(--meeel-text-primary);
+  padding: var(--meeel-space-sm) var(--meeel-space-md);
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--meeel-space-sm);
+}
+
+/* Logo / brand text */
+header .logo,
+header .brand,
+header .app-brand,
+header h1,
+header h2 {
+  color: var(--meeel-text-primary);
+  font-family: var(--meeel-font-ui);
+  font-weight: var(--meeel-weight-semibold);
+  font-size: 16px;
+}
+
+/* Saved indicator text */
+header .saved-text,
+header .save-indicator,
+header [id*="save"] {
+  color: var(--meeel-text-secondary);
+  font-family: var(--meeel-font-ui);
+  font-size: 12px;
+  font-weight: var(--meeel-weight-regular);
+}
+
+/* Icon buttons in header */
+header .btn-icon,
+header button.btn-icon {
+  background: transparent;
+  border: 1px solid var(--meeel-border);
+  color: var(--meeel-text-primary);
+  border-radius: var(--meeel-radius-md);
+  min-height: 40px;
+  min-width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--meeel-dur-fast) var(--meeel-ease),
+              border-color var(--meeel-dur-fast) var(--meeel-ease),
+              color var(--meeel-dur-fast) var(--meeel-ease);
+  cursor: pointer;
+  padding: 0;
+}
+
+header .btn-icon:hover,
+header button.btn-icon:hover {
+  background: var(--meeel-surface);
+  border-color: var(--meeel-text-tertiary);
+  color: var(--meeel-text-primary);
+}
+
+header .btn-icon:active,
+header button.btn-icon:active {
+  transform: scale(0.95);
+  background: var(--meeel-surface-2);
+}
+
+/* Download button — primary CTA */
+header .btn-download,
+header #download-btn,
+header button.btn-primary {
+  background: var(--meeel-accent);
+  border: 1px solid var(--meeel-accent);
+  color: #ffffff;
+  border-radius: var(--meeel-radius-md);
+  padding: 0 18px;
+  min-height: 40px;
+  font-family: var(--meeel-font-ui);
+  font-size: 14px;
+  font-weight: var(--meeel-weight-semibold);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background var(--meeel-dur-fast) var(--meeel-ease),
+              transform var(--meeel-dur-fast) var(--meeel-ease-spring),
+              box-shadow var(--meeel-dur-base) var(--meeel-ease);
+  box-shadow: var(--meeel-shadow-accent);
+}
+
+header .btn-download:hover,
+header #download-btn:hover,
+header button.btn-primary:hover {
+  background: var(--meeel-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.45);
+}
+
+header .btn-download:active,
+header #download-btn:active,
+header button.btn-primary:active {
+  background: var(--meeel-accent-press);
+  transform: scale(0.97);
+  box-shadow: var(--meeel-shadow-sm);
+}
+
+/* If download button is icon-only (square) */
+header #download-btn:empty,
+header .btn-download.icon-only {
+  padding: 0;
+  min-width: 40px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   PHASE 2B — Tools drawer + card migration
+   ══════════════════════════════════════════════════════════════ */
+
+.tools-drawer {
+  background: var(--meeel-bg);
+  border-left: 1px solid var(--meeel-border);
+  color: var(--meeel-text-primary);
+  font-family: var(--meeel-font-ui);
+}
+
+.tools-card {
+  background: var(--meeel-surface);
+  border: 1px solid var(--meeel-border);
+  border-radius: var(--meeel-radius-lg);
+  padding: var(--meeel-space-md);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--meeel-font-ui);
+  color: var(--meeel-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--meeel-space-md);
+  width: 100%;
+  transition:
+    background var(--meeel-dur-fast) var(--meeel-ease),
+    border-color var(--meeel-dur-fast) var(--meeel-ease),
+    transform var(--meeel-dur-fast) var(--meeel-ease-spring),
+    box-shadow var(--meeel-dur-base) var(--meeel-ease);
+}
+
+.tools-card:hover {
+  background: var(--meeel-surface-2);
+  border-color: rgba(10, 132, 255, 0.4);
+  transform: translateY(-1px);
+  box-shadow: var(--meeel-shadow-md);
+}
+
+.tools-card:active {
+  transform: scale(0.985) translateY(0);
+  box-shadow: var(--meeel-shadow-sm);
+}
+
+/* Icon container */
+.tools-card-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 132, 255, 0.12);
+  border-radius: var(--meeel-radius-md);
+  flex-shrink: 0;
+  color: var(--meeel-accent);
+  transition: background var(--meeel-dur-fast) var(--meeel-ease);
+}
+
+.tools-card:hover .tools-card-icon {
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.tools-card-icon svg {
+  display: block;
+  color: var(--meeel-accent);
+}
+
+/* Text */
+.tools-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.tools-card-title {
+  font-family: var(--meeel-font-ui);
+  font-size: 15px;
+  font-weight: var(--meeel-weight-semibold);
+  color: var(--meeel-text-primary);
+  margin-bottom: 3px;
+  letter-spacing: -0.005em;
+}
+
+.tools-card-desc {
+  font-family: var(--meeel-font-ui);
+  font-size: 12px;
+  font-weight: var(--meeel-weight-regular);
+  color: var(--meeel-text-secondary);
+  line-height: 1.35;
+}
+
+/* Divider */
+.tools-divider {
+  height: 1px;
+  background: var(--meeel-divider);
+  margin: var(--meeel-space-sm) 4px;
+  border: 0;
+}
+
+/* Settings variant — muted */
+.tools-card-settings {
+  background: transparent;
+  border-color: transparent;
+}
+
+.tools-card-settings:hover {
+  background: var(--meeel-surface);
+  border-color: var(--meeel-border);
+}
+
+.tools-card-settings .tools-card-icon {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--meeel-text-secondary);
+}
+
+.tools-card-settings .tools-card-icon svg {
+  color: var(--meeel-text-secondary);
+}
+
+.tools-card-settings .tools-card-title {
+  color: var(--meeel-text-secondary);
+  font-weight: var(--meeel-weight-medium);
+}
+
+/* Drawer header */
+.tools-header,
+.tools-drawer > h2,
+.tools-drawer > .drawer-header {
+  font-family: var(--meeel-font-ui);
+  font-weight: var(--meeel-weight-semibold);
+  color: var(--meeel-text-primary);
+  padding: var(--meeel-space-md) var(--meeel-space-lg);
+  border-bottom: 1px solid var(--meeel-border);
+  font-size: 18px;
+}
+
+/* Close button in drawer */
+.tools-drawer .close-btn,
+.tools-drawer [aria-label*="Close" i] {
+  color: var(--meeel-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--meeel-radius-sm);
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--meeel-dur-fast) var(--meeel-ease),
+              color var(--meeel-dur-fast) var(--meeel-ease);
+}
+
+.tools-drawer .close-btn:hover,
+.tools-drawer [aria-label*="Close" i]:hover {
+  background: var(--meeel-surface-2);
+  color: var(--meeel-text-primary);
+}
+
