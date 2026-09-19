@@ -1558,6 +1558,54 @@ const EXTRA_ICONS: Record<string, string> = {
   'bell-ring': svg24('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M21 5l-1.5 1.5M3 5l1.5 1.5"/>'),
   'hash': svg24('<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>'),
 
+  // ── Media ──
+  play: svg24('<polygon points="5 3 19 12 5 21 5 3"/>'),
+  pause: svg24('<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'),
+  stop: svg24('<rect x="5" y="5" width="14" height="14"/>'),
+  skip: svg24('<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>'),
+  speaker: svg24('<rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><line x1="12" y1="6" x2="12" y2="6"/>'),
+  camera: svg24('<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'),
+  image: svg24('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>'),
+
+  // ── Weather ──
+  sun: svg24('<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'),
+  moon: svg24('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'),
+  rain: svg24('<line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>'),
+  snow: svg24('<line x1="12" y1="2" x2="12" y2="22"/><line x1="3" y1="7" x2="21" y2="17"/><line x1="3" y1="17" x2="21" y2="7"/>'),
+  lightning: svg24('<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'),
+  wind: svg24('<path d="M9.59 4.59A2 2 0 1 1 11 8H2"/><path d="M12.59 19.41A2 2 0 1 0 14 16H2"/><path d="M17.73 7.73A2.5 2.5 0 1 1 19.5 12H2"/>'),
+
+  // ── Nature ──
+  tree: svg24('<path d="M12 2L5 12h4v4h6v-4h4z"/><line x1="12" y1="16" x2="12" y2="22"/>'),
+  flower: svg24('<circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/>'),
+  feather: svg24('<path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/>'),
+  fire: svg24('<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'),
+  drop: svg24('<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>'),
+
+  // ── Food ──
+  cake: svg24('<path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><line x1="4" y1="16" x2="20" y2="16"/><line x1="12" y1="3" x2="12" y2="8"/><circle cx="12" cy="3" r="1"/>'),
+  pizza: svg24('<path d="M12 2L2 20h20z"/><circle cx="10" cy="14" r="1"/><circle cx="14" cy="14" r="1"/><circle cx="12" cy="17" r="1"/>'),
+  apple: svg24('<path d="M12 6a5 5 0 0 1 5 5v8a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-8a5 5 0 0 1 5-5z"/><path d="M12 6V3"/>'),
+
+  // ── Business ──
+  briefcase: svg24('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>'),
+  chart: svg24('<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'),
+  trending: svg24('<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>'),
+  dollar: svg24('<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>'),
+  wallet: svg24('<path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>'),
+
+  // ── Tech ──
+
+  // ── Shapes ──
+  circle: svg24('<circle cx="12" cy="12" r="10"/>'),
+  square: svg24('<rect x="3" y="3" width="18" height="18" rx="2"/>'),
+  triangle: svg24('<polygon points="12 2 2 22 22 22 12 2"/>'),
+  hexagon: svg24('<polygon points="12 2 21 7 21 17 12 22 3 17 3 7 12 2"/>'),
+  star: svg24('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'),
+
+  // ── Misc ──
+  key: svg24('<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>'),
+
 };
 
 const iconsPage = document.getElementById('icons-page') as HTMLElement | null;
