@@ -3027,8 +3027,6 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'width-[200px]' },
   { group: 'Size & Space', name: 'height', description: 'Height',
     code: 'height-[100px]' },
-  { group: 'Size & Space', name: 'size', description: 'Width preset',
-    code: 'size-[medium]' },
   { group: 'Size & Space', name: 'min-width', description: 'Smallest width',
     code: 'min-width-[100px]' },
   { group: 'Size & Space', name: 'max-width', description: 'Largest width',
@@ -3079,14 +3077,6 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'box-shadow-[soft]' },
   { group: 'Size & Space', name: 'shadow', description: 'Shadow (short)',
     code: 'shadow-[soft]' },
-  { group: 'Size & Space', name: 'top', description: 'Top offset',
-    code: 'top-[20px]' },
-  { group: 'Size & Space', name: 'bottom', description: 'Bottom offset',
-    code: 'bottom-[20px]' },
-  { group: 'Size & Space', name: 'left', description: 'Left offset',
-    code: 'left-[20px]' },
-  { group: 'Size & Space', name: 'right', description: 'Right offset',
-    code: 'right-[20px]' },
   { group: 'Size & Space', name: 'z-index', description: 'Stack order',
     code: 'z-index-[10]' },
   { group: 'Size & Space', name: 'overflow', description: 'Scroll or hide',
@@ -3135,18 +3125,12 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'bar-radius-[12px]' },
   { group: 'Content', name: 'bar-padding', description: 'Color bar padding',
     code: 'bar-padding-[20px]' },
-  { group: 'Content', name: 'content-position', description: 'Content alignment',
-    code: 'content-position-[center]' },
 
   // ═══ Interactive (25) ═══
   { group: 'Interactive', name: 'on-click', description: 'Click actions',
     code: 'on-click-[show menu]' },
-  { group: 'Interactive', name: 'on-input', description: 'On typing actions',
-    code: 'on-input-[write preview Hello]' },
   { group: 'Interactive', name: 'open', description: 'Opens another page',
     code: 'open-[home-page]' },
-  { group: 'Interactive', name: 'call-id', description: 'Page identifier',
-    code: 'call-id-[111111]' },
   { group: 'Interactive', name: 'from-toggle', description: 'Toggle driver',
     code: 'from-toggle-[dark-toggle]' },
   { group: 'Interactive', name: 'min', description: 'Slider minimum',
@@ -3165,8 +3149,6 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'off-color-[#cccccc]' },
   { group: 'Interactive', name: 'default-state', description: 'Toggle initial state',
     code: 'default-state-[off]' },
-  { group: 'Interactive', name: 'default-checked', description: 'Checkbox initial state',
-    code: 'default-checked-[yes]' },
   { group: 'Interactive', name: 'check-color', description: 'Checkmark color',
     code: 'check-color-[#16a34a]' },
   { group: 'Interactive', name: 'group-name', description: 'Radio group name',
@@ -3187,8 +3169,6 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'pattern-[email]' },
   { group: 'Interactive', name: 'tooltip-position', description: 'Where tooltip shows',
     code: 'tooltip-position-[top]' },
-  { group: 'Interactive', name: 'accordion-open', description: 'Open by default',
-    code: 'accordion-open-[yes]' },
 
   // ═══ Chart & Data (10) ═══
   { group: 'Chart & Data', name: 'data', description: 'Chart numbers',
@@ -3205,10 +3185,6 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'chart-border-[#e5e5e5]' },
   { group: 'Chart & Data', name: 'chart-radius', description: 'Chart corner radius',
     code: 'chart-radius-[12px]' },
-  { group: 'Chart & Data', name: 'legend-show', description: 'Show chart legend',
-    code: 'legend-show-[yes]' },
-  { group: 'Chart & Data', name: 'grid-lines', description: 'Show grid lines',
-    code: 'grid-lines-[yes]' },
   { group: 'Chart & Data', name: 'animation-time', description: 'Animation duration',
     code: 'animation-time-[0.5s]' },
 
@@ -3217,18 +3193,8 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'badge-color-[white]' },
   { group: 'Badge & Status', name: 'badge-bg', description: 'Badge background',
     code: 'badge-bg-[#16a34a]' },
-  { group: 'Badge & Status', name: 'badge-shape', description: 'Badge shape',
-    code: 'badge-shape-[round]' },
-  { group: 'Badge & Status', name: 'badge-position', description: 'Badge position',
-    code: 'badge-position-[top-right]' },
-  { group: 'Badge & Status', name: 'status-dot', description: 'Show status dot',
-    code: 'status-dot-[online]' },
-  { group: 'Badge & Status', name: 'status-color', description: 'Status color',
-    code: 'status-color-[green]' },
 
   // ═══ Video (4) ═══
-  { group: 'Video', name: 'youtube', description: 'YouTube embed',
-    code: 'youtube-[https://youtube.com/watch?v=ABC]' },
   { group: 'Video', name: 'video-controls', description: 'Show video controls',
     code: 'video-controls-[yes]' },
   { group: 'Video', name: 'autoplay', description: 'Play on load',
@@ -3237,6 +3203,9 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'loop-video-[yes]' },
 
   // ═══ Connections (8) ═══
+  /* ═══ RESERVED: Backend Connections (library-তে দেখাব না, engine support পরে) ═══
+  { group: 'Connections', name: 'call-id', description: 'Page identifier',
+    code: 'call-id-[home]' },
   { group: 'Connections', name: 'supabase-url', description: 'Supabase URL',
     code: 'supabase-url-[https://xxx.supabase.co]' },
   { group: 'Connections', name: 'supabase-publishable-key', description: 'Supabase key',
@@ -3253,6 +3222,7 @@ const PROPERTIES_LIST: PropEntry[] = [
     code: 'service-type-[supabase]' },
   { group: 'Connections', name: 'project-name', description: 'Project name',
     code: 'project-name-[my-app]' },
+  */
 ];
 
 const propsPage = document.getElementById('props-page') as HTMLElement | null;
