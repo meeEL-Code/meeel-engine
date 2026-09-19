@@ -22,7 +22,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Pacifico&family=Caveat:wght@400;700&family=Satisfy&family=Kalam:wght@400;700&family=Indie+Flower&family=Shadows+Into+Light&family=Great+Vibes&family=Allura&family=Parisienne&family=Sacramento&family=Amatic+SC:wght@400;700&family=Permanent+Marker&family=Courgette&family=Yellowtail&family=Cookie&family=Alex+Brush&family=Tangerine&family=Berkshire+Swash&family=Italianno&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/src/ui/style.css" />
 </head>
-<body>
+<body data-tab="code">
 
   <!-- Unsaved work banner -->
   <div class="unsaved-banner" id="unsaved-banner" hidden>
@@ -88,6 +88,18 @@
       <input type="file" id="import-input" accept=".meeel,.me,.txt" hidden>
     </div>
   </header>
+
+  <!-- Mobile-only view switch tabs -->
+  <div class="view-tabs" role="tablist">
+    <button class="view-tab active" data-tab="code" type="button" role="tab">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      meeEL
+    </button>
+    <button class="view-tab" data-tab="preview" type="button" role="tab">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Preview
+    </button>
+  </div>
 
   <main class="layout">
     <section class="pane editor-pane">

@@ -1389,6 +1389,39 @@ document.addEventListener('drop', (e) => {
 
 const fullscreenBtn = document.getElementById('preview-fullscreen') as HTMLButtonElement | null;
 
+// ── View tabs (mobile: switch between editor/preview) ──
+function setActiveTab(tab: 'code' | 'preview') {
+  document.body.dataset.tab = tab;
+  document.querySelectorAll('.view-tab').forEach((btn) => {
+    const el = btn as HTMLElement;
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  try { localStorage.setItem('meeel-view-tab', tab); } catch {}
+  // Refresh CodeMirror after making it visible
+  if (tab === 'code') {
+    setTimeout(() => { try { cm.refresh(); } catch {} }, 50);
+  }
+}
+
+document.querySelectorAll('.view-tab').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const tab = (btn as HTMLElement).dataset.tab as 'code' | 'preview';
+    if (tab) setActiveTab(tab);
+  });
+});
+
+// Restore last tab
+try {
+  const saved = localStorage.getItem('meeel-view-tab');
+  if (saved === 'code' || saved === 'preview') {
+    document.body.dataset.tab = saved;
+    document.querySelectorAll('.view-tab').forEach((btn) => {
+      const el = btn as HTMLElement;
+      el.classList.toggle('active', el.dataset.tab === saved);
+    });
+  }
+} catch {}
+
 // ── Play Mode toggle ──
 const previewPlay = document.getElementById('preview-play') as HTMLButtonElement | null;
 
@@ -5730,41 +5763,7 @@ function isRealWork(code: string): boolean {
   };
 })();
 
-// ── View tabs (meeEL / Preview) ──
-function setupViewTabs() {
-  const tabs = document.querySelectorAll('.view-tab');
-  if (!tabs.length) return;
-
-  const saved = localStorage.getItem('meeel-view-tab') || 'editor';
-  setViewTab(saved);
-
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      const view = (tab as HTMLElement).dataset.view || 'editor';
-      setViewTab(view);
-    });
-  });
-}
-
-function setViewTab(view: string) {
-  document.body.dataset.view = view;
-  document.querySelectorAll('.view-tab').forEach((t) => {
-    (t as HTMLElement).classList.toggle('active', (t as HTMLElement).dataset.view === view);
-  });
-  try { localStorage.setItem('meeel-view-tab', view); } catch {}
-
-  // When switching to preview, refresh iframe measurement
-  if (view === 'preview') {
-    setTimeout(() => {
-      try { cm.requestMeasure(); } catch {}
-    }, 50);
-  } else {
-    // Switching back to editor — refocus
-    setTimeout(() => {
-      try { cm.focus(); } catch {}
-    }, 50);
-  }
-}
+// (Old view tab system removed — using unified setActiveTab)
 
 setupViewTabs();
 

@@ -5155,3 +5155,190 @@ header .btn-download.icon-only {
   color: var(--meeel-text-primary);
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   VIEW TABS — mobile only, switch between editor/preview
+   ══════════════════════════════════════════════════════════════ */
+
+.view-tabs {
+  display: none;
+  background: #0f1524;
+  border-bottom: 1px solid #262626;
+  padding: 4px;
+  gap: 4px;
+}
+
+.view-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #808080;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 40px;
+}
+
+.view-tab svg {
+  opacity: 0.75;
+}
+
+.view-tab.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.view-tab.active svg {
+  opacity: 1;
+}
+
+.view-tab:hover:not(.active) {
+  background: #1a2336;
+  color: #b0b0b0;
+}
+
+/* ── Mobile-only: show tabs, hide one pane based on selection ── */
+@media (max-width: 767px) {
+  .view-tabs {
+    display: flex;
+  }
+
+  /* Full-height stacked layout */
+  .layout {
+    display: flex !important;
+    flex-direction: column;
+    overflow: hidden !important;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Default: only show editor */
+  body[data-tab="code"] .pane.preview-pane,
+  body[data-tab="preview"] .pane.editor-pane {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-tab="code"] .pane.editor-pane,
+  body[data-tab="preview"] .pane.preview-pane {
+    display: flex !important;
+    visibility: visible !important;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    height: 100% !important;
+    overflow: hidden;
+  }
+
+  body[data-tab="code"] .pane.editor-pane .editor-container,
+  body[data-tab="preview"] .pane.preview-pane iframe {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* ── In landscape phone — same behavior ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .view-tabs {
+    display: flex;
+    padding: 3px;
+  }
+  .view-tab {
+    min-height: 36px;
+    font-size: 12px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VIEW TABS — CLEAN (only active has pill)
+   ══════════════════════════════════════════════════════════════ */
+
+.view-tabs {
+  background: #0d1420 !important;
+  border-bottom: 1px solid #1a2336 !important;
+  padding: 6px 8px !important;
+  gap: 6px !important;
+  display: none;
+}
+
+@media (max-width: 767px), (max-height: 500px) and (orientation: landscape) {
+  .view-tabs {
+    display: flex !important;
+  }
+}
+
+/* Inactive tab — plain text, no box, no background */
+.view-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 999px !important;
+  color: #6b7280 !important;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  min-height: 38px;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.view-tab svg {
+  opacity: 0.6;
+  width: 14px;
+  height: 14px;
+}
+
+.view-tab:hover:not(.active) {
+  background: transparent !important;
+  color: #b0b0b0 !important;
+}
+
+.view-tab:focus,
+.view-tab:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Active tab — blue pill only */
+.view-tab.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.view-tab.active svg {
+  opacity: 1;
+}
+
+/* Landscape phones — tighter */
+@media (max-height: 500px) and (orientation: landscape) {
+  .view-tabs {
+    padding: 4px 6px !important;
+  }
+  .view-tab {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+}
