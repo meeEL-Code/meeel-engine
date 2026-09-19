@@ -1543,6 +1543,21 @@ const EXTRA_ICONS: Record<string, string> = {
   'corner-up-right': svg24('<polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>'),
   'chevron-down': svg24('<polyline points="6 9 12 15 18 9"/>'),
   'chevron-up': svg24('<polyline points="18 15 12 9 6 15"/>'),
+  // ── Arrows ──
+  'arrow-up-right': svg24('<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>'),
+  'chevron-left': svg24('<polyline points="15 18 9 12 15 6"/>'),
+  'chevron-right': svg24('<polyline points="9 18 15 12 9 6"/>'),
+  'expand': svg24('<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>'),
+  'collapse': svg24('<polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/>'),
+  'refresh': svg24('<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>'),
+
+  // ── Communication ──
+  'mail': svg24('<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>'),
+  'message': svg24('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+  'send': svg24('<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'),
+  'bell-ring': svg24('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M21 5l-1.5 1.5M3 5l1.5 1.5"/>'),
+  'hash': svg24('<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>'),
+
 };
 
 const iconsPage = document.getElementById('icons-page') as HTMLElement | null;
