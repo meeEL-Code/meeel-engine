@@ -1,3 +1,4 @@
+import { setupPlayground } from './playground';
 import CodeMirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/mode/simple';
@@ -1392,11 +1393,44 @@ const fullscreenBtn = document.getElementById('preview-fullscreen') as HTMLButto
 const previewPlay = document.getElementById('preview-play') as HTMLButtonElement | null;
 
 // Helper: forward a key to the iframe as a synthetic event
+// Set key state directly on iframe's window — reliable for hold + release
+function setIframeKey(key: string, down: boolean) {
+  try {
+    const w = preview.contentWindow as any;
+    if (!w) return;
+    const k = key === ' ' ? 'Space' : key;
+    // 1. Direct global state (read by when-held)
+    if (!w.__meeel_external_keys) w.__meeel_external_keys = {};
+    if (down) {
+      w.__meeel_external_keys[k] = true;
+      w.__meeel_external_keys[k.toLowerCase()] = true;
+    } else {
+      delete w.__meeel_external_keys[k];
+      delete w.__meeel_external_keys[k.toLowerCase()];
+    }
+    // 2. Also fire synthetic event so on-key (click-style) triggers
+    const doc = preview.contentDocument;
+    if (doc) {
+      const ev = new KeyboardEvent(down ? 'keydown' : 'keyup', {
+        key: k,
+        code: k.length === 1 ? 'Key' + k.toUpperCase() : k,
+        bubbles: true,
+        cancelable: true,
+      });
+      doc.dispatchEvent(ev);
+      if (doc.body) doc.body.dispatchEvent(ev);
+    }
+    // 3. If iframe exposes setter
+    if (typeof w.__meeel_setKey === 'function') {
+      w.__meeel_setKey(k, down);
+    }
+  } catch (e) { /* ignore */ }
+}
+
 function forwardKeyToPreview(key: string) {
   try {
     const doc = preview.contentDocument;
     if (!doc) return;
-    // Dispatch synthetic keydown on iframe's document
     const ev = new KeyboardEvent('keydown', {
       key: key,
       code: key.length === 1 ? 'Key' + key.toUpperCase() : key,
@@ -1404,7 +1438,6 @@ function forwardKeyToPreview(key: string) {
       cancelable: true,
     });
     doc.dispatchEvent(ev);
-    // Also on body (some listeners bind there)
     if (doc.body) doc.body.dispatchEvent(ev);
   } catch (e) { /* cross-origin, ignore */ }
 }
@@ -1418,6 +1451,10 @@ function handleKeyInput(value: string) {
 
 function setPlayMode(on: boolean) {
   document.body.classList.toggle('play-mode', on);
+  // Blur any active element so keyboard closes
+  try { (document.activeElement as HTMLElement)?.blur(); } catch {}
+  const __kc = document.getElementById('meeel-key-capture') as HTMLInputElement | null;
+  __kc?.blur();
   previewPlay?.classList.toggle('playing', on);
 
   // Show/hide virtual D-pad
@@ -1427,12 +1464,11 @@ function setPlayMode(on: boolean) {
   const keyCapture = document.getElementById('meeel-key-capture') as HTMLInputElement | null;
 
   if (on) {
+    // Do NOT focus hidden input — D-pad injects keys directly.
+    // (Keyboard would cover the game screen.)
     if (keyCapture) {
-      keyCapture.value = '';
-      keyCapture.style.pointerEvents = 'auto';
-      setTimeout(() => {
-        try { keyCapture.focus(); } catch {}
-      }, 50);
+      keyCapture.blur();
+      keyCapture.style.pointerEvents = 'none';
     }
     try { localStorage.setItem('meeel-play-mode', 'yes'); } catch {}
   } else {
@@ -1477,49 +1513,77 @@ document.querySelectorAll('.dpad-btn').forEach((btn) => {
 
   let __touchedRecently = false;
 
-  const fire = () => {
+  let __dpad_interval: number | null = null;
+  let __dpad_touched = false;
+
+  const fireOnce = () => {
     if (key === '__EXIT__') {
       setPlayMode(false);
       return;
     }
     if (!document.body.classList.contains('play-mode')) return;
     const k = key === 'Space' ? ' ' : key;
-    forwardKeyToPreview(k);
-    // Keep hidden input focused (keyboard stays up)
-    const kc = document.getElementById('meeel-key-capture') as HTMLInputElement | null;
-    if (kc && document.activeElement !== kc) {
-      try { kc.focus(); } catch {}
-    }
-    // Haptic
-    if (navigator.vibrate) { try { navigator.vibrate(8); } catch {} }
+    setIframeKey(k, true);
   };
 
-  // Touchstart — immediate feedback + keep keyboard focused
+  const startHold = () => {
+    if (__dpad_interval !== null) return;
+    fireOnce();
+    if (navigator.vibrate) { try { navigator.vibrate(8); } catch {} }
+    // Repeat every 60ms while held — smooth movement
+    __dpad_interval = window.setInterval(fireOnce, 60);
+  };
+
+  const stopHold = () => {
+    if (__dpad_interval !== null) {
+      clearInterval(__dpad_interval);
+      __dpad_interval = null;
+    }
+    const k = key === 'Space' ? ' ' : key;
+    setIframeKey(k, false);
+  };
+
+  // Touchstart → start repeating
   el.addEventListener('touchstart', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    __touchedRecently = true;
-    fire();
-    setTimeout(() => { __touchedRecently = false; }, 400);
+    __dpad_touched = true;
+    startHold();
+    setTimeout(() => { __dpad_touched = false; }, 400);
   }, { passive: false });
 
-  // Click — desktop fallback only
-  el.addEventListener('click', (e) => {
-    if (__touchedRecently) return;
+  // Touchend → stop
+  el.addEventListener('touchend', (e) => {
     e.preventDefault();
-    fire();
+    e.stopPropagation();
+    stopHold();
+  }, { passive: false });
+
+  el.addEventListener('touchcancel', () => stopHold());
+
+  // Click (desktop) → brief repeat
+  el.addEventListener('click', (e) => {
+    if (__dpad_touched) return;
+    e.preventDefault();
+    startHold();
+    setTimeout(stopHold, 250);
   });
 });
 
-// Re-focus hidden input on tap in preview area
-document.querySelector('.preview-pane')?.addEventListener('click', () => {
+// Prevent iframe/preview taps from opening the keyboard in Play Mode
+document.querySelector('.preview-pane')?.addEventListener('touchstart', (e) => {
   if (document.body.classList.contains('play-mode')) {
-    if (keyCaptureEl) {
-      keyCaptureEl.value = '';
-      try { keyCaptureEl.focus(); } catch {}
+    // Only prevent default if the tap is on the iframe itself
+    const t = e.target as HTMLElement;
+    if (t && (t.id === 'preview' || t.tagName === 'IFRAME')) {
+      // let the game handle taps; but blur any focused input
+      try {
+        const kc = document.getElementById('meeel-key-capture') as HTMLInputElement | null;
+        kc?.blur();
+      } catch {}
     }
   }
-});
+}, { passive: true });
 
 previewPlay?.addEventListener('click', () => {
   const currentlyOn = document.body.classList.contains('play-mode');
@@ -1633,7 +1697,26 @@ if (fullscreenBtn && previewPane) {
 
 /* ============ PWA — SERVICE WORKER + INSTALL ============ */
 
-const installBtn = document.getElementById('install-btn') as HTMLButtonElement | null;
+const installBtn = document.getElementById('install-tools-btn') as HTMLButtonElement | null;
+
+// Detect if app is already installed (running in standalone mode)
+function isRunningAsInstalledApp(): boolean {
+  try {
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+    if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return true;
+    if (window.matchMedia && window.matchMedia('(display-mode: minimal-ui)').matches) return true;
+    if ((window.navigator as any).standalone === true) return true; // iOS Safari
+  } catch {}
+  return false;
+}
+
+// Hide install button if already installed, or user dismissed it once
+const INSTALL_HIDDEN_KEY = 'meeel-install-hidden-v1';
+if (installBtn) {
+  if (isRunningAsInstalledApp() || localStorage.getItem(INSTALL_HIDDEN_KEY) === 'yes') {
+    installBtn.hidden = true;
+  }
+}
 
 // Register service worker
 if ('serviceWorker' in navigator) {
@@ -1656,24 +1739,48 @@ let deferredInstallPrompt: any = null;
 window.addEventListener('beforeinstallprompt', (e: Event) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  if (installBtn) installBtn.hidden = false;
+  if (installBtn) {
+    // Never show if already installed
+    if (isRunningAsInstalledApp()) return;
+    installBtn.hidden = false;
+  }
 });
 
 if (installBtn) {
   installBtn.addEventListener('click', async () => {
-    if (!deferredInstallPrompt) {
-      // Fallback — show instructions
-      alert(
-        'To install:\n\n' +
-          'Android (Chrome): tap ⋮ menu → "Install app"\n' +
-          'iOS (Safari): tap Share → "Add to Home Screen"'
-      );
+    // If already installed, hide and don't do anything
+    if (isRunningAsInstalledApp()) {
+      installBtn.hidden = true;
+      try { localStorage.setItem(INSTALL_HIDDEN_KEY, 'yes'); } catch {}
       return;
     }
+
+    if (!deferredInstallPrompt) {
+      // No native prompt available — show instructions ONE time
+      const alreadyShown = localStorage.getItem('meeel-install-tip-shown') === 'yes';
+      if (!alreadyShown) {
+        alert(
+          'To install:\n\n' +
+            'Android (Chrome): tap ⋮ menu → "Install app"\n' +
+            'iOS (Safari): tap Share → "Add to Home Screen"'
+        );
+        try { localStorage.setItem('meeel-install-tip-shown', 'yes'); } catch {}
+      }
+      // Hide button after tapping once — user knows how now
+      installBtn.hidden = true;
+      try { localStorage.setItem(INSTALL_HIDDEN_KEY, 'yes'); } catch {}
+      return;
+    }
+
     deferredInstallPrompt.prompt();
     const result = await deferredInstallPrompt.userChoice;
     if (result.outcome === 'accepted') {
       installBtn.hidden = true;
+      try { localStorage.setItem(INSTALL_HIDDEN_KEY, 'yes'); } catch {}
+    } else if (result.outcome === 'dismissed') {
+      // User said no — hide button so it stops nagging
+      installBtn.hidden = true;
+      try { localStorage.setItem(INSTALL_HIDDEN_KEY, 'yes'); } catch {}
     }
     deferredInstallPrompt = null;
   });
@@ -1743,6 +1850,10 @@ function svg24(path: string): string {
 }
 
 const EXTRA_ICONS: Record<string, string> = {
+  // ── Game Sprites (90s style) ──
+  hero: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><ellipse cx="32" cy="60" rx="16" ry="2.5" fill="#000" opacity="0.3"/><rect x="18" y="52" width="12" height="8" fill="#6D4C41"/><rect x="34" y="52" width="12" height="8" fill="#6D4C41"/><rect x="18" y="52" width="12" height="2" fill="#3E2723"/><rect x="34" y="52" width="12" height="2" fill="#3E2723"/><rect x="22" y="40" width="8" height="12" fill="#FCD34D"/><rect x="34" y="40" width="8" height="12" fill="#FCD34D"/><rect x="16" y="24" width="32" height="20" fill="#16A34A"/><rect x="16" y="38" width="32" height="3" fill="#78350F"/><rect x="29" y="37" width="6" height="5" fill="#FBBF24"/><rect x="26" y="24" width="12" height="4" fill="#15803D"/><rect x="10" y="26" width="6" height="14" fill="#FCD34D"/><rect x="48" y="26" width="6" height="14" fill="#FCD34D"/><rect x="10" y="40" width="6" height="5" fill="#FCD34D"/><rect x="48" y="40" width="6" height="5" fill="#FCD34D"/><rect x="18" y="6" width="28" height="20" fill="#FCD34D"/><rect x="16" y="2" width="32" height="8" fill="#78350F"/><rect x="16" y="6" width="4" height="10" fill="#78350F"/><rect x="44" y="6" width="4" height="10" fill="#78350F"/><rect x="20" y="10" width="6" height="3" fill="#78350F"/><rect x="32" y="10" width="6" height="3" fill="#78350F"/><rect x="23" y="16" width="5" height="6" fill="#000"/><rect x="36" y="16" width="5" height="6" fill="#000"/><rect x="24" y="17" width="2" height="2" fill="#FFF"/><rect x="37" y="17" width="2" height="2" fill="#FFF"/><path d="M28 24 Q32 26 36 24" stroke="#000" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>',
+  enemy: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><ellipse cx="32" cy="60" rx="18" ry="2.5" fill="#000" opacity="0.3"/><ellipse cx="32" cy="36" rx="20" ry="20" fill="#DC2626"/><ellipse cx="32" cy="36" rx="16" ry="16" fill="#EF4444"/><path d="M16 22 L22 14 L26 22 Z" fill="#DC2626"/><path d="M48 22 L42 14 L38 22 Z" fill="#DC2626"/><circle cx="24" cy="34" r="4" fill="#FFF"/><circle cx="40" cy="34" r="4" fill="#FFF"/><circle cx="25" cy="35" r="2" fill="#000"/><circle cx="41" cy="35" r="2" fill="#000"/><path d="M22 44 Q32 50 42 44" stroke="#000" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M26 46 L26 49 M32 48 L32 51 M38 46 L38 49" stroke="#000" stroke-width="1.5"/></svg>',
+  coin: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><ellipse cx="32" cy="60" rx="14" ry="2" fill="#000" opacity="0.25"/><circle cx="32" cy="30" r="20" fill="#B45309"/><circle cx="32" cy="30" r="17" fill="#FBBF24"/><circle cx="32" cy="30" r="14" fill="#FCD34D"/><text x="32" y="38" font-family="Arial" font-size="20" font-weight="bold" fill="#B45309" text-anchor="middle">$</text></svg>',
   // ── Navigation ──
   dashboard: svg24('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'),
   compass: svg24('<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>'),
@@ -2803,6 +2914,18 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'decrease', group: 'Numbers', description: 'Subtract 1',
     code: 'on-click-[decrease counter]',
     icon: '<line x1="5" y1="12" x2="19" y2="12"/>' },
+  { name: 'add-from', group: 'Numbers', description: 'Add another element value',
+    code: 'on-click-[add-from total addend]',
+    icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' },
+  { name: 'subtract-from', group: 'Numbers', description: 'Subtract another element value',
+    code: 'on-click-[subtract-from total deduction]',
+    icon: '<line x1="5" y1="12" x2="19" y2="12"/>' },
+  { name: 'multiply-by', group: 'Numbers', description: 'Multiply by another element value',
+    code: 'on-click-[multiply-by total factor]',
+    icon: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' },
+  { name: 'divide-by', group: 'Numbers', description: 'Divide by another element value',
+    code: 'on-click-[divide-by total divisor]',
+    icon: '<circle cx="12" cy="6" r="1"/><circle cx="12" cy="18" r="1"/><line x1="5" y1="12" x2="19" y2="12"/>' },
   { name: 'add', group: 'Numbers', description: 'Add specific number',
     code: 'on-click-[add counter 5]',
     icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' },
@@ -3116,6 +3239,15 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'focus-next', group: 'Form', description: 'Jump to next input',
     code: 'on-click-[focus-next name-input]',
     icon: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="15 8 19 12 15 16"/>' },
+  { name: 'face-left', group: 'Movement', description: 'Flip to face left',
+    code: 'on-key-[ArrowLeft face-left character]',
+    icon: '<polyline points="15 18 9 12 15 6"/>' },
+  { name: 'face-right', group: 'Movement', description: 'Flip to face right',
+    code: 'on-key-[ArrowRight face-right character]',
+    icon: '<polyline points="9 18 15 12 9 6"/>' },
+  { name: 'flip', group: 'Movement', description: 'Flip horizontally',
+    code: 'on-click-[flip character]',
+    icon: '<path d="M12 3v18"/><polyline points="8 8 4 12 8 16"/><polyline points="16 8 20 12 16 16"/>' },
   { name: 'move-by-x', group: 'Movement', description: 'Move left/right by pixels',
     code: 'on-click-[move-by-x character 10]',
     icon: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="15 8 19 12 15 16"/><polyline points="9 8 5 12 9 16"/>' },
@@ -3128,6 +3260,9 @@ const ACTIONS_LIST: ActionEntry[] = [
   { name: 'move-to-y', group: 'Movement', description: 'Jump to vertical position',
     code: 'on-click-[move-to-y character 200]',
     icon: '<line x1="12" y1="3" x2="12" y2="21"/><circle cx="12" cy="12" r="3" fill="currentColor"/><line x1="8" y1="3" x2="16" y2="3"/><line x1="8" y1="21" x2="16" y2="21"/>' },
+  { name: 'translate', group: 'Network', description: 'Translate text to another language',
+    code: 'on-click-[translate input-text to-bengali into output-text]',
+    icon: '<path d="M4 5h10M9 3v2c0 4-2 8-6 10M6 9c1 2 3 4 6 5"/><path d="M13 22l4-10 4 10"/><line x1="15" y1="18" x2="19" y2="18"/>' },
   { name: 'on-key', group: 'Interactive', description: 'Run action when key pressed',
     code: 'on-key-[Space] show secret-box',
     icon: '<rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="10" x2="6" y2="10"/><line x1="10" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="14" y2="10"/><line x1="18" y1="10" x2="18" y2="10"/><line x1="7" y1="14" x2="17" y2="14"/>' },
@@ -5594,3 +5729,44 @@ function isRealWork(code: string): boolean {
     });
   };
 })();
+
+// ── View tabs (meeEL / Preview) ──
+function setupViewTabs() {
+  const tabs = document.querySelectorAll('.view-tab');
+  if (!tabs.length) return;
+
+  const saved = localStorage.getItem('meeel-view-tab') || 'editor';
+  setViewTab(saved);
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const view = (tab as HTMLElement).dataset.view || 'editor';
+      setViewTab(view);
+    });
+  });
+}
+
+function setViewTab(view: string) {
+  document.body.dataset.view = view;
+  document.querySelectorAll('.view-tab').forEach((t) => {
+    (t as HTMLElement).classList.toggle('active', (t as HTMLElement).dataset.view === view);
+  });
+  try { localStorage.setItem('meeel-view-tab', view); } catch {}
+
+  // When switching to preview, refresh iframe measurement
+  if (view === 'preview') {
+    setTimeout(() => {
+      try { cm.requestMeasure(); } catch {}
+    }, 50);
+  } else {
+    // Switching back to editor — refocus
+    setTimeout(() => {
+      try { cm.focus(); } catch {}
+    }, 50);
+  }
+}
+
+setupViewTabs();
+
+// Playground
+setupPlayground();
