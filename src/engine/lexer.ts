@@ -5,7 +5,7 @@ const KNOWN_KEYWORDS = new Set<string>([
   // Text styles
   'bold', 'italic', 'underline',
   // Shape
-  'round', 'circle', 'pill', 'sharp', 'shadow', 'no-border',
+  'round', 'circle', 'pill', 'sharp', 'no-border',
   // Visibility
   'hidden', 'visible', 'disabled', 'pointer', 'invisible', 'transparent',
   // Layout

@@ -282,9 +282,33 @@ export const PROPERTIES: Record<string, PropertyDef> = {
     if (v === 'sharp') return '0';
     return v;
   } },
+  'shadow': {
+    css: 'box-shadow',
+    transform: (v) => {
+      var map = {
+        'soft': '0 4px 12px rgba(0,0,0,0.08)',
+        'strong': '0 8px 24px rgba(0,0,0,0.20)',
+        'deep': '0 12px 40px rgba(0,0,0,0.30)',
+        'glow': '0 0 20px rgba(37,99,235,0.4)',
+        'none': 'none',
+      };
+      if (map[v]) return map[v];
+      return v.replace(/-/g, ' ');
+    },
+  },
   'box-shadow': {
     css: 'box-shadow',
-    transform: (v) => v.replace(/-/g, ' '),
+    transform: (v) => {
+      var map = {
+        'soft': '0 4px 12px rgba(0,0,0,0.08)',
+        'strong': '0 8px 24px rgba(0,0,0,0.20)',
+        'deep': '0 12px 40px rgba(0,0,0,0.30)',
+        'glow': '0 0 20px rgba(37,99,235,0.4)',
+        'none': 'none',
+      };
+      if (map[v]) return map[v];
+      return v.replace(/-/g, ' ');
+    },
   },
   'opacity': { css: 'opacity' },
   'width': { css: 'width' },
