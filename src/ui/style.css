@@ -6299,3 +6299,231 @@ html {
 body {
   overflow-x: hidden;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   CodeMirror 6 theme
+   ══════════════════════════════════════════════════════════════ */
+
+.editor-host .cm-editor {
+  height: 100% !important;
+  background: #1e1e1e !important;
+  color: #f0f0f0 !important;
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-size: 13px !important;
+  outline: none !important;
+}
+
+.editor-host .cm-editor.cm-focused {
+  outline: none !important;
+}
+
+.editor-host .cm-scroller {
+  font-family: inherit !important;
+  line-height: 1.65 !important;
+  overflow: auto !important;
+}
+
+.editor-host .cm-content {
+  padding: 14px 0 !important;
+  caret-color: #4fc1ff !important;
+}
+
+.editor-host .cm-line {
+  padding: 0 16px !important;
+}
+
+.editor-host .cm-gutters {
+  background: #1a1a1a !important;
+  color: #555 !important;
+  border-right: 1px solid #262626 !important;
+  min-width: 44px !important;
+}
+
+.editor-host .cm-lineNumbers .cm-gutterElement {
+  padding: 0 12px 0 8px !important;
+  font-size: 12px !important;
+}
+
+.editor-host .cm-activeLineGutter {
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+.editor-host .cm-activeLine {
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+.editor-host .cm-cursor {
+  border-left: 2px solid #4fc1ff !important;
+}
+
+.editor-host .cm-selectionBackground,
+.editor-host .cm-focused .cm-selectionBackground {
+  background: rgba(74, 158, 255, 0.28) !important;
+}
+
+/* Syntax tokens */
+.editor-host .cm-keyword { color: #7dd3fc !important; font-weight: 600 !important; }
+.editor-host .cm-bracket { color: #94a3b8 !important; }
+.editor-host .cm-number { color: #fdba74 !important; }
+.editor-host .cm-string { color: #86efac !important; }
+.editor-host .cm-comment { color: #64748b !important; font-style: italic !important; }
+
+/* Bracket matching */
+.editor-host .cm-matchingBracket {
+  background: rgba(37, 99, 235, 0.25) !important;
+  outline: 1px solid rgba(37, 99, 235, 0.6) !important;
+}
+
+.editor-host .cm-nonmatchingBracket {
+  background: rgba(220, 38, 38, 0.25) !important;
+}
+
+/* Error line */
+.editor-host .cm-error-line {
+  background: rgba(239, 68, 68, 0.16) !important;
+  border-left: 3px solid #ef4444 !important;
+}
+
+/* Autocomplete popup */
+.editor-host .cm-tooltip {
+  background: #111a2c !important;
+  border: 1px solid #2a3a52 !important;
+  border-radius: 8px !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.editor-host .cm-tooltip-autocomplete ul li[aria-selected] {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Search panel */
+.editor-host .cm-panels {
+  background: #0f1524 !important;
+  color: #e2e8f0 !important;
+  border-bottom: 1px solid #262626 !important;
+}
+
+.editor-host .cm-panels input {
+  background: #1a2336 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #2a3a52 !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CodeMirror 6 theme
+   ══════════════════════════════════════════════════════════════ */
+
+.editor-host .cm-editor {
+  height: 100% !important;
+  background: #1e1e1e !important;
+  color: #f0f0f0 !important;
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace !important;
+  font-size: 13px !important;
+  outline: none !important;
+}
+
+.editor-host .cm-editor.cm-focused {
+  outline: none !important;
+}
+
+.editor-host .cm-scroller {
+  font-family: inherit !important;
+  line-height: 1.65 !important;
+  overflow: auto !important;
+}
+
+.editor-host .cm-content {
+  padding: 14px 0 !important;
+  caret-color: #4fc1ff !important;
+}
+
+.editor-host .cm-line {
+  padding: 0 16px !important;
+}
+
+.editor-host .cm-gutters {
+  background: #1a1a1a !important;
+  color: #555 !important;
+  border-right: 1px solid #262626 !important;
+  min-width: 44px !important;
+}
+
+.editor-host .cm-lineNumbers .cm-gutterElement {
+  padding: 0 12px 0 8px !important;
+  font-size: 12px !important;
+}
+
+.editor-host .cm-activeLineGutter {
+  background: rgba(37, 99, 235, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+.editor-host .cm-activeLine {
+  background: rgba(255, 255, 255, 0.025) !important;
+}
+
+.editor-host .cm-cursor {
+  border-left: 2px solid #4fc1ff !important;
+}
+
+.editor-host .cm-selectionBackground,
+.editor-host .cm-focused .cm-selectionBackground {
+  background: rgba(74, 158, 255, 0.28) !important;
+}
+
+/* Syntax tokens */
+.editor-host .cm-keyword { color: #7dd3fc !important; font-weight: 600 !important; }
+.editor-host .cm-bracket { color: #94a3b8 !important; }
+.editor-host .cm-number { color: #fdba74 !important; }
+.editor-host .cm-string { color: #86efac !important; }
+.editor-host .cm-comment { color: #64748b !important; font-style: italic !important; }
+
+/* Bracket matching */
+.editor-host .cm-matchingBracket {
+  background: rgba(37, 99, 235, 0.25) !important;
+  outline: 1px solid rgba(37, 99, 235, 0.6) !important;
+}
+
+.editor-host .cm-nonmatchingBracket {
+  background: rgba(220, 38, 38, 0.25) !important;
+}
+
+/* Error line */
+.editor-host .cm-error-line {
+  background: rgba(239, 68, 68, 0.16) !important;
+  border-left: 3px solid #ef4444 !important;
+}
+
+/* Autocomplete popup */
+.editor-host .cm-tooltip {
+  background: #111a2c !important;
+  border: 1px solid #2a3a52 !important;
+  border-radius: 8px !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+.editor-host .cm-tooltip-autocomplete ul li[aria-selected] {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Search panel */
+.editor-host .cm-panels {
+  background: #0f1524 !important;
+  color: #e2e8f0 !important;
+  border-bottom: 1px solid #262626 !important;
+}
+
+.editor-host .cm-panels input {
+  background: #1a2336 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #2a3a52 !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+}
