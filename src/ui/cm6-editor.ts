@@ -24,38 +24,39 @@ import { tags as t } from '@lezer/highlight';
 
 /* ── meeEL HighlightStyle — proper vibrant colors ── */
 const meeelHighlight = HighlightStyle.define([
-  // Block/property names (keyword tag from StreamLanguage)
-  { tag: t.keyword, color: '#7dd3fc', fontWeight: '600' },
-  { tag: t.definitionKeyword, color: '#7dd3fc', fontWeight: '600' },
-  { tag: t.typeName, color: '#7dd3fc', fontWeight: '600' },
+  // Block/property names — brand blue (matches drawer/header)
+  { tag: t.keyword, color: '#60a5fa', fontWeight: '500' },
+  { tag: t.definitionKeyword, color: '#60a5fa', fontWeight: '500' },
+  { tag: t.typeName, color: '#60a5fa', fontWeight: '500' },
+  { tag: t.propertyName, color: '#7dd3fc' },
 
-  // Values (string tag)
+  // Values — soft mint
   { tag: t.string, color: '#86efac' },
   { tag: t.special(t.string), color: '#86efac' },
   { tag: t.atom, color: '#86efac' },
 
-  // Numbers
-  { tag: t.number, color: '#fdba74' },
-  { tag: t.integer, color: '#fdba74' },
-  { tag: t.float, color: '#fdba74' },
+  // Numbers — warm amber (matches console chips)
+  { tag: t.number, color: '#fbbf24' },
+  { tag: t.integer, color: '#fbbf24' },
+  { tag: t.float, color: '#fbbf24' },
 
-  // Comments
+  // Comments — muted slate
   { tag: t.comment, color: '#64748b', fontStyle: 'italic' },
   { tag: t.lineComment, color: '#64748b', fontStyle: 'italic' },
 
-  // Brackets & punctuation
-  { tag: t.bracket, color: '#f472b6' },
+  // Brackets — quiet slate
+  { tag: t.bracket, color: '#94a3b8' },
   { tag: t.punctuation, color: '#94a3b8' },
-  { tag: t.squareBracket, color: '#f472b6' },
-  { tag: t.paren, color: '#f472b6' },
-  { tag: t.brace, color: '#f472b6' },
+  { tag: t.squareBracket, color: '#94a3b8' },
+  { tag: t.paren, color: '#94a3b8' },
+  { tag: t.brace, color: '#94a3b8' },
 
-  // Operators
-  { tag: t.operator, color: '#f472b6' },
+  // Operators — soft purple (subtle accent)
+  { tag: t.operator, color: '#c084fc' },
 
-  // Meta / special
-  { tag: t.meta, color: '#c084fc' },
+  // Default text
   { tag: t.variableName, color: '#e2e8f0' },
+  { tag: t.meta, color: '#c084fc' },
 ]);
 import { lintKeymap } from '@codemirror/lint';
 import { meeelLanguage } from './meeel-lang';

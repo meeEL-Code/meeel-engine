@@ -7157,3 +7157,118 @@ body[data-tab="console"] .preview-pane {
     padding: 24px 20px 10px;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   UNIFIED THEME — editor matches drawer/header/tabs
+   ══════════════════════════════════════════════════════════════ */
+
+/* Editor background — deep dark like drawer, not #1e1e1e */
+.editor-host,
+.editor-host .cm-editor,
+.editor-host .cm-scroller,
+.editor-host .CodeMirror,
+.editor-host .CodeMirror-scroll {
+  background: #080d16 !important;
+  color: #e2e8f0 !important;
+}
+
+.editor-host .cm-content,
+.editor-host .CodeMirror-lines {
+  background: transparent !important;
+  color: #e2e8f0 !important;
+  caret-color: #60a5fa !important;
+}
+
+/* Gutter — match tabs background */
+.editor-host .cm-gutters,
+.editor-host .CodeMirror-gutters {
+  background: #05080f !important;
+  border-right: 1px solid #131d2e !important;
+  color: #475569 !important;
+}
+
+.editor-host .cm-lineNumbers .cm-gutterElement {
+  color: #475569 !important;
+}
+
+.editor-host .cm-activeLineGutter {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: #94a3b8 !important;
+}
+
+.editor-host .cm-activeLine {
+  background: rgba(37, 99, 235, 0.05) !important;
+}
+
+.editor-host .cm-cursor {
+  border-left-color: #60a5fa !important;
+  border-left-width: 2px !important;
+}
+
+/* Selection — brand-tinted */
+.editor-host .cm-selectionBackground,
+.editor-host .cm-focused .cm-selectionBackground,
+.editor-host ::selection {
+  background: rgba(37, 99, 235, 0.28) !important;
+}
+
+/* Fallback class overrides (in case highlight style class names leak through) */
+.editor-host .cm-keyword,
+.editor-host .cm-definitionKeyword,
+.editor-host .cm-typeName {
+  color: #60a5fa !important;
+  font-weight: 500 !important;
+}
+
+.editor-host .cm-string,
+.editor-host .cm-string-2,
+.editor-host .cm-atom {
+  color: #86efac !important;
+}
+
+.editor-host .cm-number,
+.editor-host .cm-integer,
+.editor-host .cm-float {
+  color: #fbbf24 !important;
+}
+
+.editor-host .cm-bracket,
+.editor-host .cm-punctuation,
+.editor-host .cm-squareBracket,
+.editor-host .cm-paren,
+.editor-host .cm-brace {
+  color: #94a3b8 !important;
+}
+
+.editor-host .cm-comment,
+.editor-host .cm-lineComment {
+  color: #64748b !important;
+  font-style: italic !important;
+}
+
+.editor-host .cm-operator {
+  color: #c084fc !important;
+}
+
+.editor-host .cm-variableName {
+  color: #e2e8f0 !important;
+}
+
+/* Bracket matching — brand blue */
+.editor-host .cm-matchingBracket {
+  background: rgba(37, 99, 235, 0.22) !important;
+  outline: 1px solid rgba(96, 165, 250, 0.55) !important;
+  color: #60a5fa !important;
+}
+
+.editor-host .cm-nonmatchingBracket {
+  background: rgba(220, 38, 38, 0.22) !important;
+  color: #f87171 !important;
+}
+
+/* Error line — softer, harmonized */
+.editor-host .cm-error-line {
+  background: rgba(239, 68, 68, 0.14) !important;
+  border-left: 3px solid #ef4444 !important;
+}
