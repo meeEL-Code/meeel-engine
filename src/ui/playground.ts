@@ -4,13 +4,14 @@
    ═══════════════════════════════════════════════════════════ */
 
 import { EditorState } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view';
+import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
+import { tags as t } from '@lezer/highlight';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { html } from '@codemirror/lang-html';
 import { css } from '@codemirror/lang-css';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
-import { oneDark } from '@codemirror/theme-one-dark';
 
 const LS_KEY = 'meeel-playground-v1';
 
@@ -100,7 +101,13 @@ function saveCode() {
 
 // ── Console panel ──
 function consoleAdd(type: 'log' | 'info' | 'warn' | 'error', text: string) {
-  const body = document.getElementById('pg-console-body');
+  // Red dot on Console tab when error/warn
+  if (type === 'error' || type === 'warn') {
+    const dot = document.querySelector('.pg-console-dot') as HTMLElement | null;
+    if (dot) dot.hidden = false;
+  }
+
+  const body = document.getElementById('pg-console-output');
   if (!body) return;
   // Remove "empty" placeholder
   const empty = body.querySelector('.pg-console-empty');
@@ -114,7 +121,7 @@ function consoleAdd(type: 'log' | 'info' | 'warn' | 'error', text: string) {
 }
 
 function consoleClear() {
-  const body = document.getElementById('pg-console-body');
+  const body = document.getElementById('pg-console-output');
   if (body) {
     body.innerHTML = '<div class="pg-console-empty">Console output appears here</div>';
   }
@@ -145,6 +152,49 @@ function scheduleAutoUpdate() {
 }
 
 // ── Editor factory ──
+// ── Brand theme ──
+const pgTheme = EditorView.theme({
+  '&': { backgroundColor: '#080d16', color: '#e2e8f0', height: '100%' },
+  '.cm-content': { caretColor: '#60a5fa', padding: '12px 0' },
+  '.cm-cursor, .cm-dropCursor': { borderLeftColor: '#60a5fa', borderLeftWidth: '2px' },
+  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': { backgroundColor: 'rgba(37, 99, 235, 0.28)' },
+  '.cm-gutters': { backgroundColor: '#05080f', color: '#475569', border: 'none', borderRight: '1px solid #131d2e' },
+  '.cm-activeLineGutter': { backgroundColor: 'rgba(37, 99, 235, 0.10)', color: '#94a3b8' },
+  '.cm-activeLine': { backgroundColor: 'rgba(37, 99, 235, 0.05)' },
+  '.cm-lineNumbers .cm-gutterElement': { color: '#475569', padding: '0 12px 0 10px' },
+}, { dark: true });
+
+const pgHighlight = HighlightStyle.define([
+  { tag: t.keyword, color: '#60a5fa', fontWeight: '600' },
+  { tag: t.definitionKeyword, color: '#60a5fa' },
+  { tag: t.typeName, color: '#60a5fa' },
+  { tag: t.tagName, color: '#60a5fa' },
+  { tag: t.attributeName, color: '#7dd3fc' },
+  { tag: t.attributeValue, color: '#86efac' },
+  { tag: t.propertyName, color: '#7dd3fc' },
+  { tag: t.className, color: '#fbbf24' },
+  { tag: t.string, color: '#86efac' },
+  { tag: t.special(t.string), color: '#86efac' },
+  { tag: t.atom, color: '#86efac' },
+  { tag: t.number, color: '#fbbf24' },
+  { tag: t.integer, color: '#fbbf24' },
+  { tag: t.float, color: '#fbbf24' },
+  { tag: t.bool, color: '#c084fc' },
+  { tag: t.null, color: '#c084fc' },
+  { tag: t.comment, color: '#64748b', fontStyle: 'italic' },
+  { tag: t.lineComment, color: '#64748b', fontStyle: 'italic' },
+  { tag: t.blockComment, color: '#64748b', fontStyle: 'italic' },
+  { tag: t.bracket, color: '#94a3b8' },
+  { tag: t.punctuation, color: '#94a3b8' },
+  { tag: t.squareBracket, color: '#94a3b8' },
+  { tag: t.paren, color: '#94a3b8' },
+  { tag: t.brace, color: '#94a3b8' },
+  { tag: t.operator, color: '#c084fc' },
+  { tag: t.variableName, color: '#e2e8f0' },
+  { tag: t.function(t.variableName), color: '#c084fc' },
+  { tag: t.definition(t.variableName), color: '#7dd3fc' },
+]);
+
 function makeEditor(el: HTMLElement, lang: string, initial: string): EditorView {
   const langExt = lang === 'html' ? html()
     : lang === 'css' ? css()
@@ -153,7 +203,7 @@ function makeEditor(el: HTMLElement, lang: string, initial: string): EditorView 
 
   const updateListener = EditorView.updateListener.of((v) => {
     if (v.docChanged) scheduleAutoUpdate();
-    if (v.selectionSet || v.docChanged) updateStatus(v);
+    if (v.selectionSet || v.docChanged) updateStatus(v.view);
   });
 
   const state = EditorState.create({
@@ -164,7 +214,7 @@ function makeEditor(el: HTMLElement, lang: string, initial: string): EditorView 
       highlightActiveLine(),
       keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
       langExt,
-      oneDark,
+      
       EditorView.lineWrapping,
       updateListener,
     ],
@@ -371,6 +421,42 @@ function setDevice(device: string) {
   });
 }
 
+// ── CODE / PREVIEW view switch (mobile-first, desktop shows both) ──
+function setPgView(view: 'code' | 'preview' | 'console') {
+  document.body.dataset.pgView = view;
+  document.querySelectorAll('.pg-view-btn').forEach((btn) => {
+    const el = btn as HTMLElement;
+    el.classList.toggle('active', el.dataset.pgView === view);
+  });
+  try { localStorage.setItem('meeel-pg-view', view); } catch {}
+
+  if (view === 'console') {
+    const dot = document.querySelector('.pg-console-dot') as HTMLElement | null;
+    if (dot) dot.hidden = true;
+  }
+
+  if (view === 'code') {
+    setTimeout(() => {
+      for (const k of Object.keys(editors)) editors[k]?.requestMeasure();
+      editors[currentLang]?.focus();
+    }, 60);
+  }
+
+  // On preview: ensure iframe has content
+  if (view === 'preview') {
+    setTimeout(() => {
+      const iframe = document.getElementById('pg-preview') as HTMLIFrameElement;
+      if (iframe && (!iframe.srcdoc || iframe.srcdoc.length < 20)) {
+        if (currentLang === 'python') {
+          runPython();
+        } else {
+          runHtmlCssJs();
+        }
+      }
+    }, 80);
+  }
+}
+
 // ── Open/Close ──
 function openPlayground() {
   const page = document.getElementById('playground-page');
@@ -429,15 +515,50 @@ export function setupPlayground() {
     });
   });
 
-  document.getElementById('pg-run')?.addEventListener('click', () => {
-    if (currentLang === 'python') runPython();
-    else runHtmlCssJs();
+  // (Run button removed — auto-updates on typing; Python runs via auto-run too)
+
+  // CODE / PREVIEW switch
+  document.querySelectorAll('.pg-view-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const view = (btn as HTMLElement).dataset.pgView as 'code' | 'preview' | 'console';
+      if (view) setPgView(view);
+    });
   });
+
+  // Restore last view
+  try {
+    const saved = localStorage.getItem('meeel-pg-view');
+    const valid = ['code', 'preview', 'console'];
+    if (saved && valid.includes(saved)) {
+      setPgView(saved as 'code' | 'preview' | 'console');
+    } else {
+      setPgView('code');
+    }
+  } catch {
+    setPgView('code');
+  }
 
   document.getElementById('pg-reset')?.addEventListener('click', resetCurrentTab);
   document.getElementById('pg-copy')?.addEventListener('click', copyCurrentTab);
   document.getElementById('pg-open-new')?.addEventListener('click', openPreviewNewTab);
-  document.getElementById('pg-console-clear')?.addEventListener('click', consoleClear);
+
+  // ── Receive console messages from preview iframe ──
+  window.addEventListener('message', (e) => {
+    const data = e.data;
+    if (!data || !data.__pg) return;
+    if (data.type === 'error') {
+      consoleAdd('error', (data.args || []).join(' '));
+    } else if (data.type === 'console-log') {
+      consoleAdd('log', (data.args || []).join(' '));
+    } else if (data.type === 'console-info') {
+      consoleAdd('info', (data.args || []).join(' '));
+    } else if (data.type === 'console-warn') {
+      consoleAdd('warn', (data.args || []).join(' '));
+    } else if (data.type === 'console-error') {
+      consoleAdd('error', (data.args || []).join(' '));
+    }
+  });
+
 
   document.querySelectorAll('.pg-dev-btn[data-device]').forEach((b) => {
     b.addEventListener('click', () => setDevice((b as HTMLElement).dataset.device || 'responsive'));

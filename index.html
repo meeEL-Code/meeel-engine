@@ -1163,15 +1163,27 @@
       </button>
     </div>
 
+    <div class="pg-view-switch" role="tablist">
+      <button class="pg-view-btn active" data-pg-view="code" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Code
+      </button>
+      <button class="pg-view-btn" data-pg-view="preview" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Preview
+      </button>
+      <button class="pg-view-btn" data-pg-view="console" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        Console
+        <span class="pg-console-dot" hidden></span>
+      </button>
+    </div>
+
     <div class="pg-tabs" role="tablist">
       <button class="pg-tab active" data-lang="html" type="button">HTML</button>
       <button class="pg-tab" data-lang="css" type="button">CSS</button>
       <button class="pg-tab" data-lang="js" type="button">JS</button>
       <button class="pg-tab" data-lang="python" type="button">Python</button>
-      <button class="pg-run" id="pg-run" type="button">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Run
-      </button>
     </div>
 
     <div class="pg-body">
@@ -1183,8 +1195,13 @@
       </div>
 
       <div class="pg-preview-wrap">
-        <div class="pg-preview-header">PREVIEW</div>
         <iframe id="pg-preview" class="pg-preview"></iframe>
+      </div>
+
+      <div class="pg-console-wrap">
+        <div class="pg-console-output" id="pg-console-output">
+          <div class="pg-console-empty">No console messages yet.</div>
+        </div>
       </div>
     </div>
   </div>
