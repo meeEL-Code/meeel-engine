@@ -6897,3 +6897,263 @@ body[data-tab="console"] .preview-pane {
     box-shadow: none !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   TOOLS DRAWER — clean, professional redesign
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Drawer shell — deeper background, sharper edge ── */
+.tools-drawer {
+  background: #080d16 !important;
+  border-left: 1px solid #1a2332 !important;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ── Header row ── */
+.tools-drawer .tools-header,
+.tools-drawer > h2,
+.tools-drawer > header {
+  padding: 20px 24px 16px !important;
+  border-bottom: 1px solid #1a2332 !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.01em !important;
+  background: #080d16 !important;
+}
+
+/* ── Scroll area padding ── */
+.tools-drawer > *:not(.tools-header):not(h2):not(header) {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* ── Card base ── */
+.tools-card {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  padding: 12px 14px !important;
+  margin-bottom: 4px !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  text-align: left !important;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease !important;
+  min-height: 64px !important;
+  cursor: pointer !important;
+  width: 100% !important;
+}
+
+/* ── Hover — subtle, clean, no shadows ── */
+.tools-card:hover {
+  background: #0f1725 !important;
+  border-color: #1a2332 !important;
+  transform: translateX(2px) !important;
+  box-shadow: none !important;
+}
+
+.tools-card:active {
+  transform: translateX(0) scale(0.985) !important;
+  background: #131d2e !important;
+}
+
+/* ── Card icon — compact, brand blue, no gradient ── */
+.tools-card-icon,
+.tools-card > svg:first-child,
+.tools-card > .tools-card-icon svg {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(37, 99, 235, 0.12) !important;
+  border: 1px solid rgba(37, 99, 235, 0.25) !important;
+  border-radius: 10px !important;
+  color: #60a5fa !important;
+  transition: all 0.15s ease !important;
+}
+
+.tools-card-icon svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke: currentColor !important;
+}
+
+.tools-card:hover .tools-card-icon {
+  background: rgba(37, 99, 235, 0.22) !important;
+  border-color: rgba(37, 99, 235, 0.45) !important;
+  color: #93c5fd !important;
+}
+
+/* ── Text block ── */
+.tools-card-text {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+/* ── Title ── */
+.tools-card-title {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #e2e8f0 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.005em !important;
+}
+
+/* ── Description ── */
+.tools-card-desc {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: #64748b !important;
+  line-height: 1.4 !important;
+  margin-top: 1px !important;
+}
+
+/* ── Divider between major groups (via ::after on specific cards) ── */
+.tools-card + .tools-card {
+  position: relative !important;
+}
+
+/* ── Card grid: kill any stray divider lines inside cards ── */
+.tools-card > hr,
+.tools-card > .divider {
+  display: none !important;
+}
+
+/* ── Close button ── */
+.tools-drawer .tools-close,
+.tools-drawer > header button,
+.tools-drawer > h2 + button,
+.tools-drawer .drawer-close {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: #64748b !important;
+  border: 1px solid transparent !important;
+  transition: all 0.15s ease !important;
+}
+
+.tools-drawer .tools-close:hover,
+.tools-drawer > header button:hover,
+.tools-drawer .drawer-close:hover {
+  background: #131d2e !important;
+  color: #e2e8f0 !important;
+  border-color: #1a2332 !important;
+}
+
+/* ── Scrollbar — thin, quiet ── */
+.tools-drawer::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.tools-drawer::-webkit-scrollbar-thumb {
+  background: #1a2332 !important;
+  border-radius: 3px !important;
+}
+
+.tools-drawer::-webkit-scrollbar-thumb:hover {
+  background: #2a3a52 !important;
+}
+
+.tools-drawer::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+/* ── Mobile: slightly larger touch targets ── */
+@media (max-width: 767px) {
+  .tools-card {
+    min-height: 68px !important;
+    padding: 14px 16px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .tools-card-title {
+    font-size: 15px !important;
+  }
+
+  .tools-card-desc {
+    font-size: 12.5px !important;
+  }
+
+  .tools-card-icon {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+  }
+}
+
+/* ── TV: bigger ── */
+@media (min-width: 1920px) {
+  .tools-drawer {
+    max-width: 560px !important;
+  }
+
+  .tools-card {
+    min-height: 84px !important;
+    padding: 20px 22px !important;
+    gap: 18px !important;
+  }
+
+  .tools-card-icon {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    border-radius: 12px !important;
+  }
+
+  .tools-card-icon svg {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .tools-card-title {
+    font-size: 17px !important;
+  }
+
+  .tools-card-desc {
+    font-size: 14px !important;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   TOOLS DRAWER — group labels
+   ══════════════════════════════════════════════════════════════ */
+
+.tools-group-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #475569;
+  padding: 20px 14px 8px;
+  margin: 0;
+  user-select: none;
+}
+
+.tools-group-label:first-child {
+  padding-top: 6px;
+}
+
+/* Remove old divider if any remains */
+.tools-divider {
+  display: none !important;
+}
+
+/* Slightly bigger on TV */
+@media (min-width: 1920px) {
+  .tools-group-label {
+    font-size: 12px;
+    padding: 24px 20px 10px;
+  }
+}
