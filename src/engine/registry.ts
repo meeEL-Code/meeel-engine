@@ -4,7 +4,7 @@ export interface BlockDef {
 
 export interface PropertyDef {
   css: string;
-  special?: 'content' | 'src' | 'type' | 'placeholder' | 'href' | 'value' | 'alt' | 'on-key';
+  special?: 'content' | 'src' | 'type' | 'placeholder' | 'href' | 'value' | 'alt' | 'on-key' | 'on-click' | 'open' | 'toggle-label' | 'toggle-state' | 'toggle-on-color' | 'toggle-off-color' | 'from-toggle' | 'color-bar-value' | 'color-bar-radius' | 'color-bar-padding' | 'color-bar-hint' | 'chart-data' | 'chart-labels' | 'chart-value' | 'chart-max' | 'modal-trigger' | 'modal-title' | 'modal-close' | 'badge-color' | 'badge-bg' | 'slider-min' | 'slider-max' | 'slider-step' | 'slider-fill' | 'slider-track' | 'slider-show-value' | 'radio-group-name' | 'input-check-color' | 'input-checked' | 'slider-value';
   transform?: (v: string) => string;
 }
 
@@ -505,7 +505,7 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'shadow': {
     css: 'box-shadow',
     transform: (v) => {
-      var map = {
+      var map: Record<string, string> = {
         'soft': '0 4px 12px rgba(0,0,0,0.08)',
         'strong': '0 8px 24px rgba(0,0,0,0.20)',
         'deep': '0 12px 40px rgba(0,0,0,0.30)',
@@ -519,7 +519,7 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'box-shadow': {
     css: 'box-shadow',
     transform: (v) => {
-      var map = {
+      var map: Record<string, string> = {
         'soft': '0 4px 12px rgba(0,0,0,0.08)',
         'strong': '0 8px 24px rgba(0,0,0,0.20)',
         'deep': '0 12px 40px rgba(0,0,0,0.30)',

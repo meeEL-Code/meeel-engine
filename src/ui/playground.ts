@@ -214,6 +214,8 @@ function makeEditor(el: HTMLElement, lang: string, initial: string): EditorView 
       highlightActiveLine(),
       keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
       langExt,
+      pgTheme,
+      syntaxHighlighting(pgHighlight),
       
       EditorView.lineWrapping,
       updateListener,

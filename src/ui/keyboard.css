@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════════
+   meeKeyboard — custom on-screen keyboard for meeEL
+   Mobile-first. Dark theme matching meeEL brand.
+   ═══════════════════════════════════════════════════════ */
+
+.meekbd {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #0a0f17;
+  border-top: 1px solid #1f2937;
+  z-index: 500;
+  padding: 6px 4px 8px;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.4);
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: inherit;
+}
+
+.meekbd[hidden] { display: none !important; }
+
+/* ── Suggestion bar ── */
+.meekbd-suggest {
+  display: flex;
+  gap: 6px;
+  padding: 4px 6px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-height: 36px;
+  align-items: center;
+}
+.meekbd-suggest::-webkit-scrollbar { display: none; }
+
+.meekbd-suggest-btn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  background: #1a2336;
+  color: #e2e8f0;
+  border: 1px solid #2a3a52;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+.meekbd-suggest-btn:active {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* ── Library strip ── */
+.meekbd-lib {
+  display: flex;
+  gap: 4px;
+  padding: 2px 6px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.meekbd-lib::-webkit-scrollbar { display: none; }
+
+.meekbd-lib-btn {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  background: #131d2e;
+  color: #94a3b8;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition: all 0.12s;
+}
+.meekbd-lib-btn:active,
+.meekbd-lib-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+/* ── Panel (rows of keys) ── */
+.meekbd-panel {
+  padding: 0 2px;
+}
+
+.meekbd-row {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 5px;
+}
+
+.meekbd-key {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 38px;
+  padding: 0;
+  background: #1a2336;
+  color: #e2e8f0;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.08s;
+  -webkit-tap-highlight-color: transparent;
+}
+.meekbd-key:active {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.meekbd-key-del,
+.meekbd-key-enter {
+  flex: 1.4 1 0;
+  background: #131d2e;
+  color: #94a3b8;
+}
+
+.meekbd-key-shift {
+  flex: 1.4 1 0;
+  background: #131d2e;
+  color: #94a3b8;
+}
+.meekbd-key-shift.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.meekbd-row-symbols {
+  margin-top: 2px;
+}
+
+.meekbd-key-symbol {
+  background: #0f1724;
+  color: #60a5fa;
+  font-weight: 700;
+  font-size: 16px;
+  border-color: #2a3a52;
+}
+.meekbd-key-symbol:active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.meekbd-key-space {
+  flex: 4 1 0;
+  background: #0f1724;
+  color: #94a3b8;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Bottom padding so editor not covered ── */
+body.meekbd-open .layout {
+  padding-bottom: 260px;
+}
+body.meekbd-open .editor-bottom-bar {
+  display: none;
+}
+
+/* ── Desktop: keyboard hidden by default ── */
+@media (min-width: 1024px) {
+  .meekbd { display: none !important; }
+}
+
+/* ── Close button — pinned to right of library strip ── */
+.meekbd-lib-close {
+  margin-left: auto;
+  position: sticky;
+  right: 0;
+  background: #1a2336 !important;
+  color: #94a3b8 !important;
+  border-color: #2a3a52 !important;
+  padding: 5px 10px !important;
+  min-width: 36px;
+}
+.meekbd-lib-close:active {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+}
+
+.meekbd-key-shift.locked {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+.meekbd-key-shift.locked::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  width: 12px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 1px;
+}
+.meekbd-key-shift {
+  position: relative;
+}
+
+/* Keyboard closed → no bottom space consumed */
+body:not(.meekbd-open) .layout {
+  padding-bottom: 0 !important;
+}
+
+/* ── Keyboard toggle button in topbar — matches Import button ── */
+.btn-kbd-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: #131d2e;
+  color: #94a3b8;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-kbd-toggle:hover,
+.btn-kbd-toggle:active {
+  background: #1a2336;
+  color: #e2e8f0;
+  border-color: #2a3a52;
+}
+.btn-kbd-toggle.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}

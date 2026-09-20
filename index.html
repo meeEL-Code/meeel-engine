@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>meeEL Page</title>
+  <title>meeEL</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#0a84ff" />
@@ -15,12 +15,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Raleway:wght@400;700&family=Nunito:wght@400;700&family=Work+Sans:wght@400;700&family=Source+Sans+3:wght@400;700&family=Oswald:wght@400;700&family=Ubuntu:wght@400;700&family=Rubik:wght@400;700&family=Karla:wght@400;700&family=Manrope:wght@400;700&family=Barlow:wght@400;700&family=DM+Sans:wght@400;700&family=Fira+Sans:wght@400;700&family=PT+Sans:wght@400;700&family=Mulish:wght@400;700&family=Outfit:wght@400;700&family=Figtree:wght@400;700&family=Heebo:wght@400;700&family=Assistant:wght@400;700&family=Archivo:wght@400;700&family=Cabin:wght@400;700&family=Dosis:wght@400;700&family=Josefin+Sans:wght@400;700&family=Questrial&family=Quicksand:wght@400;700&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Merriweather:wght@400;700&family=Lora:wght@400;700&family=PT+Serif:wght@400;700&family=Noto+Serif:wght@400;700&family=Libre+Baskerville:wght@400;700&family=EB+Garamond:wght@400;700&family=Crimson+Text:wght@400;700&family=Cormorant+Garamond:wght@400;700&family=Spectral:wght@400;700&family=Tinos:wght@400;700&family=Domine:wght@400;700&family=Bitter:wght@400;700&family=Crimson+Pro:wght@400;700&family=Alegreya:wght@400;700&family=Frank+Ruhl+Libre:wght@400;700&family=Zilla+Slab:wght@400;700&family=Bree+Serif&family=Cutive&family=Neuton:wght@400;700&family=Old+Standard+TT:wght@400;700&family=Vollkorn:wght@400;700&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Fira+Code:wght@400;700&family=Roboto+Mono:wght@400;700&family=Source+Code+Pro:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=Space+Mono:wght@400;700&family=Courier+Prime:wght@400;700&family=Inconsolata:wght@400;700&family=Cousine:wght@400;700&family=Anonymous+Pro:wght@400;700&family=Ubuntu+Mono:wght@400;700&family=PT+Mono&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Righteous&family=Archivo+Black&family=Alfa+Slab+One&family=Bungee&family=Fugaz+One&family=Monoton&family=Abril+Fatface&family=Lobster&family=Titan+One&family=Bowlby+One&family=Rubik+Mono+One&family=Lilita+One&family=Passion+One&family=Luckiest+Guy&family=Shrikhand&family=Fredoka:wght@400;700&family=Chewy&family=Baloo+2:wght@400;700&family=Bakbak+One&family=Rampart+One&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Pacifico&family=Caveat:wght@400;700&family=Satisfy&family=Kalam:wght@400;700&family=Indie+Flower&family=Shadows+Into+Light&family=Great+Vibes&family=Allura&family=Parisienne&family=Sacramento&family=Amatic+SC:wght@400;700&family=Permanent+Marker&family=Courgette&family=Yellowtail&family=Cookie&family=Alex+Brush&family=Tangerine&family=Berkshire+Swash&family=Italianno&display=swap" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&family=Poppins:wght@400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/src/ui/style.css" />
+  <link rel="stylesheet" href="/src/ui/keyboard.css" />
 </head>
 <body data-tab="code">
 
@@ -54,11 +51,11 @@
               fill="none" stroke="#ffffff" stroke-width="5"
               stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span>meeEL Page</span>
+      <span>meeEL</span>
     </div>
     <div class="topbar-right">
       <span id="save-indicator" class="save-indicator"></span>
-      <button id="install-btn" class="btn-install" title="Install meeEL Page" aria-label="Install" hidden>
+      <button id="install-btn" class="btn-install" title="Install meeEL" aria-label="Install" hidden>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
@@ -66,9 +63,16 @@
         </svg>
         <span>Install</span>
       </button>
-      <button id="tools-btn" class="btn-tools" title="Tools" aria-label="Tools">
+      <button id="kbd-toggle-btn" class="btn-kbd-toggle" title="Keyboard" aria-label="Keyboard">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          <rect x="2" y="6" width="20" height="12" rx="2"/>
+          <line x1="6" y1="10" x2="6" y2="10"/>
+          <line x1="10" y1="10" x2="10" y2="10"/>
+          <line x1="14" y1="10" x2="14" y2="10"/>
+          <line x1="18" y1="10" x2="18" y2="10"/>
+          <line x1="6" y1="14" x2="6" y2="14"/>
+          <line x1="18" y1="14" x2="18" y2="14"/>
+          <line x1="8" y1="14" x2="16" y2="14"/>
         </svg>
       </button>
       <button id="import-btn" class="btn-import" title="Import .meeel file" aria-label="Import">
@@ -639,7 +643,7 @@
   </div>
 
 
-  <!-- About meeEL Page -->
+  <!-- About meeEL -->
   <div class="lib-page" id="about-page" hidden>
     <div class="lib-page-header">
       <button class="lib-page-back" id="about-back" aria-label="Back">
@@ -1251,11 +1255,112 @@
           <div class="settings-row settings-row-static">
             <div class="settings-row-text">
               <div class="settings-row-label">Version</div>
-              <div class="settings-row-desc">meeEL Page v0.1 — mee Innovations</div>
+              <div class="settings-row-desc">meeEL v0.1 — mee Innovations</div>
             </div>
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════ meeKeyboard ═══════════ -->
+  <div class="meekbd" id="meekbd" hidden>
+    <!-- Live suggestions from library -->
+    <div class="meekbd-suggest" id="meekbd-suggest"></div>
+
+    <!-- Library strip -->
+    <div class="meekbd-lib" id="meekbd-lib">
+      <button class="meekbd-lib-btn" data-lib="colors" type="button">Colors</button>
+      <button class="meekbd-lib-btn" data-lib="fonts" type="button">Fonts</button>
+      <button class="meekbd-lib-btn" data-lib="blocks" type="button">Blocks</button>
+      <button class="meekbd-lib-btn" data-lib="icons" type="button">Icons</button>
+      <button class="meekbd-lib-btn" data-lib="tokens" type="button">Tokens</button>
+      <button class="meekbd-lib-btn" data-lib="actions" type="button">Actions</button>
+      <button class="meekbd-lib-btn meekbd-lib-close" id="meekbd-close" type="button" aria-label="Hide keyboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Active panel: normal keys or library grid -->
+    <div class="meekbd-panel" id="meekbd-panel">
+      <!-- Numbers row -->
+      <div class="meekbd-row">
+        <button class="meekbd-key" data-key="1" type="button">1</button>
+        <button class="meekbd-key" data-key="2" type="button">2</button>
+        <button class="meekbd-key" data-key="3" type="button">3</button>
+        <button class="meekbd-key" data-key="4" type="button">4</button>
+        <button class="meekbd-key" data-key="5" type="button">5</button>
+        <button class="meekbd-key" data-key="6" type="button">6</button>
+        <button class="meekbd-key" data-key="7" type="button">7</button>
+        <button class="meekbd-key" data-key="8" type="button">8</button>
+        <button class="meekbd-key" data-key="9" type="button">9</button>
+        <button class="meekbd-key" data-key="0" type="button">0</button>
+        <button class="meekbd-key meekbd-key-del" data-key="Backspace" type="button">⌫</button>
+      </div>
+
+      <!-- QWERTY row 1 -->
+      <div class="meekbd-row">
+        <button class="meekbd-key" data-key="q" type="button">q</button>
+        <button class="meekbd-key" data-key="w" type="button">w</button>
+        <button class="meekbd-key" data-key="e" type="button">e</button>
+        <button class="meekbd-key" data-key="r" type="button">r</button>
+        <button class="meekbd-key" data-key="t" type="button">t</button>
+        <button class="meekbd-key" data-key="y" type="button">y</button>
+        <button class="meekbd-key" data-key="u" type="button">u</button>
+        <button class="meekbd-key" data-key="i" type="button">i</button>
+        <button class="meekbd-key" data-key="o" type="button">o</button>
+        <button class="meekbd-key" data-key="p" type="button">p</button>
+      </div>
+
+      <!-- QWERTY row 2 -->
+      <div class="meekbd-row">
+        <button class="meekbd-key" data-key="a" type="button">a</button>
+        <button class="meekbd-key" data-key="s" type="button">s</button>
+        <button class="meekbd-key" data-key="d" type="button">d</button>
+        <button class="meekbd-key" data-key="f" type="button">f</button>
+        <button class="meekbd-key" data-key="g" type="button">g</button>
+        <button class="meekbd-key" data-key="h" type="button">h</button>
+        <button class="meekbd-key" data-key="j" type="button">j</button>
+        <button class="meekbd-key" data-key="k" type="button">k</button>
+        <button class="meekbd-key" data-key="l" type="button">l</button>
+        <button class="meekbd-key meekbd-key-enter" data-key="Enter" type="button" aria-label="Enter">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 10 4 15 9 20"/>
+            <path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- QWERTY row 3 -->
+      <div class="meekbd-row">
+        <button class="meekbd-key meekbd-key-shift" data-key="Shift" type="button" aria-label="Shift">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l9 9h-5v9h-8v-9H3z"/>
+          </svg>
+        </button>
+        <button class="meekbd-key" data-key="z" type="button">z</button>
+        <button class="meekbd-key" data-key="x" type="button">x</button>
+        <button class="meekbd-key" data-key="c" type="button">c</button>
+        <button class="meekbd-key" data-key="v" type="button">v</button>
+        <button class="meekbd-key" data-key="b" type="button">b</button>
+        <button class="meekbd-key" data-key="n" type="button">n</button>
+        <button class="meekbd-key" data-key="m" type="button">m</button>
+        <button class="meekbd-key" data-key="." type="button">.</button>
+        <button class="meekbd-key" data-key="," type="button">,</button>
+      </div>
+
+      <!-- meeEL symbols row -->
+      <div class="meekbd-row meekbd-row-symbols">
+        <button class="meekbd-key meekbd-key-symbol" data-key="#" type="button">#</button>
+        <button class="meekbd-key meekbd-key-symbol" data-key="[]" type="button">[]</button>
+        <button class="meekbd-key meekbd-key-symbol" data-key="-" type="button">-</button>
+        <button class="meekbd-key meekbd-key-symbol" data-key="!" type="button">!</button>
+        <button class="meekbd-key meekbd-key-space" data-key="Space" type="button">space</button>
       </div>
     </div>
   </div>

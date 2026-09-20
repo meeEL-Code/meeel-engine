@@ -1,5 +1,80 @@
 import { setupPlayground } from './playground';
 import { createCM6Editor, setMeeelSuggestionSource } from './cm6-editor';
+import { initKeyboard, showKeyboard, hideKeyboard, isKeyboardOpen, setExternalTarget } from './keyboard';
+
+
+// meeKeyboard — wire logic + auto show/hide on any editor or input
+setTimeout(() => {
+  initKeyboard(() => cm.view);
+
+  // CM6 focus → clear external target
+  cm.view.contentDOM.addEventListener('focus', () => setExternalTarget(null));
+
+  // 1. Editor tap no longer opens keyboard — use the topbar button instead.
+  //    (Scroll and cursor placement need free touch. Keyboard opens from the icon.)
+
+  // 1b. Topbar keyboard icon — toggle keyboard visibility
+  const kbdToggleBtn = document.getElementById('kbd-toggle-btn') as HTMLButtonElement | null;
+  const syncToggleState = () => {
+    if (kbdToggleBtn) kbdToggleBtn.classList.toggle('active', isKeyboardOpen());
+  };
+  const toggleKbd = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isKeyboardOpen()) hideKeyboard();
+    else showKeyboard();
+    setTimeout(syncToggleState, 20);
+  };
+  if (kbdToggleBtn) {
+    kbdToggleBtn.addEventListener('touchstart', toggleKbd, { passive: false });
+    kbdToggleBtn.addEventListener('mousedown', (e) => { if (e.button === 0) toggleKbd(e); });
+  }
+  document.addEventListener('meekbd-shown', syncToggleState);
+
+  // 2. Any <input> or <textarea> focus → show keyboard
+  const watchInputs = () => {
+    document.querySelectorAll('input, textarea, [contenteditable="true"]').forEach((el) => {
+      if ((el as any).__meekbdWired) return;
+      (el as any).__meekbdWired = true;
+      el.addEventListener('focus', () => {
+        // Skip hidden/non-visible inputs
+        const t = (el as HTMLInputElement).type;
+        if (t === 'file' || t === 'hidden') return;
+        const style = window.getComputedStyle(el);
+        if (style.display === 'none' || style.visibility === 'hidden') return;
+        // Skip the CM6 hidden key-capture input, if any
+        if ((el as HTMLElement).classList.contains('cm-textfield')) return;
+        setExternalTarget(el as HTMLInputElement | HTMLTextAreaElement);
+        showKeyboard();
+      });
+      el.addEventListener('blur', () => {
+        // Delay so keyboard tap doesn't kill focus immediately
+        setTimeout(() => {
+          if (!isKeyboardOpen()) return;
+          const active = document.activeElement;
+          const inKbd = active && (active as HTMLElement).closest('#meekbd');
+          const inEditor = active === cm.view.contentDOM;
+          const stillInput = active && (active.matches('input, textarea, [contenteditable="true"]'));
+          if (!inKbd && !inEditor && !stillInput) hideKeyboard();
+        }, 180);
+      });
+    });
+  };
+  watchInputs();
+  // Re-scan occasionally (library pages, modals)
+  setInterval(watchInputs, 2000);
+
+  // 3. Document click outside editor + keyboard → hide
+  document.addEventListener('touchstart', (e) => {
+    if (!isKeyboardOpen()) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('#meekbd')) return;
+    if (target.closest('.cm-editor')) return;
+    if (target.matches('input, textarea, [contenteditable="true"]')) return;
+    hideKeyboard();
+  }, { passive: true });
+
+}, 100);
 import { lex } from '../engine/lexer';
 import { parse } from '../engine/parser';
 import { resolve, ResolveError } from '../engine/resolver';
@@ -492,6 +567,42 @@ function renderCurrentPage() {
   // After doc.write, install click interception
   // (must run after DOM is built)
   setTimeout(interceptPreviewLinks, 0);
+  setTimeout(attachMeeKeyboardToPreview, 0);
+}
+
+function attachMeeKeyboardToPreview() {
+  const doc = preview.contentDocument;
+  if (!doc) return;
+  const win = preview.contentWindow;
+  if (!win) return;
+
+  doc.querySelectorAll('input, textarea').forEach((el) => {
+    const input = el as HTMLInputElement | HTMLTextAreaElement;
+    if ((input as any).__meekbdWired) return;
+    (input as any).__meekbdWired = true;
+
+    const type = input instanceof HTMLInputElement ? input.type : 'text';
+    // Skip pickers / checkboxes — native is fine for those
+    if (['checkbox', 'radio', 'date', 'time', 'color', 'file', 'range', 'submit', 'button', 'reset', 'image'].includes(type)) return;
+
+    input.setAttribute('inputmode', 'none');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('autocapitalize', 'off');
+    input.setAttribute('spellcheck', 'false');
+
+    input.addEventListener('focus', () => {
+      setExternalTarget(input);
+      showKeyboard();
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (preview.contentDocument?.activeElement !== input) {
+          setExternalTarget(null);
+        }
+      }, 200);
+    });
+  });
 }
 
 function interceptPreviewLinks() {
@@ -1314,7 +1425,6 @@ if (initialPublishState.tab) {
   );
 }
 if (initialPublishState.open) {
-  setTimeout(() => openPublish(), 100);
 }
 
 /* ============ IMPORT ============ */
@@ -1949,7 +2059,6 @@ render();
    Tools Drawer — open / close
    ============================================================ */
 
-const toolsBtn = document.getElementById('tools-btn') as HTMLButtonElement | null;
 const toolsDrawer = document.getElementById('tools-drawer') as HTMLElement | null;
 const toolsClose = document.getElementById('tools-close') as HTMLButtonElement | null;
 const toolsBackdrop = document.getElementById('tools-backdrop') as HTMLElement | null;
@@ -1966,7 +2075,11 @@ function closeToolsDrawer() {
   toolsBackdrop.hidden = true;
 }
 
-toolsBtn?.addEventListener('click', openToolsDrawer);
+// Fallback: logo tap opens tools drawer (temporary until meeKeyboard library strip)
+const logoEl = document.querySelector('.logo') as HTMLElement | null;
+logoEl?.addEventListener('click', openToolsDrawer);
+logoEl?.setAttribute('style', 'cursor:pointer;');
+
 toolsClose?.addEventListener('click', closeToolsDrawer);
 toolsBackdrop?.addEventListener('click', closeToolsDrawer);
 

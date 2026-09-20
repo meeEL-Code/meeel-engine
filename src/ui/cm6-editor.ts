@@ -228,6 +228,12 @@ export function createCM6Editor(
         ]),
         meeelLanguage,
         syntaxHighlighting(meeelHighlight),
+        EditorView.contentAttributes.of({
+          inputmode: 'none',
+          autocorrect: 'off',
+          autocapitalize: 'off',
+          spellcheck: 'false',
+        }),
         errorLineField,
         updateListener,
         keydownHandler,
