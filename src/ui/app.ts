@@ -1,5 +1,5 @@
 import { setupPlayground } from './playground';
-import { createCM6Editor } from './cm6-editor';
+import { createCM6Editor, setMeeelSuggestionSource } from './cm6-editor';
 import { lex } from '../engine/lexer';
 import { parse } from '../engine/parser';
 import { resolve, ResolveError } from '../engine/resolver';
@@ -29,6 +29,16 @@ const DEFAULT_CODE = `home-page-[
 
 const editorHost = document.getElementById('editor-host') as HTMLElement;
 const cm = createCM6Editor(editorHost, DEFAULT_CODE);
+
+// Inject suggestion source — CM6 autocomplete will use this
+setMeeelSuggestionSource((word: string) => {
+  if (!word) return [];
+  const lower = word.toLowerCase();
+  return allSuggestions
+    .filter((s) => s.name.toLowerCase().startsWith(lower))
+    .sort((a, b) => a.name.length - b.name.length)
+    .slice(0, 20);
+});
 
 // ── Proxy for legacy editor API (value, selection, events) ──
 const editor: any = {
@@ -218,6 +228,8 @@ interface Suggestion {
   category: 'block' | 'property' | 'keyword';
 }
 
+const __USE_OLD_SUGGEST = false;
+
 let allSuggestions: Suggestion[] = [];
 
 function buildSuggestionList(): Suggestion[] {
@@ -274,6 +286,7 @@ function getSuggestions(word: string): Suggestion[] {
 }
 
 function renderSuggestions() {
+  if (!__USE_OLD_SUGGEST) return;
   if (currentSuggestions.length === 0) {
     suggestionBar.hidden = true;
     suggestionBar.innerHTML = '';
@@ -293,6 +306,7 @@ function renderSuggestions() {
 }
 
 function acceptSuggestion(idx: number) {
+  if (!__USE_OLD_SUGGEST) return;
   const word = getCurrentWord();
   if (!word) return;
   const s = currentSuggestions[idx];
@@ -734,7 +748,7 @@ editor.addEventListener('click', () => {
 });
 
 editor.addEventListener('keydown', (e) => {
-  if (suggestionBar.hidden === false && currentSuggestions.length > 0) {
+  if (__USE_OLD_SUGGEST && suggestionBar.hidden === false && currentSuggestions.length > 0) {
     if (e.key === 'Tab') {
       e.preventDefault();
       acceptSuggestion(activeIndex);

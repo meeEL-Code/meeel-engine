@@ -6527,3 +6527,40 @@ body {
   border-radius: 6px !important;
   padding: 6px 10px !important;
 }
+
+/* ── CM6 autocomplete tooltip ── */
+.editor-host .cm-tooltip-autocomplete {
+  background: #111a2c !important;
+  border: 1px solid #2a3a52 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55) !important;
+  overflow: hidden !important;
+  max-height: 320px !important;
+}
+
+.editor-host .cm-tooltip-autocomplete ul {
+  font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace !important;
+  font-size: 13px !important;
+  max-height: 320px !important;
+}
+
+.editor-host .cm-tooltip-autocomplete ul li {
+  padding: 6px 14px !important;
+  color: #cbd5e1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.editor-host .cm-tooltip-autocomplete ul li[aria-selected] {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.editor-host .cm-tooltip-autocomplete .cm-completionIcon {
+  opacity: 0.8 !important;
+}
+
+.editor-host .cm-tooltip-autocomplete .cm-completionIcon-class:after { content: '⬛' !important; }
+.editor-host .cm-tooltip-autocomplete .cm-completionIcon-property:after { content: '◆' !important; }
+.editor-host .cm-tooltip-autocomplete .cm-completionIcon-keyword:after { content: '●' !important; }

@@ -22,6 +22,32 @@ import {
 } from '@codemirror/language';
 import { lintKeymap } from '@codemirror/lint';
 import { meeelLanguage } from './meeel-lang';
+import { CompletionContext, CompletionResult } from '@codemirror/autocomplete';
+
+/* ── External suggestion source (injected by app) ── */
+let meeelSuggestionSource: ((word: string) => Array<{ name: string; category: string }>) | null = null;
+
+export function setMeeelSuggestionSource(
+  fn: (word: string) => Array<{ name: string; category: string }>
+) {
+  meeelSuggestionSource = fn;
+}
+
+function meeelCompletionSource(context: CompletionContext): CompletionResult | null {
+  const word = context.matchBefore(/[a-z][a-z0-9-]*/);
+  if (!word || (word.from === word.to && !context.explicit)) return null;
+
+  const items = meeelSuggestionSource ? meeelSuggestionSource(word.text) : [];
+  return {
+    from: word.from,
+    options: items.map((s) => ({
+      label: s.name,
+      type: s.category === 'block' ? 'class' : s.category === 'property' ? 'property' : 'keyword',
+      boost: s.category === 'block' ? 2 : 0,
+    })),
+    validFor: /^[a-z][a-z0-9-]*$/,
+  };
+}
 
 /* ── Error line decorations ── */
 const setErrorLines = StateEffect.define<number[]>();
@@ -143,7 +169,12 @@ export function createCM6Editor(
         meeelIndent,
         bracketMatching(),
         closeBrackets(),
-        autocompletion(),
+        autocompletion({
+          override: [meeelCompletionSource],
+          activateOnTyping: true,
+          maxRenderedOptions: 20,
+          defaultKeymap: true,
+        }),
         rectangularSelection(),
         crosshairCursor(),
         highlightActiveLine(),
