@@ -18,8 +18,45 @@ import {
 } from '@codemirror/autocomplete';
 import {
   bracketMatching, indentOnInput, syntaxHighlighting,
-  defaultHighlightStyle, indentService, indentUnit,
+  HighlightStyle, indentService, indentUnit,
 } from '@codemirror/language';
+import { tags as t } from '@lezer/highlight';
+
+/* ── meeEL HighlightStyle — proper vibrant colors ── */
+const meeelHighlight = HighlightStyle.define([
+  // Block/property names (keyword tag from StreamLanguage)
+  { tag: t.keyword, color: '#7dd3fc', fontWeight: '600' },
+  { tag: t.definitionKeyword, color: '#7dd3fc', fontWeight: '600' },
+  { tag: t.typeName, color: '#7dd3fc', fontWeight: '600' },
+
+  // Values (string tag)
+  { tag: t.string, color: '#86efac' },
+  { tag: t.special(t.string), color: '#86efac' },
+  { tag: t.atom, color: '#86efac' },
+
+  // Numbers
+  { tag: t.number, color: '#fdba74' },
+  { tag: t.integer, color: '#fdba74' },
+  { tag: t.float, color: '#fdba74' },
+
+  // Comments
+  { tag: t.comment, color: '#64748b', fontStyle: 'italic' },
+  { tag: t.lineComment, color: '#64748b', fontStyle: 'italic' },
+
+  // Brackets & punctuation
+  { tag: t.bracket, color: '#f472b6' },
+  { tag: t.punctuation, color: '#94a3b8' },
+  { tag: t.squareBracket, color: '#f472b6' },
+  { tag: t.paren, color: '#f472b6' },
+  { tag: t.brace, color: '#f472b6' },
+
+  // Operators
+  { tag: t.operator, color: '#f472b6' },
+
+  // Meta / special
+  { tag: t.meta, color: '#c084fc' },
+  { tag: t.variableName, color: '#e2e8f0' },
+]);
 import { lintKeymap } from '@codemirror/lint';
 import { meeelLanguage } from './meeel-lang';
 import { CompletionContext, CompletionResult } from '@codemirror/autocomplete';
@@ -189,7 +226,7 @@ export function createCM6Editor(
           indentWithTab,
         ]),
         meeelLanguage,
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        syntaxHighlighting(meeelHighlight),
         errorLineField,
         updateListener,
         keydownHandler,

@@ -410,6 +410,9 @@ function render() {
 
     allPages = generatePages(ast);
 
+    // Success — clear console errors
+    clearConsoleErrors();
+
     if (allPages.length === 0) {
       renderBlank();
       updatePageSelector();
@@ -439,7 +442,9 @@ function render() {
       });
     } else {
       const message = err instanceof Error ? err.message : String(err);
-      renderMessage('Parse Error', escapeHtml(message));
+      showErrorsInConsole('Parse Error', [{
+        msg: message,
+      }]);
     }
   }
 }
@@ -467,16 +472,12 @@ function renderParseError(err: {
     </div>
   `;
 
-  const body = `
-    <div class="err-panel">
-      <div class="err-header">
-        <span class="err-icon">${SVG_WARN}</span>
-        <span class="err-title">1 error</span>
-      </div>
-      <div class="err-list">${cardsHtml}</div>
-    </div>
-  `;
-  renderMessage('', body, true);
+  showErrorsInConsole('', [{
+    line: err.line,
+    label: 'Structure',
+    msg: err.message,
+    suggestion: err.suggestion,
+  }]);
 }
 
 function renderCurrentPage() {
@@ -622,16 +623,178 @@ function renderErrors(errors: ResolveError[]) {
     </div>`;
   }).join('');
 
-  const body = `
-    <div class="err-panel">
-      <div class="err-header">
-        <span class="err-icon">${SVG_WARN}</span>
-        <span class="err-title">${count} error${count > 1 ? 's' : ''}</span>
+  // Send to console (preview keeps last valid render)
+  const cards = errors.map((e) => {
+    const { label } = classifyError(e.message);
+    return {
+      line: e.line,
+      label,
+      msg: e.message,
+      suggestion: e.suggestion || undefined,
+    };
+  });
+  showErrorsInConsole('', cards);
+}
+
+// ── Show "fix errors" empty state in preview when code has errors ──
+function renderEmptyPreviewState() {
+  const doc = preview.contentDocument;
+  if (!doc) return;
+
+  doc.open();
+  doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>
+    *:not(input):not(textarea):not([contenteditable]) {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0b1220;
+      color: #94a3b8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .empty {
+      text-align: center;
+      max-width: 380px;
+    }
+    .icon {
+      display: inline-flex;
+      width: 64px;
+      height: 64px;
+      align-items: center;
+      justify-content: center;
+      background: rgba(239, 68, 68, 0.10);
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      border-radius: 50%;
+      color: #f87171;
+      margin-bottom: 22px;
+    }
+    h2 {
+      font-size: 19px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+    .hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #111a2c;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      font-size: 12.5px;
+      color: #94a3b8;
+    }
+    .hint b {
+      color: #7dd3fc;
+      font-weight: 600;
+    }
+  </style></head><body>
+    <div class="empty">
+      <div class="icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </div>
-      <div class="err-list">${cardsHtml}</div>
+      <h2>Preview unavailable</h2>
+      <p>Your code has errors that must be fixed before the preview can be rendered.</p>
+      <div class="hint">Open the <b>Console</b> tab to see what to fix.</div>
     </div>
-  `;
-  renderMessage('', body, true);
+  </body></html>`);
+  doc.close();
+}
+
+// ── Console open/close — desktop docks, mobile switches tab ──
+const isDesktop = () => window.matchMedia('(min-width: 768px)').matches;
+
+function toggleConsole() {
+  if (isDesktop()) {
+    const willOpen = !document.body.classList.contains('console-open');
+    document.body.classList.toggle('console-open', willOpen);
+    if (previewConsoleBtn) previewConsoleBtn.classList.toggle('active', willOpen);
+  } else {
+    setActiveTab('console');
+  }
+}
+
+function openConsoleDock() {
+  if (!isDesktop()) return;
+  document.body.classList.add('console-open');
+  if (previewConsoleBtn) previewConsoleBtn.classList.add('active');
+}
+
+function closeConsoleDock() {
+  if (!isDesktop()) return;
+  document.body.classList.remove('console-open');
+  if (previewConsoleBtn) previewConsoleBtn.classList.remove('active');
+}
+
+// ── Show errors in the bottom console panel (not in preview) ──
+function showErrorsInConsole(title: string, cards: Array<{
+  line?: number;
+  label?: string;
+  msg: string;
+  suggestion?: string;
+}>) {
+  // Show "fix errors" empty state in preview
+  renderEmptyPreviewState();
+
+  // Clear previous errors (prevents duplicates)
+  if (consoleOutput) {
+    consoleOutput.innerHTML = '<div class="console-empty">No messages. Console will show errors and logs here.</div>';
+  }
+
+  // Show red dot on Console tab
+  if (consoleDot) {
+    consoleDot.hidden = false;
+    consoleDot.classList.remove('green');
+    consoleDot.classList.add('red');
+  }
+
+  // Desktop: auto-open dock
+  openConsoleDock();
+
+  const header = title || (cards.length + ' error' + (cards.length > 1 ? 's' : ''));
+  appendConsoleLine('info', header);
+
+  for (const c of cards) {
+    let txt = '';
+    if (typeof c.line === 'number') txt += '[Line ' + c.line + '] ';
+    if (c.label) txt += c.label + ': ';
+    txt += c.msg;
+    appendConsoleLine('error', txt);
+
+    if (c.suggestion) {
+      appendConsoleLine('info', '  → ' + c.suggestion);
+    }
+  }
+}
+
+function clearConsoleErrors() {
+  // Show green dot (clean state)
+  if (consoleDot) {
+    consoleDot.hidden = false;
+    consoleDot.classList.remove('red');
+    consoleDot.classList.add('green');
+  }
+  if (consoleOutput) {
+    consoleOutput.innerHTML = '<div class="console-empty">No messages. Console will show errors and logs here.</div>';
+  }
+  // Desktop: auto-close dock
+  closeConsoleDock();
 }
 
 function renderMessage(title: string, body: string, isPanel = false) {
@@ -1276,22 +1439,39 @@ document.addEventListener('drop', (e) => {
 const fullscreenBtn = document.getElementById('preview-fullscreen') as HTMLButtonElement | null;
 
 // ── Preview bottom bar actions ──
-const previewConsole = document.getElementById('preview-console') as HTMLElement | null;
+const previewConsole: HTMLElement | null = null; // removed — using full-page console only
 const previewConsoleBtn = document.getElementById('preview-console-btn') as HTMLButtonElement | null;
 const previewRefreshBtn = document.getElementById('preview-refresh') as HTMLButtonElement | null;
 
-function appendConsoleLine(kind: 'log' | 'error' | 'info', text: string) {
-  if (!previewConsole) return;
+const consoleOutput = document.getElementById('console-output') as HTMLElement | null;
+const consoleDot = document.querySelector('.console-dot') as HTMLElement | null;
+// (consoleClearBtn removed)
+
+function appendConsoleLine(kind: 'log' | 'error' | 'info' | 'warn', text: string) {
+  if (!consoleOutput) return;
+  const empty = consoleOutput.querySelector('.console-empty');
+  if (empty) empty.remove();
+
   const line = document.createElement('div');
-  line.className = 'line ' + kind;
-  line.textContent = (kind === 'error' ? '✗ ' : kind === 'info' ? 'ℹ ' : '› ') + text;
-  previewConsole.appendChild(line);
-  previewConsole.scrollTop = previewConsole.scrollHeight;
-  // Keep max 200 lines
-  while (previewConsole.children.length > 200) {
-    previewConsole.removeChild(previewConsole.firstChild as ChildNode);
+  line.className = 'console-line ' + kind;
+  const prefix = kind === 'error' ? 'ERROR' : kind === 'warn' ? 'WARN' : kind === 'info' ? 'INFO' : 'LOG';
+  line.innerHTML = '<span class="console-prefix">' + prefix + '</span><span class="console-body"></span>';
+  const body = line.querySelector('.console-body') as HTMLElement;
+  if (body) body.textContent = text;
+  consoleOutput.appendChild(line);
+  consoleOutput.scrollTop = consoleOutput.scrollHeight;
+  while (consoleOutput.children.length > 500) {
+    consoleOutput.removeChild(consoleOutput.firstChild as ChildNode);
   }
 }
+
+// Initialize dot: green (assume clean until proven otherwise)
+if (consoleDot) {
+  consoleDot.hidden = false;
+  consoleDot.classList.add('green');
+}
+
+// (Clear button removed — auto-clear on success)
 
 function clearConsole() {
   if (previewConsole) previewConsole.innerHTML = '';
@@ -1328,13 +1508,7 @@ try {
 } catch {}
 
 previewConsoleBtn?.addEventListener('click', () => {
-  if (!previewConsole) return;
-  const willShow = previewConsole.hidden;
-  previewConsole.hidden = !willShow;
-  previewConsoleBtn.classList.toggle('active', willShow);
-  if (willShow) {
-    previewConsole.scrollTop = previewConsole.scrollHeight;
-  }
+  toggleConsole();
 });
 
 previewRefreshBtn?.addEventListener('click', () => {
@@ -1364,7 +1538,7 @@ function setActiveTab(tab: 'code' | 'preview') {
 
 document.querySelectorAll('.view-tab').forEach((btn) => {
   btn.addEventListener('click', () => {
-    const tab = (btn as HTMLElement).dataset.tab as 'code' | 'preview';
+    const tab = (btn as HTMLElement).dataset.tab as 'code' | 'preview' | 'console';
     if (tab) setActiveTab(tab);
   });
 });

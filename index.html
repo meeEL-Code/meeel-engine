@@ -99,6 +99,13 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       Preview
     </button>
+    <button class="view-tab" data-tab="console" type="button" role="tab">
+      <span class="tab-icon-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        <span class="console-dot" hidden></span>
+      </span>
+      Console
+    </button>
   </div>
 
   <main class="layout">
@@ -130,7 +137,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           <span>Refresh</span>
         </button>
-        <button id="preview-console-btn" class="pbb-btn" title="Toggle console" type="button">
+        <button id="preview-console-btn" class="pbb-btn" title="Open Console" type="button">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
           <span>Console</span>
         </button>
@@ -139,7 +146,15 @@
           <span>Full</span>
         </button>
       </div>
-      <div id="preview-console" class="preview-console" hidden></div>
+    </section>
+    <section class="pane console-pane">
+      <div class="console-header">
+        <span class="console-title">Console</span>
+        <span class="console-hint">Auto-clears when code is valid</span>
+      </div>
+      <div id="console-output" class="console-output">
+        <div class="console-empty">No messages. Console will show errors and logs here.</div>
+      </div>
     </section>
   </main>
 
