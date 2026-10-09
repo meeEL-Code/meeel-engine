@@ -470,6 +470,28 @@ export function resolveBlock(name: string): BlockDef | null {
 }
 
 export const PROPERTIES: Record<string, PropertyDef> = {
+  // sprite / character
+  'idle': { css: '', special: 'content' as any },
+  'walk': { css: '', special: 'content' as any },
+  'hit': { css: '', special: 'content' as any },
+  'jump': { css: '', special: 'content' as any },
+  'size': { css: '' },
+
+  // ── Positioning (magic blocks use these) ──
+  'top': { css: 'top' },
+  'right': { css: 'right' },
+  'bottom': { css: 'bottom' },
+  'left': { css: 'left' },
+  'position': { css: 'position' },
+  'z-index': { css: 'z-index' },
+  'overflow': { css: 'overflow' },
+
+  // ── Magic block metadata (not CSS, stored as data-attrs) ──
+  'message': { css: '', special: 'content' as any },
+  'msg': { css: '', special: 'content' as any },
+  'call-id': { css: '', special: 'content' as any },
+  'tag': { css: '', special: 'content' as any },
+
   'background-color': { css: 'background-color' },
   'color': { css: 'color' },
   'font': { css: 'font-family' },
@@ -579,10 +601,6 @@ export const PROPERTIES: Record<string, PropertyDef> = {
   'border-bottom': { css: 'border-bottom' },
   'border-left': { css: 'border-left' },
   'border-right': { css: 'border-right' },
-  'z-index': { css: 'z-index' },
-  'overflow': { css: 'overflow' },
-  'overflow-x': { css: 'overflow-x' },
-  'overflow-y': { css: 'overflow-y' },
   'src': { css: 'src' },
   'target': { css: 'target' },
   'title-attr': { css: 'title' },

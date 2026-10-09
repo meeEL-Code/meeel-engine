@@ -5,6 +5,14 @@ import { lex } from '../engine/lexer';
 import { parse } from '../engine/parser';
 import { resolve, ResolveError } from '../engine/resolver';
 import { generatePages, PageOutput } from '../engine/generator';
+import { generateAll } from '../engine/multi-gen';
+import { lex as lexV2 } from '../engine2/lexer';
+import { parse as parseV2 } from '../engine2/parser';
+import { generate as generateV2 } from '../engine2/generator';
+import { MEEL_RUNTIME_SOURCE } from '../engine/runtime-source';
+import { lex as lexV3 } from '../engine3/lexer';
+import { parse as parseV3 } from '../engine3/parser';
+import { generate as generateV3 } from '../engine3/generator';
 import {
   resolveBlock,
   POSITION_KEYWORDS,
@@ -170,6 +178,7 @@ let debounceTimer: number | undefined;
 let errorMap = new Map<number, string | undefined>();
 
 let allPages: PageOutput[] = [];
+let latestAst: any = null;
 let currentPageIndex = 0;
 
 /* ============ SVG ICONS ============ */
@@ -503,6 +512,98 @@ function render() {
   errorMap = new Map();
   const source = editor.value;
 
+  // Try engine3 first (uses "is" keyword, primary types)
+  if (renderV3(source)) {
+    syncGutter();
+    syncHighlight();
+    return;
+  }
+
+  // Try meeEL v2 syntax
+  const isV2 = /^\s*(screen|\w+\s*#\w+\s*\[)/m.test(source);
+  if (isV2) {
+    try {
+      const tokens2 = lexV2(source);
+      const program2 = parseV2(tokens2);
+      const out2 = generateV2(program2);
+      const doc2 = preview.contentDocument;
+      if (doc2) {
+        const head = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+          + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+          + '<style>' + out2.css + '</style></head><body>';
+        doc2.open();
+        doc2.write(head + out2.html + '</body></html>');
+        doc2.close();
+
+        const win: any = doc2.defaultView;
+        if (win) {
+          win.__meelRuntimeLoaded = false;
+          try {
+            if (typeof win.eval === 'function') {
+              win.eval(MEEL_RUNTIME_SOURCE + '\n' + out2.js);
+              // Success badge
+              try {
+                const b = doc2.createElement('div');
+                b.textContent = '✓ v2 runtime ok';
+                b.style.cssText = 'position:fixed;top:4px;left:4px;background:#30d158;color:#fff;font:11px monospace;padding:3px 8px;border-radius:4px;z-index:99999;';
+                doc2.body.appendChild(b);
+              } catch (err) {}
+            }
+          } catch (e: any) {
+            console.warn('[meeEL v2 eval]', e);
+            // Show error on preview
+            try {
+              const errDiv = doc2.createElement('div');
+              errDiv.textContent = 'JS ERROR: ' + (e.message || e);
+              errDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#ff453a;color:#fff;font:12px monospace;padding:8px;z-index:99999;';
+              doc2.body.appendChild(errDiv);
+            } catch (err) {}
+          }
+        }
+
+        (window as any).__meelV2 = { html: out2.html, css: out2.css, js: out2.js, meeel: source };
+
+        allPages = [{
+          name: program2.screens[0] ? program2.screens[0].name : 'screen',
+          filename: 'index.html',
+          cssFilename: 'style.css',
+          jsFilename: 'script.js',
+          label: program2.screens[0] ? program2.screens[0].name : 'Page',
+          html: out2.html,
+          htmlFile: '<!DOCTYPE html><html><head><meta charset="utf-8">'
+            + '<link rel="stylesheet" href="style.css"></head><body>'
+            + out2.html
+            + '<script src="script.js" defer></' + 'script></body></html>',
+          css: out2.css,
+          js: out2.js,
+        } as any];
+        currentPageIndex = 0;
+
+        syncGutter();
+        syncHighlight();
+        return;
+      }
+    } catch (e: any) {
+      console.warn('[meeEL v2] error:', e);
+      const msg = e && e.message ? e.message : String(e);
+      const line = e && e.line ? e.line : 0;
+      const doc2 = preview.contentDocument;
+      if (doc2) {
+        doc2.open();
+        doc2.write(
+          '<!DOCTYPE html><html><body style="font-family:monospace;padding:20px;background:#1a1a1a;color:#ff6b6b;">'
+          + '<h2 style="margin-top:0">meeEL error</h2>'
+          + '<p>Line ' + line + ': ' + msg.replace(/</g, '&lt;') + '</p>'
+          + '</body></html>'
+        );
+        doc2.close();
+      }
+      syncGutter();
+      syncHighlight();
+      return;
+    }
+  }
+
   try {
     const tokens = lex(source);
     const ast = parse(tokens);
@@ -521,7 +622,24 @@ function render() {
     syncGutter();
     syncHighlight();
 
-    allPages = generatePages(ast);
+    latestAst = ast;
+    // Deep-filter *-sound-[...] blocks at any nesting level before HTML/CSS gen
+    const stripSounds = (node: any): any => {
+      if (!node || typeof node !== 'object') return node;
+      if (node.kind === 'block' && typeof node.name === 'string' &&
+          (node.name.endsWith('-sound') || node.name.endsWith('-sprite'))) {
+        return null;
+      }
+      if (Array.isArray(node.children)) {
+        return {
+          ...node,
+          children: node.children.map(stripSounds).filter(Boolean),
+        };
+      }
+      return node;
+    };
+    const astForPages = stripSounds(ast);
+    allPages = generatePages(astForPages);
 
     if (allPages.length === 0) {
       renderBlank();
@@ -592,17 +710,151 @@ function renderParseError(err: {
   renderMessage('', body, true);
 }
 
+function renderV3(source: string): boolean {
+  // Engine 3 detection: uses "is" keyword for properties OR has primary types
+  // We detect by: any line matches "<name...> [ ... ]" pattern AND
+  // there is at least one "is" property OR a primary type word
+  if (!/\[/.test(source)) return false;
+  if (!/\b(screen|player|enemy|coin|button|joystick|keyboard)\b/.test(source)) return false;
+
+  try {
+    const tokens3 = lexV3(source);
+    const program3 = parseV3(tokens3);
+    const out3 = generateV3(program3);
+    const doc3 = preview.contentDocument;
+    if (!doc3) return false;
+
+    const head3 = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+      + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<style>' + out3.css + '</style></head><body>';
+    doc3.open();
+    doc3.write(head3 + out3.html + '</body></html>');
+    doc3.close();
+
+    const win3: any = doc3.defaultView;
+    if (win3) {
+      win3.__meelRuntimeLoaded = false;
+      try {
+        if (typeof win3.eval === 'function') {
+          win3.eval(MEEL_RUNTIME_SOURCE + '\n' + out3.js);
+        }
+      } catch (e) { console.warn('[engine3 eval]', e); }
+    }
+
+    allPages = [{
+      name: program3.blocks[0] ? program3.blocks[0].refName : 'screen',
+      filename: 'index.html',
+      cssFilename: 'style.css',
+      jsFilename: 'script.js',
+      label: 'engine3',
+      html: out3.html,
+      htmlFile: '<!DOCTYPE html><html><head><meta charset="utf-8">'
+        + '<link rel="stylesheet" href="style.css"></head><body>'
+        + out3.html
+        + '<script src="script.js" defer></' + 'script></body></html>',
+      css: out3.css,
+      js: out3.js,
+    } as any];
+    currentPageIndex = 0;
+    syncGutter();
+    syncHighlight();
+    return true;
+  } catch (e: any) {
+    console.warn('[engine3] error:', e);
+    return false;
+  }
+}
+
+function renderV2(source: string): boolean {
+  if (!/^\s*screen\s/m.test(source)) return false;
+  try {
+    const tokens = lexV2(source);
+    const screens = parseV2(tokens);
+    const out = generateV2(screens);
+    const doc = preview.contentDocument;
+    if (!doc) return false;
+    const scriptTag = '<' + 'script>';
+    const scriptEnd = '<' + '/' + 'script>';
+    const fullHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+      + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+      + '<style>' + out.css + '</style></head><body>'
+      + out.html
+      + scriptTag + MEEL_RUNTIME_SOURCE + '\n' + out.js + scriptEnd
+      + '</body></html>';
+    doc.open();
+    doc.write(fullHtml);
+    doc.close();
+    (window as any).__meelV2 = { html: out.html, css: out.css, js: out.js, meeel: source };
+    return true;
+  } catch (e) {
+    console.warn('[meeEL v2] error:', e);
+    return false;
+  }
+}
+
 function renderCurrentPage() {
   const page = allPages[currentPageIndex];
   if (!page) return;
   const doc = preview.contentDocument;
   if (!doc) return;
+
+  let multiJs = "";
+  try {
+    if (latestAst && latestAst.children) {
+      const pageBlocks = latestAst.children.filter(
+        (c) => c.kind === "block" && c.name === page.name
+      );
+      if (pageBlocks.length > 0) {
+        const singleRoot = { kind: "block", name: "<root>", children: pageBlocks, line: 0 };
+        const out = generateAll(singleRoot);
+        multiJs = out.js || "";
+      }
+    }
+  } catch (e) { console.warn("[meeEL] multi-gen error:", e); }
+
+  // Write HTML
+  let html = page.html;
   doc.open();
-  doc.write(page.html);
+  doc.write(html);
   doc.close();
 
-  // After doc.write, install click interception
-  // (must run after DOM is built)
+
+  // Pre-hide overlay screens (game-over / win) until runtime decides
+  if (doc.head) {
+    const pre = doc.createElement("style");
+    pre.textContent = "#game-over-screen,[id$=\x27-game-over-screen\x27],#win-screen,[id$=\x27-win-screen\x27]{display:none!important}";
+    doc.head.appendChild(pre);
+  }
+
+  // Clear all pending timers from previous render (prevents time leak)
+  try {
+    const win: any = doc.defaultView;
+    if (win) {
+      for (let __i = 1; __i < 100000; __i++) {
+        try { win.clearInterval(__i); } catch (e) {}
+        try { win.clearTimeout(__i); } catch (e) {}
+      }
+    }
+  } catch (e) {}
+
+  // Execute runtime + user JS inside iframe via its own eval()
+  try {
+    const win: any = doc.defaultView;
+    if (win) {
+      // Reset the double-load guard so runtime runs fresh
+      win.__meelRuntimeLoaded = false;
+      if (typeof win.eval === 'function') {
+        win.eval(MEEL_RUNTIME_SOURCE + "\n" + multiJs);
+      } else {
+        // fallback
+        const runner = new Function('window', 'document', MEEL_RUNTIME_SOURCE + "\n" + multiJs);
+        runner.call(win, win, win.document);
+      }
+    }
+  } catch (e) {
+    console.warn("[meeEL] exec error:", e);
+  }
+
   setTimeout(interceptPreviewLinks, 0);
 }
 
@@ -991,7 +1243,7 @@ function buildReadme(_meeelCode: string, pages: PageOutput[]): string {
   var lines = [];
   lines.push('# ' + appName);
   lines.push('');
-  lines.push('A small web project — built with a simple English-based language.');
+  lines.push('A small web project — built with **meeEL** by **Ocide**.');
   lines.push('');
   lines.push('---');
   lines.push('');
@@ -1063,13 +1315,16 @@ function buildReadme(_meeelCode: string, pages: PageOutput[]): string {
   lines.push('');
   lines.push('## Made with');
   lines.push('');
-  lines.push('This project was created with **meeEL** — a simple language for building web pages with plain English.');
+  lines.push('This project was created with **meeEL** by **Ocide** — a simple English-based language that turns plain words into HTML, CSS, JavaScript, and Python.');
   lines.push('');
   lines.push('Learn more: [meeel-page.onrender.com](https://meeel-page.onrender.com)');
+  lines.push('');
+  lines.push('Built by **Ocide** 🚀');
   lines.push('');
   lines.push('---');
   lines.push('');
   lines.push('*Created on ' + date + '*');
+  lines.push('*Built with meeEL by Ocide*');
   lines.push('');
   return lines.join('\n');
 }
@@ -1078,12 +1333,52 @@ function buildParts() {
   if (allPages.length === 0) return null;
   const currentPage = allPages[currentPageIndex];
   const readme = buildReadme(editor.value, allPages);
+
+  // v2 mode — use __meelV2 data directly
+  const v2 = (window as any).__meelV2;
+  if (v2 && v2.meeel === editor.value) {
+    return {
+      meeel: v2.meeel,
+      html: currentPage.htmlFile,
+      css: v2.css,
+      js: v2.js,
+      python: '# meeEL v2 — Python export coming soon',
+      env: buildEnvContent(),
+      readme,
+      pages: allPages,
+    };
+  }
+
+  // Use multi-gen to extract JS + Python for this page's blocks
+  let multiJs = '';
+  let multiPy = '';
+  try {
+    if (latestAst && latestAst.children) {
+      const pageBlocks = latestAst.children.filter(
+        (c: any) => c.kind === 'block' && c.name === currentPage.name
+      );
+      if (pageBlocks.length > 0) {
+        const singleRoot = {
+          kind: 'block',
+          name: '<root>',
+          children: pageBlocks,
+          line: 0,
+        };
+        const out = generateAll(singleRoot as any);
+        multiJs = out.js || '';
+        multiPy = out.python || '';
+      }
+    }
+  } catch (e) {
+    console.warn('[meeEL] multi-gen error:', e);
+  }
+
   return {
     meeel: editor.value,
     html: currentPage.htmlFile,
     css: currentPage.css,
-    js: currentPage.js || '/* No interactivity in this page. */',
-    python: (currentPage as any).python || buildDefaultPython(),
+    js: multiJs || currentPage.js || '/* No interactivity in this page. */',
+    python: multiPy || (currentPage as any).python || buildDefaultPython(),
     env: buildEnvContent(),
     readme,
     pages: allPages,

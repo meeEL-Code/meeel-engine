@@ -26,5 +26,9 @@
     "@uiw/codemirror-themes": "^4.25.11",
     "codemirror": "^5.65.21",
     "jszip": "^3.10.2"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "esbuild@0.21.5": true
   }
 }

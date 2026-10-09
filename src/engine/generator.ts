@@ -1611,6 +1611,7 @@ function wrapHtmlExternal(html: string, cssFilename: string, jsFilename: string 
 </head>
 <body>
 ${html}
+<script src="meeel-runtime.js"></script>
 <script src="${jsFilename}" defer></script>
 </body>
 </html>`;

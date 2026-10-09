@@ -1,33 +1,25 @@
-import { Token, TokenType } from '../grammar/tokens';
+import { Token, TokenType, KEYWORDS } from '../grammar/tokens';
 
-/* Keywords that user can write in ANY case (bold, Bold, BOLD) */
 const KNOWN_KEYWORDS = new Set<string>([
-  // Text styles
   'bold', 'italic', 'underline',
-  // Shape
   'round', 'circle', 'pill', 'sharp', 'no-border',
-  // Visibility
   'hidden', 'visible', 'disabled', 'pointer', 'invisible', 'transparent',
-  // Layout
   'flex', 'flex-column', 'flex-row', 'flex-wrap',
   'full-width', 'full-height', 'full', 'fill', 'stretch', 'fit',
   'block', 'inline', 'inline-block', 'grid',
-  // Position
   'top', 'bottom', 'left', 'right', 'center', 'middle',
-  // State
   'checked', 'selected', 'active', 'inactive',
-  // Font sizes
   'font-tiny', 'font-small', 'font-medium', 'font-large',
   'font-huge', 'font-massive',
-  // Gaps
   'gap-small', 'gap-medium', 'gap-large',
-  // Screen modes
   'row', 'column',
 ]);
 
-function isKnownKeyword(word: string): boolean {
-  return KNOWN_KEYWORDS.has(word.toLowerCase());
-}
+const isIdChar = (c: string) =>
+  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+  (c >= '0' && c <= '9') || c === '_' || c === '-';
+
+const isDigit = (c: string) => c >= '0' && c <= '9';
 
 export function lex(source: string): Token[] {
   const tokens: Token[] = [];
@@ -35,9 +27,25 @@ export function lex(source: string): Token[] {
   let line = 1;
   let col = 1;
 
-  const peek = (offset = 0) => source[i + offset];
+    const peek = (offset = 0) => {
+    const idx = i + offset;
+    const code = source.charCodeAt(idx);
+    if (code >= 0xD800 && code <= 0xDBFF && idx + 1 < source.length) {
+      return source.slice(idx, idx + 2);
+    }
+    return source[idx];
+  };
+
   const advance = () => {
-    const ch = source[i++];
+    // Surrogate-pair aware: if high surrogate, consume the low surrogate too
+    const code = source.charCodeAt(i);
+    let ch;
+    if (code >= 0xD800 && code <= 0xDBFF && i + 1 < source.length) {
+      ch = source.slice(i, i + 2);
+      i += 2;
+    } else {
+      ch = source[i++];
+    }
     if (ch === '\n') {
       line++;
       col = 1;
@@ -47,131 +55,147 @@ export function lex(source: string): Token[] {
     return ch;
   };
 
-  const pushToken = (type: TokenType, value: string, l: number, c: number) => {
+  const push = (type: TokenType, value: string, l: number, c: number) => {
     tokens.push({ type, value, line: l, col: c });
   };
 
   while (i < source.length) {
     const ch = peek();
 
-    // Whitespace (not newline)
-    if (ch === ' ' || ch === '\t' || ch === '\r') {
-      advance();
-      continue;
-    }
+    if (ch === ' ' || ch === '\t' || ch === '\r') { advance(); continue; }
+    if (ch === '\n') { push(TokenType.NEWLINE, '\n', line, col); advance(); continue; }
 
-    // Newline
-    if (ch === '\n') {
-      pushToken(TokenType.NEWLINE, '\n', line, col);
-      advance();
-      continue;
-    }
+    if (ch === ']') { push(TokenType.CLOSE, ']', line, col); advance(); continue; }
+    if (ch === '[') { push(TokenType.OPEN, '[', line, col); advance(); continue; }
 
-    // Close bracket
-    if (ch === ']') {
-      pushToken(TokenType.CLOSE, ']', line, col);
-      advance();
-      continue;
-    }
-
-    // Comment: '#' to end of line
+    // #id or comment
     if (ch === '#') {
-      // Skip until newline (or end)
-      while (i < source.length && peek() !== '\n') {
+      const next = peek(1);
+      const isIdStart = (next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || next === '_';
+      if (isIdStart) {
+        const l = line, c = col;
         advance();
+        let id = '#';
+        while (i < source.length && isIdChar(peek())) id += advance();
+        push(TokenType.HASH_ID, id, l, c);
+        continue;
       }
+      while (i < source.length && peek() !== '\n') advance();
       continue;
     }
 
-    // Standalone value: numbers, times (00:00:00), URLs, emails, paths
-    // Triggers when starting with digit, ':', '@', '/', or negative number
-    const isNumberStart = ch >= '0' && ch <= '9';
-    const isNegativeNumber = ch === '-' && peek(1) >= '0' && peek(1) <= '9';
-    const isValueSpecial = ch === ':' || ch === '@' || ch === '/';
-
-    if (isNumberStart || isNegativeNumber || isValueSpecial) {
-      const startLine = line;
-      const startCol = col;
-      let val = '';
-      while (i < source.length) {
-        const c = peek();
-        // Stop at structural chars
-        if (c === ' ' || c === '\t' || c === '\r' || c === '\n') break;
-        if (c === '[' || c === ']') break;
-        // Stop at '-[' (start of a property/block)
-        if (c === '-' && peek(1) === '[') break;
-        val += advance();
-      }
-      if (val.length > 0) {
-        pushToken(TokenType.VALUE, val, startLine, startCol);
+    // $id
+    if (ch === '$') {
+      const next = peek(1);
+      if ((next >= 'a' && next <= 'z') || (next >= 'A' && next <= 'Z') || next === '_') {
+        const l = line, c = col;
+        advance();
+        let id = '$';
+        while (i < source.length && isIdChar(peek())) id += advance();
+        push(TokenType.DOLLAR_ID, id, l, c);
         continue;
       }
     }
 
-    // Name — allow uppercase start ONLY if followed immediately by -[
-    // (e.g. Pink-[#ec4899] inside colors block)
-    // Otherwise names start with lowercase letter.
-    const isUpperStart = ch >= 'A' && ch <= 'Z';
-    const isLowerStart = ch >= 'a' && ch <= 'z';
-
-    if (isUpperStart || isLowerStart) {
-      const startLine = line;
-      const startCol = col;
-      let name = '';
-
-      // Consume the name (allowing letters + digits + hyphens + uppercase)
-      while (i < source.length) {
-        const c = peek();
-        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
-          name += advance();
-        } else if (c === '-') {
-          const next = peek(1);
-          if (
-            (next >= 'a' && next <= 'z') ||
-            (next >= 'A' && next <= 'Z') ||
-            (next >= '0' && next <= '9')
-          ) {
-            name += advance();
-          } else {
-            break;
-          }
-        } else {
-          break;
-        }
-      }
-
-      // If name starts with uppercase and NOT followed by -[,
-      // check if it's a known keyword first (Bold → bold)
-      if (isUpperStart && !(peek() === '-' && peek(1) === '[')) {
-        if (isKnownKeyword(name)) {
-          pushToken(TokenType.NAME, name.toLowerCase(), startLine, startCol);
+    // String
+    if (ch === '"' || ch === "'") {
+      const quote = ch;
+      const l = line, c = col;
+      advance();
+      let str = '';
+      while (i < source.length && peek() !== quote) {
+        if (peek() === '\\' && peek(1)) {
+          advance();
+          const esc = advance();
+          str += esc === 'n' ? '\n' : esc === 't' ? '\t' : esc;
           continue;
         }
-        // Otherwise: treat as VALUE (content word like "Ready", "Running")
-        pushToken(TokenType.VALUE, name, startLine, startCol);
+        str += advance();
+      }
+      if (peek() === quote) advance();
+      push(TokenType.STRING, str, l, c);
+      continue;
+    }
+
+    // Number with optional +/- and unit suffix (ms, s, m, h)
+    if (isDigit(ch) || ((ch === '-' || ch === '+') && isDigit(peek(1)))) {
+      const l = line, c = col;
+      let num = '';
+      if (ch === '-' || ch === '+') num += advance();
+      while (i < source.length && (isDigit(peek()) || peek() === '.')) num += advance();
+      // unit suffix
+      if (peek() === 'm' && peek(1) === 's' && !isIdChar(peek(2))) {
+        num += advance(); num += advance();
+      } else if ((peek() === 's' || peek() === 'm' || peek() === 'h') && !isIdChar(peek(1))) {
+        num += advance();
+      }
+      push(TokenType.NUMBER, num, l, c);
+      continue;
+    }
+
+    // Operators
+    const twoChar = ch + peek(1);
+    if (['==', '!=', '>=', '<='].includes(twoChar)) {
+      const l = line, c = col;
+      advance(); advance();
+      push(TokenType.OPERATOR, twoChar, l, c);
+      continue;
+    }
+    if (['=', '>', '<', '+', '-', '*', '/'].includes(ch)) {
+      // Handle standalone '-' carefully: only if not part of id/unit
+      if (ch === '-' && isIdChar(peek(1))) {
+        // fall through to name parsing below
+      } else {
+        const l = line, c = col;
+        advance();
+        push(TokenType.OPERATOR, ch, l, c);
+        continue;
+      }
+    }
+
+    if (ch === ',') { push(TokenType.COMMA, ',', line, col); advance(); continue; }
+    if (ch === '.') { push(TokenType.DOT, '.', line, col); advance(); continue; }
+
+    // Names
+    const isUpper = ch >= 'A' && ch <= 'Z';
+    const isLower = ch >= 'a' && ch <= 'z';
+    if (isUpper || isLower) {
+      const l = line, c = col;
+      let name = '';
+      while (i < source.length) {
+        const cc = peek();
+        if ((cc >= 'a' && cc <= 'z') || (cc >= 'A' && cc <= 'Z') || isDigit(cc) || cc === '_') {
+          name += advance();
+        } else if (cc === '-') {
+          const nxt = peek(1);
+          if (isIdChar(nxt)) name += advance();
+          else break;
+        } else break;
+      }
+
+      if (isUpper && !(peek() === '-' && peek(1) === '[')) {
+        if (KNOWN_KEYWORDS.has(name.toLowerCase())) {
+          push(TokenType.NAME, name.toLowerCase(), l, c);
+          continue;
+        }
+        push(TokenType.VALUE, name, l, c);
         continue;
       }
 
-      pushToken(TokenType.NAME, name, startLine, startCol);
+      const lower = name.toLowerCase();
+      const isKeyword = KEYWORDS.has(lower);
+      push(TokenType.NAME, isKeyword ? lower : name, l, c);
 
-      // Check for -[
       if (peek() === '-' && peek(1) === '[') {
-        advance();
-        advance();
-        pushToken(TokenType.DASH_BRACKET, '-[', line, col);
-
-        // Read value until matching ']' (with bracket depth tracking)
+        advance(); advance();
+        push(TokenType.DASH_BRACKET, '-[', line, col);
         let val = '';
         let depth = 1;
         while (i < source.length) {
-          const c = peek();
-          if (c === '\n') break;
-          if (c === '[') {
-            depth++;
-            val += advance();
-            continue;
-          }
-          if (c === ']') {
+          const cc = peek();
+          if (cc === '\n') break;
+          if (cc === '[') { depth++; val += advance(); continue; }
+          if (cc === ']') {
             depth--;
             if (depth === 0) break;
             val += advance();
@@ -180,7 +204,7 @@ export function lex(source: string): Token[] {
           val += advance();
         }
         if (val.trim().length > 0) {
-          pushToken(TokenType.VALUE, val.trim(), line, col);
+          push(TokenType.VALUE, val.trim(), line, col);
         }
       }
       continue;
@@ -189,6 +213,6 @@ export function lex(source: string): Token[] {
     throw new Error(`Unexpected character '${ch}' at line ${line}, col ${col}`);
   }
 
-  pushToken(TokenType.EOF, '', line, col);
+  push(TokenType.EOF, '', line, col);
   return tokens;
 }
