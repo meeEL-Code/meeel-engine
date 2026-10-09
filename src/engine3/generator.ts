@@ -190,7 +190,7 @@ function emitBlock(block: Block, depth: number): { html: string; css: string } {
 }
 
 // ─── Emit one Action → JS ───
-function emitAction(a: Action): string {
+function emitAction(a: Action, defaultTarget: string = ''): string {
   const verb = a.verb.toLowerCase();
   const words = a.words;
   const values = a.values;
@@ -215,21 +215,26 @@ function emitAction(a: Action): string {
     const byIdx = words.indexOf('by');
     const fromIdx = words.indexOf('from');
 
-    // Map a word index to the corresponding value index
-    // values array starts at words[1], so valueIdx = wordIdx - 1
     const valAt = (wordIdx: number): string => {
       const v = values[wordIdx - 1];
       return v ? jsVal(v) : '0';
     };
 
     if (byIdx >= 1) {
-      // reduce <ref> <prop> by <N>   → words: [reduce, ref, prop, by, N]
+      // reduce <ref> <prop> by <N>  → words: [reduce, ref, prop, by, N]
       if (byIdx === 3 && words.length >= 5) {
         const ref = words[1];
         const prop = words[2];
         const value = valAt(4);
         return 'state[' + JSON.stringify(ref) + '].' + prop +
                ' = (state[' + JSON.stringify(ref) + '].' + prop + ' || 0) - ' + value + ';';
+      }
+      // reduce <prop> by <N>  (context-aware) → use defaultTarget
+      if (byIdx === 2 && defaultTarget) {
+        const prop = words[1];
+        const value = valAt(3);
+        return 'state[' + JSON.stringify(defaultTarget) + '].' + prop +
+               ' = (state[' + JSON.stringify(defaultTarget) + '].' + prop + ' || 0) - ' + value + ';';
       }
       // reduce <target> by <N>
       const target = words[1];
@@ -238,7 +243,7 @@ function emitAction(a: Action): string {
     }
     if (fromIdx >= 1) {
       const value = valAt(1);
-      const target = words[fromIdx + 1] || 'unknown';
+      const target = words[fromIdx + 1] || defaultTarget || 'unknown';
       return 'subtractFrom(' + JSON.stringify(target) + ', ' + value + ');';
     }
   }
@@ -314,9 +319,14 @@ function emitAction(a: Action): string {
       k++;
     }
     const expr = parts.join(' + ') || '""';
-    // Emit as live (refreshable) text
-    return 'registerLiveText(function() { return ' + expr + '; }, ' +
-           JSON.stringify(pos) + ');';
+    // If expression contains state lookups (dynamic) → live text
+    // Otherwise → one-shot showText
+    const isDynamic = parts.some(p => p.startsWith('state['));
+    if (isDynamic) {
+      return 'registerLiveText(function() { return ' + expr + '; }, ' +
+             JSON.stringify(pos) + ');';
+    }
+    return 'showText(' + expr + ', ' + JSON.stringify(pos) + ');';
   }
 
   // ─── hide ───
@@ -358,7 +368,7 @@ function emitAction(a: Action): string {
 }
 
 // ─── Emit one Event → JS ───
-function emitEvent(ev: Event): string {
+function emitEvent(ev: Event, defaultTarget: string = ''): string {
   const kw = ev.kindWord;
 
   // ─── every N unit ───
@@ -381,12 +391,15 @@ function emitEvent(ev: Event): string {
     if (words.length >= 3 && (words[1] === 'touches' || words[1] === 'hits')) {
       const a = words[0];
       const b = words[2];
-      const body = ev.body.map(item =>
-        (item as any).kind === 'event' ? emitEvent(item as Event) : emitAction(item as Action)
+      // When event fires with `a` touching `b`, the "target" for damage is `b`.
+      const bodyA = ev.body.map(item =>
+        (item as any).kind === 'event' ? emitEvent(item as Event) : emitAction(item as Action, b)
       ).join('\n  ');
-      // Runtime fires many variants — we register the same handler on all
-      return "on('touches:" + a + ":" + b + "', function() {\n  " + body + "\n});\n" +
-             "on('touches:" + b + ":" + a + "', function() {\n  " + body + "\n});";
+      const bodyB = ev.body.map(item =>
+        (item as any).kind === 'event' ? emitEvent(item as Event) : emitAction(item as Action, a)
+      ).join('\n  ');
+      return "on('touches:" + a + ":" + b + "', function() {\n  " + bodyA + "\n});\n" +
+             "on('touches:" + b + ":" + a + "', function() {\n  " + bodyB + "\n});";
     }
     // when press <key>
     if (words.length >= 2 && (words[0] === 'press' || words[0] === 'key')) {
@@ -407,32 +420,49 @@ function emitEvent(ev: Event): string {
 
   // ─── if ... ───
   if (kw === 'if') {
-    // Build condition from words
-    // Example: if boss health <= 0
-    //          if score >= 50
     const words = ev.words;
-    let left = '', op = '', right = '';
     let opIdx = -1;
+    let op = '';
     for (let k = 0; k < words.length; k++) {
-      if (['<=', '>=', '==', '!=', '<', '>'].includes(words[k])) {
-        opIdx = k; op = words[k]; break;
+      if (['<=', '>=', '==', '!=', '<', '>', 'is'].includes(words[k])) {
+        opIdx = k;
+        op = words[k] === 'is' ? '==' : words[k];
+        break;
       }
     }
+
+    let left = '';
+    let right = '""';
     if (opIdx >= 0) {
       const leftWords = words.slice(0, opIdx);
       const rightWords = words.slice(opIdx + 1);
-      if (leftWords.length >= 2) {
+
+      // Pattern: <prop> of <ref>  →  state[ref].prop
+      if (leftWords.length === 3 && leftWords[1] === 'of') {
+        left = 'state[' + JSON.stringify(leftWords[2]) + '].' + leftWords[0];
+      }
+      // Pattern: <ref> <prop>  →  state[ref].prop
+      else if (leftWords.length === 2) {
         left = 'state[' + JSON.stringify(leftWords[0]) + '].' + leftWords[1];
-      } else {
+      }
+      // Pattern: <name>  →  state[name]
+      else if (leftWords.length === 1) {
         left = 'state[' + JSON.stringify(leftWords[0]) + ']';
       }
-      const rightVal = rightWords[0];
-      right = /^-?\d+/.test(rightVal) ? rightVal : JSON.stringify(rightVal);
+
+      // Right side: number, string, or state ref
+      const rv = rightWords[0] || '0';
+      if (/^-?\d+(\.\d+)?$/.test(rv)) right = rv;
+      else if (['true', 'false'].includes(rv)) right = rv;
+      else right = JSON.stringify(rv);
     }
+
     const body = ev.body.map(item =>
       (item as any).kind === 'event' ? emitEvent(item as Event) : emitAction(item as Action)
     ).join('\n  ');
-    return 'if (' + left + ' ' + op + ' ' + right + ') {\n  ' + body + '\n}';
+    const innerIf = 'if (' + left + ' ' + op + ' ' + right + ') {\n    ' + body + '\n  }';
+    // Wrap in an every(100) so it re-evaluates as state changes
+    return 'every(100, function() {\n  ' + innerIf + '\n});';
   }
 
   return 'console.log("event", ' + JSON.stringify(ev) + ');';
