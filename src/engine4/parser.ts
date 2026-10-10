@@ -177,6 +177,7 @@ function tryCombineNumbers(words: string[]): number | null {
 function tokenToValue(t: Token): Value {
   if (t.type === T.NUMBER) return { type: 'number', value: parseFloat(t.value) };
   if (t.type === T.STRING) return { type: 'string', value: t.value };
+  if (t.type === T.HEX)    return { type: 'word', value: t.value };
   // WORD — maybe a number word?
   const n = resolveNumber(t.value);
   if (n !== null) return { type: 'number', value: n };
@@ -189,33 +190,65 @@ function tokenToValue(t: Token): Value {
 //   create <words> call this "name"  → custom refName (on next line)
 function parseCreateStatement(L: Line): Block {
   const toks = L.tokens;
-  // drop 'create' or its synonym (first token)
-  const words: string[] = [];
+  const typeWords: string[] = [];
+  let instanceName = '';
   let parent: string | null = null;
+  let seenNamed = false;
 
   let i = 1;
   while (i < toks.length) {
     const w = toks[i].value.toLowerCase();
+
+    // inside / in / under / contains
     if (NEST_CLAUSES.has(w) && i + 1 < toks.length) {
       parent = toks[i + 1].value;
       i += 2;
       continue;
     }
-    // skip filler words
-    if (['a', 'an', 'the', 'named', 'called', 'with', 'of'].includes(w)) {
+
+    // named / called — everything after is instance name
+    if (w === 'named' || w === 'called') {
+      seenNamed = true;
       i++;
       continue;
     }
-    words.push(toks[i].value);
+
+    // fillers
+    if (['a', 'an', 'the', 'with', 'of'].includes(w)) { i++; continue; }
+
+    // skip event/action keywords that shouldn't be in a header
+    if (i > 1 && (w === 'set' || w === 'when')) break;
+
+    if (seenNamed) {
+      // instance name — join with dashes
+      instanceName += (instanceName ? '-' : '') + toks[i].value;
+    } else {
+      typeWords.push(toks[i].value);
+    }
     i++;
   }
 
-  const { type, modifier } = detectType(words);
+  // ─── Type detection: last type-word = type, rest = modifier ───
+  let type: string;
+  let modifier: string;
+  if (typeWords.length === 0) {
+    type = 'block';
+    modifier = instanceName || '';
+  } else if (typeWords.length === 1) {
+    type = typeWords[0].toLowerCase();
+    modifier = instanceName || '';
+  } else {
+    type = typeWords[typeWords.length - 1].toLowerCase();
+    modifier = typeWords.slice(0, -1).join('-').toLowerCase();
+    if (instanceName) modifier += (modifier ? '-' : '') + instanceName;
+  }
+
+  // ─── Reference name = type first, then modifier ───
   const refName = modifier ? type + '-' + modifier : type;
 
   return {
     kind: 'block',
-    words,
+    words: [...typeWords, instanceName].filter(Boolean),
     type,
     modifier,
     refName,
@@ -223,7 +256,7 @@ function parseCreateStatement(L: Line): Block {
     properties: [],
     events: [],
     children: [],
-    role: WIDGET_ROLES[type] || 'unknown',
+    role: 'unknown',  // computed later, from properties + structure
     line: L.line,
   };
 }
@@ -415,6 +448,26 @@ function resolveInWords(words: string[], dict: RefDictionary): void {
   }
 }
 
+// ─── Structural role detection ───
+// Role derived from STRUCTURE — never from a name whitelist.
+function computeStructuralRole(block: Block): BlockRole {
+  const hasNumberValue = block.properties.some(p => p.value.type === 'number');
+  const hasAnyProperty = block.properties.length > 0;
+  const hasEvents = block.events.length > 0;
+  const hasChildren = block.children.length > 0;
+
+  // Container: has children
+  if (hasChildren) return 'container';
+  // Top-level block with no value, no events → container (like a page)
+  if (block.parent === null && !hasNumberValue && !hasEvents && hasAnyProperty) {
+    return 'container';
+  }
+  // Controller: has events, no numeric value
+  if (hasEvents && !hasNumberValue) return 'controller';
+  // Fallback: entity (visual/reactive block)
+  return 'entity';
+}
+
 // ─── Public parse function ───
 export function parse(tokens: Token[]): Program {
   const lines = groupLines(tokens);
@@ -509,6 +562,11 @@ export function parse(tokens: Token[]): Program {
     }
   }
 
+  // ─── Compute structural role for EVERY block FIRST ───
+  for (const b of program.blocks) {
+    b.role = computeStructuralRole(b);
+  }
+
   // ─── Attach children to their parents; remove from top-level ───
   const orphans: Block[] = [];
   for (const b of program.blocks) {
@@ -519,12 +577,9 @@ export function parse(tokens: Token[]): Program {
       orphans.push(b);
     }
   }
-  // Remove children from top-level (they live inside their parent)
   program.blocks = program.blocks.filter(b => !orphans.includes(b));
 
   // ─── Reference Resolution ───
-  // After all blocks are known, build a dictionary and resolve every
-  // 'word' value in events/actions to its canonical refName.
   const dict = buildRefDictionary(program.blocks);
   for (const ev of program.events) {
     resolveInWords(ev.words, dict);

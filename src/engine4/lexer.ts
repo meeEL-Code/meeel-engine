@@ -60,8 +60,31 @@ export function lex(source: string): Token[] {
       continue;
     }
 
-    // comment — # to end of line
+    // # — hex color OR comment
+    // Rule: # followed by 3, 4, 6, or 8 hex digits (not followed by letter) = HEX
+    //       otherwise = comment to end of line
     if (ch === '#') {
+      let hexLen = 0;
+      for (let j = 1; j < 10; j++) {
+        const cc = peek(j);
+        if (!cc || !/[0-9a-fA-F]/.test(cc)) break;
+        hexLen++;
+      }
+      const after = peek(hexLen + 1);
+      const afterIsLetter = after && /[a-zA-Z]/.test(after);
+      const isHexColor =
+        (hexLen === 3 || hexLen === 4 || hexLen === 6 || hexLen === 8) &&
+        !afterIsLetter;
+
+      if (isHexColor) {
+        const l = line, c = col;
+        advance();  // consume #
+        let hex = '#';
+        for (let k = 0; k < hexLen; k++) hex += advance();
+        push(T.HEX, hex, l, c);
+        continue;
+      }
+      // comment
       while (i < source.length && peek() !== '\n') advance();
       continue;
     }
